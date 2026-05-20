@@ -1,0 +1,2698 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Рабочие таблицы</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f2;
+      --surface: #ffffff;
+      --surface-2: #fbfcfa;
+      --ink: #17201b;
+      --muted: #647268;
+      --line: #dce2dc;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --accent-soft: #e5f3ef;
+      --sidebar-bg: #17201b;
+      --sidebar-text: #ffffff;
+      --sidebar-muted: rgba(255, 255, 255, .66);
+      --sidebar-hover: rgba(255, 255, 255, .08);
+      --sidebar-line: rgba(255, 255, 255, .12);
+      --chart: #2563eb;
+      --danger: #b91c1c;
+      --shadow: 0 14px 38px rgba(23, 32, 27, .08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-theme="light"] {
+      --bg: #f7f8fb;
+      --surface: #ffffff;
+      --surface-2: #fbfcff;
+      --ink: #172033;
+      --muted: #687287;
+      --line: #dde3ee;
+      --accent: #475569;
+      --accent-strong: #334155;
+      --accent-soft: #eef2f7;
+      --sidebar-bg: #ffffff;
+      --sidebar-text: #172033;
+      --sidebar-muted: #687287;
+      --sidebar-hover: #eef2f7;
+      --sidebar-line: #dde3ee;
+      --chart: #475569;
+      --shadow: 0 14px 38px rgba(23, 32, 51, .08);
+    }
+
+    body[data-theme="dark"] {
+      --bg: #0c1117;
+      --surface: #151c24;
+      --surface-2: #111820;
+      --ink: #ecf2f8;
+      --muted: #9aa8b8;
+      --line: #2a3441;
+      --accent: #38bdf8;
+      --accent-strong: #0ea5e9;
+      --accent-soft: rgba(56, 189, 248, .16);
+      --sidebar-bg: #080d13;
+      --sidebar-text: #ffffff;
+      --sidebar-muted: rgba(255, 255, 255, .68);
+      --sidebar-hover: rgba(255, 255, 255, .08);
+      --sidebar-line: rgba(255, 255, 255, .12);
+      --chart: #38bdf8;
+      --shadow: 0 14px 38px rgba(0, 0, 0, .24);
+    }
+
+    body[data-theme="blue"] {
+      --bg: #f3f7fc;
+      --surface: #ffffff;
+      --surface-2: #f8fbff;
+      --ink: #102033;
+      --muted: #607086;
+      --line: #d8e2ef;
+      --accent: #155a98;
+      --accent-strong: #0f477a;
+      --accent-soft: #e5f0fb;
+      --sidebar-bg: #0f477a;
+      --sidebar-text: #ffffff;
+      --sidebar-muted: rgba(255, 255, 255, .7);
+      --sidebar-hover: rgba(255, 255, 255, .1);
+      --sidebar-line: rgba(255, 255, 255, .14);
+      --chart: #155a98;
+      --shadow: 0 14px 38px rgba(16, 32, 51, .08);
+    }
+
+    body[data-theme="gray"] {
+      --bg: #f4f5f5;
+      --surface: #ffffff;
+      --surface-2: #fafafa;
+      --ink: #202428;
+      --muted: #666f78;
+      --line: #dfe3e6;
+      --accent: #525f6b;
+      --accent-strong: #3f4952;
+      --accent-soft: #eceff1;
+      --sidebar-bg: #2f363d;
+      --sidebar-text: #ffffff;
+      --sidebar-muted: rgba(255, 255, 255, .68);
+      --sidebar-hover: rgba(255, 255, 255, .08);
+      --sidebar-line: rgba(255, 255, 255, .12);
+      --chart: #525f6b;
+      --shadow: 0 14px 38px rgba(32, 36, 40, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      padding: 22px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand {
+      padding: 0 6px;
+    }
+
+    .brand-mark {
+      display: block;
+      width: 178px;
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 16px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--sidebar-muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--sidebar-muted);
+      min-height: 42px;
+      padding: 0 12px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav button:hover {
+      background: var(--sidebar-hover);
+      color: var(--sidebar-text);
+    }
+
+    .nav button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .nav svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      padding: 14px;
+      border: 1px solid var(--sidebar-line);
+      border-radius: 8px;
+      color: var(--sidebar-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .sidebar-note strong {
+      display: block;
+      color: var(--sidebar-text);
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .theme-picker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--sidebar-line);
+    }
+
+    .theme-picker label {
+      color: var(--sidebar-muted);
+      font-size: 12px;
+    }
+
+    .theme-picker select {
+      width: auto;
+      min-width: 92px;
+      height: 30px;
+      padding: 4px 8px;
+      border-color: var(--sidebar-line);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .title h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions,
+    .filters {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .module-tabs {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .module-tabs button {
+      border: 0;
+      border-radius: 6px;
+      min-height: 36px;
+      padding: 0 14px;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .module-tabs button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .cloud-panel {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .cloud-panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .cloud-panel-header strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .cloud-panel-header span,
+    .cloud-help {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .cloud-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(180px, .6fr);
+      gap: 10px;
+    }
+
+    .cloud-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: #b7c7bf;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    .btn.icon {
+      width: 38px;
+      padding: 0;
+    }
+
+    .btn.danger {
+      color: var(--danger);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(145px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric,
+    .panel,
+    .placeholder {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric {
+      min-height: 86px;
+      padding: 14px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 25px;
+      line-height: 1;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .dashboard-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .chart-panel {
+      padding: 18px;
+    }
+
+    .chart-panel h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(90px, 150px) minmax(0, 1fr) 78px;
+      gap: 12px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: var(--line);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      width: var(--value, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .bar-value {
+      text-align: right;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timeline {
+      height: 260px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding-top: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .day {
+      flex: 1;
+      min-width: 18px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+    }
+
+    .day-bar {
+      width: 100%;
+      max-width: 36px;
+      min-height: 3px;
+      height: var(--value, 0%);
+      border-radius: 6px 6px 0 0;
+      background: var(--chart);
+    }
+
+    .day-label {
+      position: absolute;
+      top: 100%;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+      transform: rotate(-35deg);
+      transform-origin: top left;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .insight {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface-2);
+    }
+
+    .insight strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .insight span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .dashboard-empty {
+      padding: 34px 18px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed #bac8bf;
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .form-panel {
+      padding: 18px;
+      position: sticky;
+      top: 18px;
+    }
+
+    .panel h3 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .14);
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .table-panel {
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+
+    .search {
+      min-width: min(360px, 100%);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 920px;
+    }
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      background: var(--surface-2);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td.numeric,
+    th.numeric {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    td.result {
+      min-width: 220px;
+      color: #334139;
+    }
+
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .empty {
+      padding: 46px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .placeholder {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .placeholder-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .placeholder-card {
+      border: 1px dashed #bac8bf;
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--surface-2);
+      min-height: 120px;
+    }
+
+    .placeholder-card strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .placeholder-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .sales-layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sales-steps,
+    .objection-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .sales-step,
+    .objection-item {
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      text-align: left;
+    }
+
+    .sales-step.active,
+    .objection-item.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .sales-card {
+      padding: 18px;
+    }
+
+    .sales-card h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .sales-goal {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 0 0 14px;
+    }
+
+    .script-textarea {
+      min-height: 220px;
+      line-height: 1.5;
+    }
+
+    .scenario-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .scenario {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 12px;
+      text-align: left;
+      color: var(--ink);
+    }
+
+    .scenario strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .scenario span,
+    .question-list li {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .question-list {
+      margin: 0;
+      padding-left: 19px;
+    }
+
+    .lead-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 1080px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        padding: 14px 16px;
+      }
+
+      .brand,
+      .sidebar-note {
+        display: none;
+      }
+
+      .nav {
+        display: flex;
+        overflow-x: auto;
+      }
+
+      .nav button {
+        width: auto;
+        flex: 0 0 auto;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .form-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .main {
+        padding: 16px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .summary,
+      .two,
+      .cloud-grid,
+      .sales-layout,
+      .lead-grid,
+      .placeholder-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions,
+      .filters,
+      .module-tabs,
+      .toolbar {
+        width: 100%;
+      }
+
+      .module-tabs button {
+        flex: 1 1 0;
+      }
+
+      .btn:not(.icon),
+      .search,
+      .filters select {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img class="brand-mark" id="brandLogo" src="assets/logo-white.png" alt="SPORTPRO">
+        <h1>SPORTPRO Office</h1>
+        <p>Единая рабочая программа для рекламы, таблиц и дашбордов.</p>
+      </div>
+
+      <nav class="nav" aria-label="Разделы">
+        <button class="active" type="button" data-view="ads" title="Реклама">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v10H4V5Zm2 2v6h12V7H6Zm2 10h8v2H8v-2Zm-2 4h12v2H6v-2Z"/></svg>
+          Реклама
+        </button>
+        <button type="button" data-view="sales" title="Продажи">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
+          Продажи
+        </button>
+        <button type="button" data-view="future" title="Будущие таблицы">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v4h14V5H5Zm0 6v8h4v-8H5Zm6 0v8h8v-8h-8Z"/></svg>
+          Шаблоны
+        </button>
+      </nav>
+
+      <div class="sidebar-note">
+        <strong>SPORTPRO Office</strong>
+        Новые разделы можно добавлять по одному: дашборд, таблица, отчеты и экспорт.
+        <div class="theme-picker">
+          <label for="themeSelect">Тема</label>
+          <select id="themeSelect">
+            <option value="green">Зеленая</option>
+            <option value="light">Светлая</option>
+            <option value="dark">Темная</option>
+            <option value="blue">Синяя</option>
+            <option value="gray">Серая</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="adsView">
+        <div class="topbar">
+          <div class="title">
+            <h2>Реклама</h2>
+            <p>Дашборд и таблица для учета рекламных размещений.</p>
+          </div>
+          <div class="actions">
+            <span class="cloud-status" id="cloudStatus">Облако не настроено</span>
+            <button class="btn" id="cloudToggleBtn" type="button">Облако</button>
+            <button class="btn primary" id="cloudSyncBtn" type="button">Синхронизировать</button>
+          </div>
+        </div>
+
+        <section class="cloud-panel hidden" id="cloudPanel">
+          <div class="cloud-panel-header">
+            <div>
+              <strong>Облачная база Supabase</strong>
+              <span>Локальная работа остается быстрой, облако нужно для совместного доступа и резервной копии.</span>
+            </div>
+            <div class="actions">
+              <button class="btn" id="cloudTestBtn" type="button">Проверить подключение</button>
+              <button class="btn" id="cloudPullBtn" type="button">Загрузить из облака</button>
+              <button class="btn primary" id="cloudSaveBtn" type="button">Сохранить настройки</button>
+            </div>
+          </div>
+          <div class="cloud-grid">
+            <label>Project URL
+              <input id="cloudUrl" type="url" placeholder="https://xxxxx.supabase.co">
+            </label>
+            <label>Publishable / anon key
+              <input id="cloudKey" type="password" placeholder="sb_publishable_... или anon key">
+            </label>
+            <label>Рабочее пространство
+              <input id="cloudWorkspace" type="text" placeholder="sportpro-main">
+            </label>
+          </div>
+          <div class="cloud-help">
+            Для руководителя можно настроить доступ к этой же базе и открыть ему этот файл программы. В этой первой версии доступ общий для тех, у кого есть настройки облака.
+          </div>
+        </section>
+
+        <div class="module-tabs" aria-label="Вид раздела рекламы">
+          <button class="active" type="button" data-ads-mode="dashboard">Дашборд</button>
+          <button type="button" data-ads-mode="table">Контент</button>
+          <button type="button" data-ads-mode="funnel">Воронка</button>
+        </div>
+
+        <section id="adsDashboardView">
+        <div class="topbar">
+          <div class="title">
+            <h2>Дашборд</h2>
+            <p>Обзор результатов рекламы по внесенным записям.</p>
+          </div>
+          <div class="actions">
+            <select id="dashboardPeriod" aria-label="Период дашборда">
+              <option value="all">Все время</option>
+              <option value="30">30 дней</option>
+              <option value="7">7 дней</option>
+            </select>
+          </div>
+        </div>
+
+        <section class="summary" aria-label="Итоги дашборда">
+          <div class="metric"><span>Записей</span><strong id="dashRows">0</strong></div>
+          <div class="metric"><span>Просмотры</span><strong id="dashViews">0</strong></div>
+          <div class="metric"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
+          <div class="metric"><span>Сообщения</span><strong id="dashMessages">0</strong></div>
+          <div class="metric"><span>Отклик</span><strong id="dashRate">0%</strong></div>
+        </section>
+
+        <section class="summary" aria-label="Итоги воронки">
+          <div class="metric"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
+          <div class="metric"><span>Охват</span><strong id="dashReach">0</strong></div>
+          <div class="metric"><span>Reels</span><strong id="dashReels">0</strong></div>
+          <div class="metric"><span>Лиды</span><strong id="dashLeads">0</strong></div>
+          <div class="metric"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
+        </section>
+
+        <section class="dashboard-grid">
+          <div class="dashboard-stack">
+            <section class="panel chart-panel">
+              <h3>Динамика просмотров</h3>
+              <div class="timeline" id="timeline"></div>
+              <div class="dashboard-empty hidden" id="timelineEmpty">Добавь записи в разделе рекламы, и здесь появится динамика.</div>
+            </section>
+
+            <section class="panel chart-panel">
+              <h3>Типы контента</h3>
+              <div class="bars" id="typeBars"></div>
+              <div class="dashboard-empty hidden" id="typeEmpty">Пока недостаточно данных для сравнения типов.</div>
+            </section>
+
+            <section class="panel chart-panel">
+              <h3>Воронка продаж</h3>
+              <div class="bars" id="funnelBars"></div>
+              <div class="dashboard-empty hidden" id="funnelEmpty">Добавь данные воронки, и здесь появятся этапы продаж.</div>
+            </section>
+          </div>
+
+          <div class="dashboard-stack">
+            <section class="panel chart-panel">
+              <h3>Лучшие темы</h3>
+              <div class="bars" id="topicBars"></div>
+              <div class="dashboard-empty hidden" id="topicEmpty">Топ тем появится после первых записей.</div>
+            </section>
+
+            <section class="panel chart-panel">
+              <h3>Выводы</h3>
+              <div class="insight-list" id="insights"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="adsTableView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Реклама</h2>
+            <p>Контент, показатели и выводы по каждому размещению.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="exportBtn" type="button" title="Экспортировать CSV">Экспорт CSV</button>
+            <button class="btn danger" id="clearBtn" type="button" title="Очистить все записи">Очистить</button>
+          </div>
+        </div>
+
+        <section class="summary" aria-label="Итоги">
+          <div class="metric"><span>Записей</span><strong id="totalRows">0</strong></div>
+          <div class="metric"><span>Просмотры</span><strong id="totalViews">0</strong></div>
+          <div class="metric"><span>Сохранения</span><strong id="totalSaves">0</strong></div>
+          <div class="metric"><span>Сообщения</span><strong id="totalMessages">0</strong></div>
+          <div class="metric"><span>Отклик</span><strong id="totalRate">0%</strong></div>
+        </section>
+
+        <section class="workspace">
+          <aside class="panel form-panel">
+            <h3 id="formTitle">Новая запись</h3>
+            <form id="entryForm">
+              <input id="entryId" type="hidden">
+              <div class="two">
+                <label>Дата
+                  <input id="date" type="date" required>
+                </label>
+                <label>Тип
+                  <select id="type" required>
+                    <option value="Рилс">Рилс</option>
+                    <option value="Пост">Пост</option>
+                    <option value="Сторис">Сторис</option>
+                    <option value="Реклама">Реклама</option>
+                    <option value="Посев">Посев</option>
+                    <option value="Другое">Другое</option>
+                  </select>
+                </label>
+              </div>
+              <label>Тема
+                <input id="topic" type="text" placeholder="Например: акция, кейс, отзыв" required>
+              </label>
+              <div class="two">
+                <label>Просмотры
+                  <input id="views" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Сохранения
+                  <input id="saves" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <label>Сообщения
+                <input id="messages" type="number" min="0" step="1" value="0" required>
+              </label>
+              <label>Вывод
+                <textarea id="conclusion" placeholder="Что сработало, что повторить, что изменить"></textarea>
+              </label>
+              <button class="btn primary" type="submit">Сохранить</button>
+              <button class="btn hidden" id="cancelEditBtn" type="button">Отменить</button>
+            </form>
+          </aside>
+
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <input class="search" id="search" type="search" placeholder="Поиск по теме или выводу">
+              <div class="filters">
+                <select id="typeFilter" aria-label="Фильтр по типу">
+                  <option value="">Все типы</option>
+                </select>
+                <select id="sortBy" aria-label="Сортировка">
+                  <option value="dateDesc">Сначала новые</option>
+                  <option value="viewsDesc">Больше просмотров</option>
+                  <option value="savesDesc">Больше сохранений</option>
+                  <option value="messagesDesc">Больше сообщений</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Тип</th>
+                    <th>Тема</th>
+                    <th class="numeric">Просмотры</th>
+                    <th class="numeric">Сохранения</th>
+                    <th class="numeric">Сообщения</th>
+                    <th class="numeric">Отклик</th>
+                    <th>Вывод</th>
+                    <th class="numeric">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+              <div class="empty" id="emptyState">Записей пока нет</div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="adsFunnelView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Воронка</h2>
+            <p>Бизнес-показатели рекламы по дням или отчетным периодам.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="funnelExportBtn" type="button" title="Экспортировать CSV">Экспорт CSV</button>
+            <button class="btn danger" id="funnelClearBtn" type="button" title="Очистить все записи">Очистить</button>
+          </div>
+        </div>
+
+        <section class="summary" aria-label="Итоги воронки">
+          <div class="metric"><span>Лиды</span><strong id="funnelTotalLeads">0</strong></div>
+          <div class="metric"><span>КП</span><strong id="funnelTotalOffers">0</strong></div>
+          <div class="metric"><span>Сделки</span><strong id="funnelTotalDeals">0</strong></div>
+          <div class="metric"><span>Выручка</span><strong id="funnelTotalRevenue">0</strong></div>
+          <div class="metric"><span>ROMI</span><strong id="funnelTotalRomi">0%</strong></div>
+        </section>
+
+        <section class="workspace">
+          <aside class="panel form-panel">
+            <h3 id="funnelFormTitle">Новая запись</h3>
+            <form id="funnelForm">
+              <input id="funnelId" type="hidden">
+              <div class="two">
+                <label>Дата / период
+                  <input id="funnelDate" type="date" required>
+                </label>
+                <label>Подписчики
+                  <input id="funnelFollowers" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <div class="two">
+                <label>Охват
+                  <input id="funnelReach" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Просмотры Reels
+                  <input id="funnelReelsViews" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <div class="two">
+                <label>Сообщения
+                  <input id="funnelMessages" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Лиды
+                  <input id="funnelLeads" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <div class="two">
+                <label>КП
+                  <input id="funnelOffers" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Сделки
+                  <input id="funnelDeals" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <div class="two">
+                <label>Выручка
+                  <input id="funnelRevenue" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Расходы
+                  <input id="funnelSpend" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <label>Вывод
+                <textarea id="funnelConclusion" placeholder="Что повлияло на лиды, сделки или выручку"></textarea>
+              </label>
+              <button class="btn primary" type="submit">Сохранить</button>
+              <button class="btn hidden" id="funnelCancelEditBtn" type="button">Отменить</button>
+            </form>
+          </aside>
+
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <input class="search" id="funnelSearch" type="search" placeholder="Поиск по выводу">
+              <div class="filters">
+                <select id="funnelSortBy" aria-label="Сортировка воронки">
+                  <option value="dateDesc">Сначала новые</option>
+                  <option value="revenueDesc">Больше выручки</option>
+                  <option value="leadsDesc">Больше лидов</option>
+                  <option value="dealsDesc">Больше сделок</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th class="numeric">Подписчики</th>
+                    <th class="numeric">Охват</th>
+                    <th class="numeric">Reels</th>
+                    <th class="numeric">Сообщения</th>
+                    <th class="numeric">Лиды</th>
+                    <th class="numeric">КП</th>
+                    <th class="numeric">Сделки</th>
+                    <th class="numeric">Выручка</th>
+                    <th class="numeric">Расходы</th>
+                    <th class="numeric">ROMI</th>
+                    <th>Вывод</th>
+                    <th class="numeric">Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="funnelRows"></tbody>
+              </table>
+              <div class="empty" id="funnelEmptyState">Записей пока нет</div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="salesView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Продажи</h2>
+            <p>Интерактивный скрипт для общения с клиентами по оснащению фитнес-клубов.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="salesResetBtn" type="button">Вернуть базовый скрипт</button>
+          </div>
+        </div>
+
+        <div class="module-tabs" aria-label="Вид раздела продаж">
+          <button class="active" type="button" data-sales-mode="script">Скрипт</button>
+          <button type="button" data-sales-mode="objections">Возражения</button>
+          <button type="button" data-sales-mode="questions">Анкета</button>
+        </div>
+
+        <section id="salesScriptView">
+          <div class="sales-layout">
+            <aside class="panel sales-card">
+              <h3>Этапы</h3>
+              <div class="sales-steps" id="salesSteps"></div>
+            </aside>
+
+            <section class="panel sales-card">
+              <h3 id="salesStageTitle">Скрипт</h3>
+              <p class="sales-goal" id="salesStageGoal"></p>
+              <label>Фраза менеджера
+                <textarea class="script-textarea" id="salesStageText"></textarea>
+              </label>
+              <div class="actions" style="margin-top: 12px;">
+                <button class="btn primary" id="salesCopyBtn" type="button">Скопировать фразу</button>
+                <button class="btn" id="salesSaveStageBtn" type="button">Сохранить правку</button>
+              </div>
+              <div class="scenario-list" id="salesScenarios"></div>
+            </section>
+
+            <aside class="panel sales-card">
+              <h3>Вопросы менеджера</h3>
+              <ol class="question-list" id="salesQuestions"></ol>
+            </aside>
+          </div>
+        </section>
+
+        <section id="salesObjectionsView" class="hidden">
+          <div class="sales-layout">
+            <aside class="panel sales-card">
+              <h3>Возражения</h3>
+              <div class="objection-list" id="objectionList"></div>
+            </aside>
+
+            <section class="panel sales-card">
+              <h3 id="objectionTitle">Возражение</h3>
+              <p class="sales-goal" id="objectionGoal"></p>
+              <label>Ответ менеджера
+                <textarea class="script-textarea" id="objectionText"></textarea>
+              </label>
+              <label>Уточняющий вопрос
+                <textarea id="objectionFollowup"></textarea>
+              </label>
+              <div class="actions" style="margin-top: 12px;">
+                <button class="btn primary" id="objectionCopyBtn" type="button">Скопировать ответ</button>
+                <button class="btn" id="objectionSaveBtn" type="button">Сохранить правку</button>
+              </div>
+            </section>
+
+            <aside class="panel sales-card">
+              <h3>Главное правило</h3>
+              <p class="sales-goal">Менеджер не “продавец тренажеров”, а эксперт по запуску фитнес-клуба. Клиент должен чувствовать, что ему помогают избежать ошибок и потерять меньше денег.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="salesQuestionsView" class="hidden">
+          <section class="panel sales-card">
+            <h3>Анкета разговора</h3>
+            <p class="sales-goal">Эти поля помогают быстро собрать вводные и подготовить два варианта комплектации: бюджетный и оптимальный.</p>
+            <div class="lead-grid">
+              <label>Площадь помещения
+                <input data-lead-field="area" type="text" placeholder="Например: 250 м2">
+              </label>
+              <label>Формат клуба
+                <input data-lead-field="format" type="text" placeholder="Студия, зал, премиум, корпоративный">
+              </label>
+              <label>Новый проект / обновление
+                <input data-lead-field="projectType" type="text" placeholder="Новый зал или обновление">
+              </label>
+              <label>Аудитория
+                <input data-lead-field="audience" type="text" placeholder="Масс-маркет, бизнес, спортсмены">
+              </label>
+              <label>Бюджет
+                <input data-lead-field="budget" type="text" placeholder="Ориентир по бюджету">
+              </label>
+              <label>Срок запуска
+                <input data-lead-field="deadline" type="text" placeholder="Когда планируется запуск">
+              </label>
+              <label>Помещение
+                <input data-lead-field="spaceStatus" type="text" placeholder="Есть помещение или выбирают">
+              </label>
+              <label>Следующий шаг
+                <input data-lead-field="nextStep" type="text" placeholder="Планировка, КП, звонок">
+              </label>
+            </div>
+            <label style="margin-top: 12px;">Комментарий
+              <textarea data-lead-field="comment" placeholder="Важные детали разговора"></textarea>
+            </label>
+            <div class="actions" style="margin-top: 12px;">
+              <button class="btn primary" id="leadCopyBtn" type="button">Скопировать анкету</button>
+              <button class="btn" id="leadClearBtn" type="button">Очистить</button>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="futureView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Шаблоны</h2>
+            <p>Здесь будут появляться следующие рабочие таблицы.</p>
+          </div>
+        </div>
+        <div class="placeholder">
+          <div class="placeholder-grid">
+            <div class="placeholder-card">
+              <strong>Контент-план</strong>
+              <span>Дата, рубрика, тема, статус, площадка, результат.</span>
+            </div>
+            <div class="placeholder-card">
+              <strong>Клиенты</strong>
+              <span>Имя, контакт, источник, этап, сумма, следующий шаг.</span>
+            </div>
+            <div class="placeholder-card">
+              <strong>Финансы</strong>
+              <span>Дата, категория, доход, расход, комментарий, баланс.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const storageKey = "workspace-tables.ads.records";
+    const funnelStorageKey = "workspace-tables.ads.funnel";
+    const legacyStorageKey = "ads-tracker-records";
+    const themeStorageKey = "workspace-tables.theme";
+    const salesScriptStorageKey = "workspace-tables.sales.script";
+    const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
+    const cloudConfigKey = "workspace-tables.cloud.supabase";
+    const deletedRecordsKey = "workspace-tables.ads.deleted";
+    const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
+    const cloudTable = "sportpro_ads_records";
+    const funnelCloudTable = "sportpro_ads_funnel_records";
+    const form = document.querySelector("#entryForm");
+    const funnelForm = document.querySelector("#funnelForm");
+    const rowsEl = document.querySelector("#rows");
+    const funnelRowsEl = document.querySelector("#funnelRows");
+    const emptyState = document.querySelector("#emptyState");
+    const funnelEmptyState = document.querySelector("#funnelEmptyState");
+    const typeFilter = document.querySelector("#typeFilter");
+    const sortBy = document.querySelector("#sortBy");
+    const search = document.querySelector("#search");
+    const funnelSearch = document.querySelector("#funnelSearch");
+    const funnelSortBy = document.querySelector("#funnelSortBy");
+    const themeSelect = document.querySelector("#themeSelect");
+    const brandLogo = document.querySelector("#brandLogo");
+    const cloudPanel = document.querySelector("#cloudPanel");
+    const cloudStatus = document.querySelector("#cloudStatus");
+    const cloudUrl = document.querySelector("#cloudUrl");
+    const cloudKey = document.querySelector("#cloudKey");
+    const cloudWorkspace = document.querySelector("#cloudWorkspace");
+    const dashboardPeriod = document.querySelector("#dashboardPeriod");
+    const cancelEditBtn = document.querySelector("#cancelEditBtn");
+    const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
+    const formTitle = document.querySelector("#formTitle");
+    const funnelFormTitle = document.querySelector("#funnelFormTitle");
+    const views = {
+      ads: document.querySelector("#adsView"),
+      sales: document.querySelector("#salesView"),
+      future: document.querySelector("#futureView"),
+    };
+    const adsModeViews = {
+      dashboard: document.querySelector("#adsDashboardView"),
+      table: document.querySelector("#adsTableView"),
+      funnel: document.querySelector("#adsFunnelView"),
+    };
+    const salesModeViews = {
+      script: document.querySelector("#salesScriptView"),
+      objections: document.querySelector("#salesObjectionsView"),
+      questions: document.querySelector("#salesQuestionsView"),
+    };
+    const salesSteps = document.querySelector("#salesSteps");
+    const salesStageTitle = document.querySelector("#salesStageTitle");
+    const salesStageGoal = document.querySelector("#salesStageGoal");
+    const salesStageText = document.querySelector("#salesStageText");
+    const salesScenarios = document.querySelector("#salesScenarios");
+    const salesQuestions = document.querySelector("#salesQuestions");
+    const objectionList = document.querySelector("#objectionList");
+    const objectionTitle = document.querySelector("#objectionTitle");
+    const objectionGoal = document.querySelector("#objectionGoal");
+    const objectionText = document.querySelector("#objectionText");
+    const objectionFollowup = document.querySelector("#objectionFollowup");
+
+    const fields = {
+      id: document.querySelector("#entryId"),
+      date: document.querySelector("#date"),
+      type: document.querySelector("#type"),
+      topic: document.querySelector("#topic"),
+      views: document.querySelector("#views"),
+      saves: document.querySelector("#saves"),
+      messages: document.querySelector("#messages"),
+      conclusion: document.querySelector("#conclusion"),
+    };
+
+    const funnelFields = {
+      id: document.querySelector("#funnelId"),
+      date: document.querySelector("#funnelDate"),
+      followers: document.querySelector("#funnelFollowers"),
+      reach: document.querySelector("#funnelReach"),
+      reelsViews: document.querySelector("#funnelReelsViews"),
+      messages: document.querySelector("#funnelMessages"),
+      leads: document.querySelector("#funnelLeads"),
+      offers: document.querySelector("#funnelOffers"),
+      deals: document.querySelector("#funnelDeals"),
+      revenue: document.querySelector("#funnelRevenue"),
+      spend: document.querySelector("#funnelSpend"),
+      conclusion: document.querySelector("#funnelConclusion"),
+    };
+
+    let records = loadRecords();
+    let funnelRecords = loadFunnelRecords();
+    let salesScript = loadSalesScript();
+    let activeSalesStage = salesScript.stages[0].id;
+    let activeObjection = salesScript.objections[0].id;
+    let deletedRecords = loadDeletedRecords(deletedRecordsKey);
+    let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
+    let cloudConfig = loadCloudConfig();
+
+    applyTheme(localStorage.getItem(themeStorageKey) || "green");
+    applyCloudConfig();
+    fields.date.valueAsDate = new Date();
+    funnelFields.date.valueAsDate = new Date();
+    render();
+    renderSales();
+    loadLeadDraft();
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+        document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
+        Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== view));
+      });
+    });
+
+    document.querySelectorAll("[data-ads-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.adsMode;
+        document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+      });
+    });
+
+    document.querySelectorAll("[data-sales-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.salesMode;
+        document.querySelectorAll("[data-sales-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        Object.entries(salesModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+      });
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const id = fields.id.value || createId();
+      const entry = {
+        id,
+        date: fields.date.value,
+        type: fields.type.value,
+        topic: fields.topic.value.trim(),
+        views: Number(fields.views.value) || 0,
+        saves: Number(fields.saves.value) || 0,
+        messages: Number(fields.messages.value) || 0,
+        conclusion: fields.conclusion.value.trim(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const index = records.findIndex((record) => record.id === id);
+      if (index >= 0) {
+        records[index] = entry;
+      } else {
+        records.push(entry);
+      }
+
+      saveRecords();
+      resetForm();
+      render();
+    });
+
+    funnelForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const id = funnelFields.id.value || createId();
+      const entry = {
+        id,
+        date: funnelFields.date.value,
+        followers: Number(funnelFields.followers.value) || 0,
+        reach: Number(funnelFields.reach.value) || 0,
+        reelsViews: Number(funnelFields.reelsViews.value) || 0,
+        messages: Number(funnelFields.messages.value) || 0,
+        leads: Number(funnelFields.leads.value) || 0,
+        offers: Number(funnelFields.offers.value) || 0,
+        deals: Number(funnelFields.deals.value) || 0,
+        revenue: Number(funnelFields.revenue.value) || 0,
+        spend: Number(funnelFields.spend.value) || 0,
+        conclusion: funnelFields.conclusion.value.trim(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const index = funnelRecords.findIndex((record) => record.id === id);
+      if (index >= 0) {
+        funnelRecords[index] = entry;
+      } else {
+        funnelRecords.push(entry);
+      }
+
+      saveFunnelRecords();
+      resetFunnelForm();
+      render();
+    });
+
+    cancelEditBtn.addEventListener("click", resetForm);
+    funnelCancelEditBtn.addEventListener("click", resetFunnelForm);
+    search.addEventListener("input", render);
+    funnelSearch.addEventListener("input", render);
+    typeFilter.addEventListener("change", render);
+    sortBy.addEventListener("change", render);
+    funnelSortBy.addEventListener("change", render);
+    dashboardPeriod.addEventListener("change", renderDashboard);
+    themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
+    document.querySelector("#cloudToggleBtn").addEventListener("click", () => {
+      cloudPanel.classList.toggle("hidden");
+    });
+    document.querySelector("#cloudSaveBtn").addEventListener("click", saveCloudConfig);
+    document.querySelector("#cloudTestBtn").addEventListener("click", testCloudConnection);
+    document.querySelector("#cloudSyncBtn").addEventListener("click", syncWithCloud);
+    document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
+    document.querySelector("#salesCopyBtn").addEventListener("click", () => copyText(salesStageText.value));
+    document.querySelector("#salesSaveStageBtn").addEventListener("click", saveActiveSalesStage);
+    document.querySelector("#objectionCopyBtn").addEventListener("click", () => copyText(`${objectionText.value}\n\n${objectionFollowup.value}`.trim()));
+    document.querySelector("#objectionSaveBtn").addEventListener("click", saveActiveObjection);
+    document.querySelector("#salesResetBtn").addEventListener("click", resetSalesScript);
+    document.querySelector("#leadCopyBtn").addEventListener("click", copyLeadDraft);
+    document.querySelector("#leadClearBtn").addEventListener("click", clearLeadDraft);
+    document.querySelectorAll("[data-lead-field]").forEach((field) => {
+      field.addEventListener("input", saveLeadDraft);
+    });
+
+    document.querySelector("#exportBtn").addEventListener("click", () => {
+      const header = ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Вывод"];
+      const lines = [header, ...getVisibleRecords().map((record) => [
+        record.date,
+        record.type,
+        record.topic,
+        record.views,
+        record.saves,
+        record.messages,
+        rate(record),
+        record.conclusion,
+      ])];
+      const csv = lines.map((line) => line.map(csvCell).join(";")).join("\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "reklama.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.querySelector("#funnelExportBtn").addEventListener("click", () => {
+      const header = ["Дата", "Подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"];
+      const lines = [header, ...getVisibleFunnelRecords().map((record) => [
+        record.date,
+        record.followers,
+        record.reach,
+        record.reelsViews,
+        record.messages,
+        record.leads,
+        record.offers,
+        record.deals,
+        record.revenue,
+        record.spend,
+        romi(record),
+        record.conclusion,
+      ])];
+      const csv = lines.map((line) => line.map(csvCell).join(";")).join("\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "reklama-funnel.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      if (!records.length || !confirm("Очистить все записи в разделе рекламы?")) return;
+      const deletedAt = new Date().toISOString();
+      records.forEach((record) => {
+        deletedRecords[record.id] = deletedAt;
+      });
+      records = [];
+      saveRecords();
+      saveDeletedRecords(deletedRecordsKey, deletedRecords);
+      resetForm();
+      render();
+    });
+
+    document.querySelector("#funnelClearBtn").addEventListener("click", () => {
+      if (!funnelRecords.length || !confirm("Очистить все записи воронки?")) return;
+      const deletedAt = new Date().toISOString();
+      funnelRecords.forEach((record) => {
+        deletedFunnelRecords[record.id] = deletedAt;
+      });
+      funnelRecords = [];
+      saveFunnelRecords();
+      saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
+      resetFunnelForm();
+      render();
+    });
+
+    rowsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      const record = records.find((item) => item.id === id);
+      if (!record) return;
+
+      if (button.dataset.action === "edit") {
+        fields.id.value = record.id;
+        fields.date.value = record.date;
+        fields.type.value = record.type;
+        fields.topic.value = record.topic;
+        fields.views.value = record.views;
+        fields.saves.value = record.saves;
+        fields.messages.value = record.messages;
+        fields.conclusion.value = record.conclusion;
+        formTitle.textContent = "Редактирование";
+        cancelEditBtn.classList.remove("hidden");
+        fields.topic.focus();
+      }
+
+      if (button.dataset.action === "delete" && confirm("Удалить запись?")) {
+        deletedRecords[id] = new Date().toISOString();
+        records = records.filter((item) => item.id !== id);
+        saveRecords();
+        saveDeletedRecords(deletedRecordsKey, deletedRecords);
+        render();
+      }
+    });
+
+    funnelRowsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      const record = funnelRecords.find((item) => item.id === id);
+      if (!record) return;
+
+      if (button.dataset.action === "edit") {
+        funnelFields.id.value = record.id;
+        funnelFields.date.value = record.date;
+        funnelFields.followers.value = record.followers;
+        funnelFields.reach.value = record.reach;
+        funnelFields.reelsViews.value = record.reelsViews;
+        funnelFields.messages.value = record.messages;
+        funnelFields.leads.value = record.leads;
+        funnelFields.offers.value = record.offers;
+        funnelFields.deals.value = record.deals;
+        funnelFields.revenue.value = record.revenue;
+        funnelFields.spend.value = record.spend;
+        funnelFields.conclusion.value = record.conclusion;
+        funnelFormTitle.textContent = "Редактирование";
+        funnelCancelEditBtn.classList.remove("hidden");
+        funnelFields.followers.focus();
+      }
+
+      if (button.dataset.action === "delete" && confirm("Удалить запись воронки?")) {
+        deletedFunnelRecords[id] = new Date().toISOString();
+        funnelRecords = funnelRecords.filter((item) => item.id !== id);
+        saveFunnelRecords();
+        saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
+        render();
+      }
+    });
+
+    function render() {
+      renderDashboard();
+      renderFilters();
+      renderSummary();
+      renderRows();
+      renderFunnelSummary();
+      renderFunnelRows();
+    }
+
+    function applyTheme(theme) {
+      const allowedThemes = ["green", "light", "dark", "blue", "gray"];
+      const nextTheme = allowedThemes.includes(theme) ? theme : "green";
+      document.body.dataset.theme = nextTheme;
+      themeSelect.value = nextTheme;
+      brandLogo.src = nextTheme === "light" ? "assets/logo-blue.png" : "assets/logo-white.png";
+      localStorage.setItem(themeStorageKey, nextTheme);
+    }
+
+    function defaultSalesScript() {
+      return {
+        stages: [
+          {
+            id: "entry",
+            title: "Вход",
+            goal: "Быстро взять инициативу и начать квалификацию.",
+            text: "Здравствуйте! Вас приветствует SPORTPRO.\n\nПодскажите, пожалуйста: вы планируете открытие нового зала или обновление существующего?",
+            questions: ["Новый зал или обновление существующего?", "На каком этапе сейчас проект?", "Удобно задать несколько вопросов, чтобы подобрать решение точнее?"],
+            scenarios: [
+              { label: "Открываем новый зал", hint: "Переходи к квалификации: площадь, формат, бюджет, сроки.", next: "qualification" },
+              { label: "Обновляем зал", hint: "Уточни, что именно нужно заменить и какие проблемы есть с текущим оборудованием.", next: "qualification" },
+              { label: "Пока просто смотрим", hint: "Не дави. Предложи показать два сценария и собрать вводные.", next: "qualification" },
+            ],
+          },
+          {
+            id: "qualification",
+            title: "Квалификация",
+            goal: "Сначала понять задачу клиента, а не продавать тренажеры с первых секунд.",
+            text: "Чтобы не предлагать лишнее, задам несколько вопросов.\n\n1. Какая площадь помещения?\n2. Какой формат клуба планируется?\n3. Это новый проект или обновление?\n4. На какую аудиторию ориентируетесь?\n5. Какой ориентировочный бюджет рассматриваете?\n6. Когда планируете запуск?\n7. Уже есть помещение или еще выбираете?",
+            questions: ["Площадь помещения", "Формат клуба", "Новый проект или обновление", "Аудитория", "Бюджет", "Срок запуска", "Статус помещения"],
+            scenarios: [
+              { label: "Есть вводные", hint: "Заполни анкету и переходи к двум вариантам комплектации.", next: "options" },
+              { label: "Нет бюджета", hint: "Переведи разговор в минимально эффективную комплектацию.", next: "options" },
+              { label: "Не знает, что нужно", hint: "Усиль экспертную позицию: поможем не ошибиться с составом зала.", next: "options" },
+            ],
+          },
+          {
+            id: "options",
+            title: "Два варианта",
+            goal: "Всегда предлагать бюджетный и оптимальный сценарий.",
+            text: "Есть два варианта:\n\n• базовая комплектация под минимальный бюджет;\n• оптимальная коммерческая комплектация с лучшим ресурсом и удержанием клиентов.\n\nСейчас покажу оба варианта и объясню разницу.",
+            questions: ["Что важнее: минимальный старт или ресурс оборудования?", "Планируется ли расширение позже?", "Нужна ли планировка расстановки?"],
+            scenarios: [
+              { label: "Хочет дешевле", hint: "Покажи базовый сценарий, но объясни ограничения по ресурсу.", next: "objection" },
+              { label: "Хочет надежно", hint: "Переходи к оптимальному коммерческому сценарию.", next: "closing" },
+              { label: "Нужно сравнить", hint: "Предложи подготовить КП в двух вариантах.", next: "push" },
+            ],
+          },
+          {
+            id: "objection",
+            title: "Возражение",
+            goal: "Не спорить, а уточнить настоящую причину сомнения.",
+            text: "Понимаю вас. Чтобы предложить правильный вариант, подскажите, что сейчас останавливает больше всего: бюджет, сроки, сомнения по оборудованию или сравнение с другими вариантами?",
+            questions: ["Что именно останавливает?", "С чем сравниваете?", "Какой критерий решения главный?"],
+            scenarios: [
+              { label: "Дорого", hint: "Открой вкладку Возражения и выбери “Дорого”.", next: "push" },
+              { label: "Я подумаю", hint: "Уточни, что именно нужно прояснить для решения.", next: "push" },
+              { label: "Нашел дешевле", hint: "Сравни ресурс, сервис, гарантию и запчасти.", next: "push" },
+            ],
+          },
+          {
+            id: "push",
+            title: "Дожим",
+            goal: "Убрать неопределенность без давления.",
+            text: "Смотрите, сейчас главное — не просто купить оборудование.\n\nВажно:\n• не ошибиться с комплектацией;\n• не потерять деньги на неправильных решениях;\n• запустить зал так, чтобы он реально работал.\n\nПоэтому предлагаю: я подготовлю вам 2 варианта комплектации, а вы спокойно сравните и увидите разницу по бюджету и результату.",
+            questions: ["Готовим два варианта?", "Куда удобнее отправить КП?", "Когда вернуться к обсуждению?"],
+            scenarios: [
+              { label: "Согласен на КП", hint: "Зафиксируй следующий шаг и данные для отправки.", next: "closing" },
+              { label: "Нужно время", hint: "Назначь конкретную дату возврата к обсуждению.", next: "closing" },
+            ],
+          },
+          {
+            id: "closing",
+            title: "Закрытие",
+            goal: "Перевести клиента в следующее действие.",
+            text: "Тогда предлагаю следующий шаг:\n\n• делаем планировку;\n• подбираем комплектацию;\n• готовим коммерческое предложение.\n\nПосле этого вы увидите бюджет, расстановку, состав оборудования и сможете спокойно принять решение.",
+            questions: ["Подтверждаем планировку?", "Куда отправить КП?", "Кто принимает финальное решение?", "Когда удобно обсудить готовый вариант?"],
+            scenarios: [
+              { label: "Готов", hint: "Фиксируй задачу: планировка, комплектация, КП.", next: "closing" },
+              { label: "Сомневается", hint: "Отправь варианты и договорись о точной дате следующего контакта.", next: "push" },
+            ],
+          },
+        ],
+        objections: [
+          {
+            id: "expensive",
+            title: "Дорого",
+            goal: "Перевести разговор с цены покупки на стоимость эксплуатации.",
+            text: "Понимаю вас.\n\nНо важно смотреть не только цену покупки, а стоимость эксплуатации.\n\nДешевое оборудование в коммерческом зале очень быстро начинает ломаться, простаивать и создавать негатив у клиентов. В итоге это обходится дороже.",
+            followup: "Подскажите, мы сейчас сравниваем только цену покупки или общий ресурс оборудования для коммерческого зала?",
+          },
+          {
+            id: "think",
+            title: "Я подумаю",
+            goal: "Выяснить реальную причину паузы.",
+            text: "Конечно.\n\nПодскажите только честно: что сейчас останавливает больше всего — бюджет, сроки, сомнения по оборудованию или сравнение с другими вариантами?",
+            followup: "Что нужно прояснить, чтобы вам было проще принять решение?",
+          },
+          {
+            id: "cheaper",
+            title: "Нашел дешевле",
+            goal: "Сравнить не цену, а уровень решения.",
+            text: "Это нормально.\n\nНо важно сравнивать уровень оборудования, коммерческий ресурс, сервис, гарантию и наличие запчастей. Очень часто “дешевле” потом выходит значительно дороже.",
+            followup: "Давайте сравним не только цену, а состав, гарантию и ресурс. Можете прислать вариант, с которым сравниваете?",
+          },
+          {
+            id: "no-budget",
+            title: "Нет бюджета",
+            goal: "Подобрать реалистичный старт без лишних затрат.",
+            text: "Тогда лучше сразу подобрать реалистичную конфигурацию, которая не убьет бюджет, позволит нормально стартовать и даст возможность масштабироваться позже.\n\nМы можем показать минимально эффективный вариант без лишних затрат.",
+            followup: "Какой диапазон бюджета сейчас будет комфортным для первого этапа?",
+          },
+        ],
+      };
+    }
+
+    function loadSalesScript() {
+      const saved = readStorage(salesScriptStorageKey);
+      if (saved && !Array.isArray(saved) && saved.stages && saved.objections) return saved;
+      return defaultSalesScript();
+    }
+
+    function saveSalesScript() {
+      localStorage.setItem(salesScriptStorageKey, JSON.stringify(salesScript));
+    }
+
+    function renderSales() {
+      renderSalesSteps();
+      renderSalesStage();
+      renderObjections();
+      renderObjection();
+    }
+
+    function renderSalesSteps() {
+      salesSteps.innerHTML = salesScript.stages.map((stage) => `
+        <button class="sales-step ${stage.id === activeSalesStage ? "active" : ""}" type="button" data-stage="${stage.id}">
+          ${escapeHtml(stage.title)}
+        </button>
+      `).join("");
+      salesSteps.querySelectorAll("[data-stage]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeSalesStage = button.dataset.stage;
+          renderSales();
+        });
+      });
+    }
+
+    function renderSalesStage() {
+      const stage = salesScript.stages.find((item) => item.id === activeSalesStage) || salesScript.stages[0];
+      salesStageTitle.textContent = stage.title;
+      salesStageGoal.textContent = stage.goal;
+      salesStageText.value = stage.text;
+      salesQuestions.innerHTML = stage.questions.map((question) => `<li>${escapeHtml(question)}</li>`).join("");
+      salesScenarios.innerHTML = stage.scenarios.map((scenario) => `
+        <button class="scenario" type="button" data-next="${scenario.next}">
+          <strong>${escapeHtml(scenario.label)}</strong>
+          <span>${escapeHtml(scenario.hint)}</span>
+        </button>
+      `).join("");
+      salesScenarios.querySelectorAll("[data-next]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeSalesStage = button.dataset.next;
+          renderSales();
+        });
+      });
+    }
+
+    function saveActiveSalesStage() {
+      const stage = salesScript.stages.find((item) => item.id === activeSalesStage);
+      if (!stage) return;
+      stage.text = salesStageText.value;
+      saveSalesScript();
+      alert("Фраза сохранена");
+    }
+
+    function renderObjections() {
+      objectionList.innerHTML = salesScript.objections.map((objection) => `
+        <button class="objection-item ${objection.id === activeObjection ? "active" : ""}" type="button" data-objection="${objection.id}">
+          ${escapeHtml(objection.title)}
+        </button>
+      `).join("");
+      objectionList.querySelectorAll("[data-objection]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeObjection = button.dataset.objection;
+          renderObjection();
+          renderObjections();
+        });
+      });
+    }
+
+    function renderObjection() {
+      const objection = salesScript.objections.find((item) => item.id === activeObjection) || salesScript.objections[0];
+      objectionTitle.textContent = objection.title;
+      objectionGoal.textContent = objection.goal;
+      objectionText.value = objection.text;
+      objectionFollowup.value = objection.followup;
+    }
+
+    function saveActiveObjection() {
+      const objection = salesScript.objections.find((item) => item.id === activeObjection);
+      if (!objection) return;
+      objection.text = objectionText.value;
+      objection.followup = objectionFollowup.value;
+      saveSalesScript();
+      alert("Ответ сохранен");
+    }
+
+    function resetSalesScript() {
+      if (!confirm("Вернуть базовый скрипт SPORTPRO? Ваши правки будут заменены.")) return;
+      salesScript = defaultSalesScript();
+      activeSalesStage = salesScript.stages[0].id;
+      activeObjection = salesScript.objections[0].id;
+      saveSalesScript();
+      renderSales();
+    }
+
+    function saveLeadDraft() {
+      const draft = {};
+      document.querySelectorAll("[data-lead-field]").forEach((field) => {
+        draft[field.dataset.leadField] = field.value;
+      });
+      localStorage.setItem(salesLeadDraftKey, JSON.stringify(draft));
+    }
+
+    function loadLeadDraft() {
+      const draft = readStorage(salesLeadDraftKey);
+      if (!draft || Array.isArray(draft)) return;
+      document.querySelectorAll("[data-lead-field]").forEach((field) => {
+        field.value = draft[field.dataset.leadField] || "";
+      });
+    }
+
+    function clearLeadDraft() {
+      document.querySelectorAll("[data-lead-field]").forEach((field) => {
+        field.value = "";
+      });
+      localStorage.removeItem(salesLeadDraftKey);
+    }
+
+    function copyLeadDraft() {
+      const labels = {
+        area: "Площадь",
+        format: "Формат",
+        projectType: "Проект",
+        audience: "Аудитория",
+        budget: "Бюджет",
+        deadline: "Срок запуска",
+        spaceStatus: "Помещение",
+        nextStep: "Следующий шаг",
+        comment: "Комментарий",
+      };
+      const lines = ["Анкета клиента SPORTPRO"];
+      document.querySelectorAll("[data-lead-field]").forEach((field) => {
+        const value = field.value.trim();
+        if (value) lines.push(`${labels[field.dataset.leadField]}: ${value}`);
+      });
+      copyText(lines.join("\n"));
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("Скопировано");
+      } catch {
+        prompt("Скопируйте текст:", text);
+      }
+    }
+
+    function loadCloudConfig() {
+      const saved = readStorage(cloudConfigKey);
+      if (!saved || Array.isArray(saved) || typeof saved !== "object") {
+        return { url: "", key: "", workspace: "sportpro-main" };
+      }
+      return {
+        url: saved.url || "",
+        key: saved.key || "",
+        workspace: saved.workspace || "sportpro-main",
+      };
+    }
+
+    function applyCloudConfig() {
+      cloudUrl.value = cloudConfig.url;
+      cloudKey.value = cloudConfig.key;
+      cloudWorkspace.value = cloudConfig.workspace;
+      updateCloudStatus(isCloudReady() ? "Облако настроено" : "Облако не настроено");
+    }
+
+    function saveCloudConfig() {
+      cloudConfig = {
+        url: normalizeCloudUrl(cloudUrl.value),
+        key: cloudKey.value.trim(),
+        workspace: cloudWorkspace.value.trim() || "sportpro-main",
+      };
+      localStorage.setItem(cloudConfigKey, JSON.stringify(cloudConfig));
+      applyCloudConfig();
+      updateCloudStatus("Настройки сохранены");
+    }
+
+    function normalizeCloudUrl(value) {
+      return value.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
+    }
+
+    function isCloudReady() {
+      return Boolean(cloudConfig.url && cloudConfig.key && cloudConfig.workspace);
+    }
+
+    function updateCloudStatus(text) {
+      cloudStatus.textContent = text;
+    }
+
+    async function syncWithCloud() {
+      if (!isCloudReady()) {
+        cloudPanel.classList.remove("hidden");
+        updateCloudStatus("Заполни настройки облака");
+        return;
+      }
+
+      try {
+        updateCloudStatus("Синхронизация...");
+        await pullFromCloud({ silent: true });
+        await pushToCloud();
+        await pullFromCloud({ silent: true });
+        updateCloudStatus(`Синхронизировано: ${formatDateTime(new Date())}`);
+      } catch (error) {
+        updateCloudStatus("Ошибка синхронизации");
+        alert(`Не удалось синхронизировать облако: ${error.message}`);
+      }
+    }
+
+    async function testCloudConnection() {
+      saveCloudConfig();
+      if (!isCloudReady()) {
+        cloudPanel.classList.remove("hidden");
+        updateCloudStatus("Заполни настройки облака");
+        return;
+      }
+
+      try {
+        updateCloudStatus("Проверка подключения...");
+        await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        updateCloudStatus("Подключение работает");
+      } catch (error) {
+        updateCloudStatus("Подключение не работает");
+        alert(`Проверка не прошла: ${error.message}`);
+      }
+    }
+
+    async function pushToCloud() {
+      await pushRowsToCloud(cloudTable, records, deletedRecords, normalizeRecord);
+      await pushRowsToCloud(funnelCloudTable, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+    }
+
+    async function pushRowsToCloud(table, localRecords, deletedMap, normalizer) {
+      const activeRows = localRecords.map((record) => ({
+        workspace_id: cloudConfig.workspace,
+        id: record.id,
+        record: normalizer(record),
+        deleted_at: null,
+        updated_at: record.updatedAt || new Date().toISOString(),
+      }));
+      const deletedRows = Object.entries(deletedMap).map(([id, deletedAt]) => ({
+        workspace_id: cloudConfig.workspace,
+        id,
+        record: null,
+        deleted_at: deletedAt,
+        updated_at: deletedAt,
+      }));
+      const rows = [...activeRows, ...deletedRows];
+      if (!rows.length) return;
+
+      await cloudRequest(`${cloudEndpoint(table)}?on_conflict=workspace_id,id`, {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates" },
+        body: JSON.stringify(rows),
+      });
+    }
+
+    async function pullFromCloud(options = {}) {
+      if (!isCloudReady()) {
+        cloudPanel.classList.remove("hidden");
+        updateCloudStatus("Заполни настройки облака");
+        return;
+      }
+
+      try {
+        if (!options.silent) updateCloudStatus("Загрузка из облака...");
+        const cloudRows = await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const funnelCloudRows = await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
+        funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+        saveRecords();
+        saveDeletedRecords(deletedRecordsKey, deletedRecords);
+        saveFunnelRecords();
+        saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
+        render();
+        if (!options.silent) updateCloudStatus(`Загружено: ${formatDateTime(new Date())}`);
+      } catch (error) {
+        if (options.silent) throw error;
+        updateCloudStatus("Ошибка загрузки");
+        alert(`Не удалось загрузить данные из облака: ${error.message}`);
+      }
+    }
+
+    function mergeCloudRows(cloudRows, localRecords, deletedMap, normalizer) {
+      const byId = new Map(localRecords.map((record) => [record.id, normalizer(record)]));
+
+      cloudRows.forEach((row) => {
+        const cloudUpdated = row.updated_at || row.record?.updatedAt || "";
+        const local = byId.get(row.id);
+        const localUpdated = local?.updatedAt || "";
+        const localDeletedAt = deletedMap[row.id] || "";
+
+        if (row.deleted_at) {
+          if (row.deleted_at >= localUpdated) {
+            byId.delete(row.id);
+            deletedMap[row.id] = row.deleted_at;
+          }
+          return;
+        }
+
+        if (localDeletedAt && localDeletedAt >= cloudUpdated) return;
+        if (!local || cloudUpdated >= localUpdated) {
+          byId.set(row.id, normalizer({ ...row.record, id: row.id, updatedAt: cloudUpdated }));
+          delete deletedMap[row.id];
+        }
+      });
+
+      return [...byId.values()];
+    }
+
+    async function cloudRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          apikey: cloudConfig.key,
+          Authorization: `Bearer ${cloudConfig.key}`,
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `${response.status} ${response.statusText}`);
+      }
+
+      if (response.status === 204) return null;
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
+    }
+
+    function cloudEndpoint(table = cloudTable) {
+      return `${cloudConfig.url}/rest/v1/${table}`;
+    }
+
+    function renderDashboard() {
+      const scoped = getDashboardRecords();
+      const funnelScoped = getDashboardFunnelRecords();
+      const totalViews = sum(scoped, "views");
+      const saves = sum(scoped, "saves");
+      const messages = sum(scoped, "messages");
+      const latestFunnel = getLatestRecord(funnelScoped);
+      const funnelReach = sum(funnelScoped, "reach");
+      const funnelReels = sum(funnelScoped, "reelsViews");
+      const funnelLeads = sum(funnelScoped, "leads");
+      const funnelRevenue = sum(funnelScoped, "revenue");
+
+      document.querySelector("#dashRows").textContent = scoped.length;
+      document.querySelector("#dashViews").textContent = formatNumber(totalViews);
+      document.querySelector("#dashSaves").textContent = formatNumber(saves);
+      document.querySelector("#dashMessages").textContent = formatNumber(messages);
+      document.querySelector("#dashRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
+      document.querySelector("#dashFollowers").textContent = formatNumber(latestFunnel?.followers || 0);
+      document.querySelector("#dashReach").textContent = formatNumber(funnelReach);
+      document.querySelector("#dashReels").textContent = formatNumber(funnelReels);
+      document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
+      document.querySelector("#dashRevenue").textContent = formatMoney(funnelRevenue);
+
+      renderTimeline(scoped);
+      renderGroupedBars("#typeBars", "#typeEmpty", groupBy(scoped, "type"), "views", 5);
+      renderGroupedBars("#topicBars", "#topicEmpty", groupBy(scoped, "topic"), "views", 5);
+      renderFunnelBars(funnelScoped);
+      renderInsights(scoped, funnelScoped);
+    }
+
+    function renderSummary() {
+      const visible = getVisibleRecords();
+      const totalViews = sum(visible, "views");
+      const saves = sum(visible, "saves");
+      const messages = sum(visible, "messages");
+
+      document.querySelector("#totalRows").textContent = visible.length;
+      document.querySelector("#totalViews").textContent = formatNumber(totalViews);
+      document.querySelector("#totalSaves").textContent = formatNumber(saves);
+      document.querySelector("#totalMessages").textContent = formatNumber(messages);
+      document.querySelector("#totalRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
+    }
+
+    function renderFunnelSummary() {
+      const visible = getVisibleFunnelRecords();
+      const leads = sum(visible, "leads");
+      const offers = sum(visible, "offers");
+      const deals = sum(visible, "deals");
+      const revenue = sum(visible, "revenue");
+      const spend = sum(visible, "spend");
+
+      document.querySelector("#funnelTotalLeads").textContent = formatNumber(leads);
+      document.querySelector("#funnelTotalOffers").textContent = formatNumber(offers);
+      document.querySelector("#funnelTotalDeals").textContent = formatNumber(deals);
+      document.querySelector("#funnelTotalRevenue").textContent = formatMoney(revenue);
+      document.querySelector("#funnelTotalRomi").textContent = spend ? `${(((revenue - spend) / spend) * 100).toFixed(1)}%` : "0%";
+    }
+
+    function renderFilters() {
+      const current = typeFilter.value;
+      const types = [...new Set(records.map((record) => record.type))].sort((a, b) => a.localeCompare(b, "ru"));
+      typeFilter.innerHTML = '<option value="">Все типы</option>' + types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join("");
+      typeFilter.value = types.includes(current) ? current : "";
+    }
+
+    function renderRows() {
+      const visible = getVisibleRecords();
+      emptyState.classList.toggle("hidden", visible.length > 0);
+      rowsEl.innerHTML = visible.map((record) => `
+        <tr>
+          <td>${formatDate(record.date)}</td>
+          <td><span class="type-pill">${escapeHtml(record.type)}</span></td>
+          <td>${escapeHtml(record.topic)}</td>
+          <td class="numeric">${formatNumber(record.views)}</td>
+          <td class="numeric">${formatNumber(record.saves)}</td>
+          <td class="numeric">${formatNumber(record.messages)}</td>
+          <td class="numeric">${rate(record)}%</td>
+          <td class="result">${escapeHtml(record.conclusion || "-")}</td>
+          <td class="numeric">
+            <button class="btn icon" type="button" title="Редактировать" data-action="edit" data-id="${record.id}">✎</button>
+            <button class="btn icon danger" type="button" title="Удалить" data-action="delete" data-id="${record.id}">×</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderFunnelRows() {
+      const visible = getVisibleFunnelRecords();
+      funnelEmptyState.classList.toggle("hidden", visible.length > 0);
+      funnelRowsEl.innerHTML = visible.map((record) => `
+        <tr>
+          <td>${formatDate(record.date)}</td>
+          <td class="numeric">${formatNumber(record.followers)}</td>
+          <td class="numeric">${formatNumber(record.reach)}</td>
+          <td class="numeric">${formatNumber(record.reelsViews)}</td>
+          <td class="numeric">${formatNumber(record.messages)}</td>
+          <td class="numeric">${formatNumber(record.leads)}</td>
+          <td class="numeric">${formatNumber(record.offers)}</td>
+          <td class="numeric">${formatNumber(record.deals)}</td>
+          <td class="numeric">${formatMoney(record.revenue)}</td>
+          <td class="numeric">${formatMoney(record.spend)}</td>
+          <td class="numeric">${romi(record)}%</td>
+          <td class="result">${escapeHtml(record.conclusion || "-")}</td>
+          <td class="numeric">
+            <button class="btn icon" type="button" title="Редактировать" data-action="edit" data-id="${record.id}">✎</button>
+            <button class="btn icon danger" type="button" title="Удалить" data-action="delete" data-id="${record.id}">×</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function getVisibleRecords() {
+      const query = search.value.trim().toLowerCase();
+      const type = typeFilter.value;
+      const filtered = records.filter((record) => {
+        const matchesType = !type || record.type === type;
+        const haystack = `${record.topic} ${record.conclusion}`.toLowerCase();
+        return matchesType && (!query || haystack.includes(query));
+      });
+
+      return filtered.sort((a, b) => {
+        if (sortBy.value === "viewsDesc") return b.views - a.views;
+        if (sortBy.value === "savesDesc") return b.saves - a.saves;
+        if (sortBy.value === "messagesDesc") return b.messages - a.messages;
+        return (b.date || "").localeCompare(a.date || "");
+      });
+    }
+
+    function getVisibleFunnelRecords() {
+      const query = funnelSearch.value.trim().toLowerCase();
+      const filtered = funnelRecords.filter((record) => {
+        const haystack = `${record.conclusion}`.toLowerCase();
+        return !query || haystack.includes(query);
+      });
+
+      return filtered.sort((a, b) => {
+        if (funnelSortBy.value === "revenueDesc") return b.revenue - a.revenue;
+        if (funnelSortBy.value === "leadsDesc") return b.leads - a.leads;
+        if (funnelSortBy.value === "dealsDesc") return b.deals - a.deals;
+        return (b.date || "").localeCompare(a.date || "");
+      });
+    }
+
+    function getDashboardRecords() {
+      const period = dashboardPeriod.value;
+      if (period === "all") return [...records];
+
+      const since = new Date();
+      since.setHours(0, 0, 0, 0);
+      since.setDate(since.getDate() - Number(period) + 1);
+
+      return records.filter((record) => {
+        if (!record.date) return false;
+        return new Date(`${record.date}T00:00:00`) >= since;
+      });
+    }
+
+    function getDashboardFunnelRecords() {
+      const period = dashboardPeriod.value;
+      if (period === "all") return [...funnelRecords];
+
+      const since = new Date();
+      since.setHours(0, 0, 0, 0);
+      since.setDate(since.getDate() - Number(period) + 1);
+
+      return funnelRecords.filter((record) => {
+        if (!record.date) return false;
+        return new Date(`${record.date}T00:00:00`) >= since;
+      });
+    }
+
+    function renderTimeline(items) {
+      const target = document.querySelector("#timeline");
+      const empty = document.querySelector("#timelineEmpty");
+      const grouped = groupBy(items, "date");
+      const points = Object.entries(grouped)
+        .map(([date, recordsForDate]) => ({ date, label: formatShortDate(date), value: sum(recordsForDate, "views") }))
+        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+        .slice(-14);
+      const max = Math.max(...points.map((point) => point.value), 0);
+
+      target.classList.toggle("hidden", points.length === 0);
+      empty.classList.toggle("hidden", points.length > 0);
+
+      target.innerHTML = points.map((point) => {
+        const height = max ? Math.max(4, (point.value / max) * 100) : 0;
+        return `
+          <div class="day" title="${point.label}: ${formatNumber(point.value)}">
+            <div class="day-bar" style="--value: ${height}%"></div>
+            <span class="day-label">${point.label}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderGroupedBars(targetSelector, emptySelector, grouped, key, limit) {
+      const target = document.querySelector(targetSelector);
+      const empty = document.querySelector(emptySelector);
+      const rows = Object.entries(grouped)
+        .map(([label, group]) => ({ label, value: sum(group, key), count: group.length }))
+        .filter((row) => row.label && row.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, limit);
+      const max = Math.max(...rows.map((row) => row.value), 0);
+
+      target.classList.toggle("hidden", rows.length === 0);
+      empty.classList.toggle("hidden", rows.length > 0);
+
+      target.innerHTML = rows.map((row) => `
+        <div class="bar-row" title="${escapeHtml(row.label)}">
+          <span>${escapeHtml(row.label)}</span>
+          <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (row.value / max) * 100 : 0}%"></div></div>
+          <span class="bar-value">${formatNumber(row.value)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderFunnelBars(items) {
+      const target = document.querySelector("#funnelBars");
+      const empty = document.querySelector("#funnelEmpty");
+      const totals = [
+        { label: "Охват", value: sum(items, "reach") },
+        { label: "Сообщения", value: sum(items, "messages") },
+        { label: "Лиды", value: sum(items, "leads") },
+        { label: "КП", value: sum(items, "offers") },
+        { label: "Сделки", value: sum(items, "deals") },
+      ].filter((row) => row.value > 0);
+      const max = Math.max(...totals.map((row) => row.value), 0);
+
+      target.classList.toggle("hidden", totals.length === 0);
+      empty.classList.toggle("hidden", totals.length > 0);
+      target.innerHTML = totals.map((row) => `
+        <div class="bar-row">
+          <span>${escapeHtml(row.label)}</span>
+          <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (row.value / max) * 100 : 0}%"></div></div>
+          <span class="bar-value">${formatNumber(row.value)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderInsights(items, funnelItems = []) {
+      const target = document.querySelector("#insights");
+      if (!items.length && !funnelItems.length) {
+        target.innerHTML = `
+          <div class="insight">
+            <strong>Пока нет данных</strong>
+            <span>Добавь записи по контенту или воронке, и здесь появятся подсказки по результатам.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const insights = [];
+      const bestByViews = [...items].sort((a, b) => b.views - a.views)[0];
+      const bestByMessages = [...items].sort((a, b) => b.messages - a.messages)[0];
+      const bestType = Object.entries(groupBy(items, "type"))
+        .map(([label, group]) => ({ label, views: sum(group, "views"), messages: sum(group, "messages") }))
+        .sort((a, b) => b.views - a.views)[0];
+      const totalViews = sum(items, "views");
+      const rateValue = totalViews ? (((sum(items, "saves") + sum(items, "messages")) / totalViews) * 100).toFixed(1) : "0.0";
+      const funnelRevenue = sum(funnelItems, "revenue");
+      const funnelSpend = sum(funnelItems, "spend");
+      const funnelLeads = sum(funnelItems, "leads");
+      const funnelDeals = sum(funnelItems, "deals");
+      const funnelOffers = sum(funnelItems, "offers");
+
+      if (bestByViews) insights.push(insightHtml("Лучший охват", `${bestByViews.topic || "Без темы"}: ${formatNumber(bestByViews.views)} просмотров.`));
+      if (bestByMessages) insights.push(insightHtml("Больше всего сообщений", `${bestByMessages.topic || "Без темы"}: ${formatNumber(bestByMessages.messages)} сообщений.`));
+      if (bestType) insights.push(insightHtml("Сильный тип", `${bestType.label}: ${formatNumber(bestType.views)} просмотров и ${formatNumber(bestType.messages)} сообщений.`));
+      if (items.length) insights.push(insightHtml("Средний отклик", `${rateValue}% от просмотров превращаются в сохранения или сообщения.`));
+      if (funnelItems.length) insights.push(insightHtml("Выручка и расходы", `${formatMoney(funnelRevenue)} выручки при расходах ${formatMoney(funnelSpend)}.`));
+      if (funnelLeads) insights.push(insightHtml("Конверсия в сделки", `${funnelDeals ? ((funnelDeals / funnelLeads) * 100).toFixed(1) : "0.0"}% лидов дошли до сделок.`));
+      if (funnelOffers) insights.push(insightHtml("КП в сделки", `${funnelDeals ? ((funnelDeals / funnelOffers) * 100).toFixed(1) : "0.0"}% КП закрылись в сделки.`));
+
+      target.innerHTML = insights.join("");
+    }
+
+    function insightHtml(title, text) {
+      return `
+        <div class="insight">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(text)}</span>
+        </div>
+      `;
+    }
+
+    function groupBy(items, key) {
+      return items.reduce((groups, item) => {
+        const label = item[key] || "Без значения";
+        groups[label] = groups[label] || [];
+        groups[label].push(item);
+        return groups;
+      }, {});
+    }
+
+    function resetForm() {
+      form.reset();
+      fields.id.value = "";
+      fields.date.valueAsDate = new Date();
+      fields.views.value = 0;
+      fields.saves.value = 0;
+      fields.messages.value = 0;
+      formTitle.textContent = "Новая запись";
+      cancelEditBtn.classList.add("hidden");
+    }
+
+    function resetFunnelForm() {
+      funnelForm.reset();
+      funnelFields.id.value = "";
+      funnelFields.date.valueAsDate = new Date();
+      funnelFields.followers.value = 0;
+      funnelFields.reach.value = 0;
+      funnelFields.reelsViews.value = 0;
+      funnelFields.messages.value = 0;
+      funnelFields.leads.value = 0;
+      funnelFields.offers.value = 0;
+      funnelFields.deals.value = 0;
+      funnelFields.revenue.value = 0;
+      funnelFields.spend.value = 0;
+      funnelFormTitle.textContent = "Новая запись";
+      funnelCancelEditBtn.classList.add("hidden");
+    }
+
+    function loadRecords() {
+      const existing = readStorage(storageKey);
+      if (existing.length) return existing.map(normalizeRecord);
+
+      const legacy = readStorage(legacyStorageKey);
+      if (legacy.length) {
+        const normalizedLegacy = legacy.map(normalizeRecord);
+        localStorage.setItem(storageKey, JSON.stringify(normalizedLegacy));
+        return normalizedLegacy;
+      }
+      return [];
+    }
+
+    function loadFunnelRecords() {
+      const existing = readStorage(funnelStorageKey);
+      if (existing.length) return existing.map(normalizeFunnelRecord);
+      return [];
+    }
+
+    function loadDeletedRecords(key) {
+      const saved = readStorage(key);
+      if (!saved || Array.isArray(saved) || typeof saved !== "object") {
+        return {};
+      }
+      return saved;
+    }
+
+    function readStorage(key) {
+      try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveRecords() {
+      records = records.map(normalizeRecord);
+      localStorage.setItem(storageKey, JSON.stringify(records));
+    }
+
+    function saveFunnelRecords() {
+      funnelRecords = funnelRecords.map(normalizeFunnelRecord);
+      localStorage.setItem(funnelStorageKey, JSON.stringify(funnelRecords));
+    }
+
+    function saveDeletedRecords(key, deletedMap) {
+      localStorage.setItem(key, JSON.stringify(deletedMap));
+    }
+
+    function normalizeRecord(record) {
+      return {
+        id: record.id || createId(),
+        date: record.date || "",
+        type: record.type || "Другое",
+        topic: record.topic || "",
+        views: Number(record.views) || 0,
+        saves: Number(record.saves) || 0,
+        messages: Number(record.messages) || 0,
+        conclusion: record.conclusion || "",
+        updatedAt: record.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeFunnelRecord(record) {
+      return {
+        id: record.id || createId(),
+        date: record.date || "",
+        followers: Number(record.followers) || 0,
+        reach: Number(record.reach) || 0,
+        reelsViews: Number(record.reelsViews) || 0,
+        messages: Number(record.messages) || 0,
+        leads: Number(record.leads) || 0,
+        offers: Number(record.offers) || 0,
+        deals: Number(record.deals) || 0,
+        revenue: Number(record.revenue) || 0,
+        spend: Number(record.spend) || 0,
+        conclusion: record.conclusion || "",
+        updatedAt: record.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function createId() {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function sum(items, key) {
+      return items.reduce((total, item) => total + (Number(item[key]) || 0), 0);
+    }
+
+    function rate(record) {
+      if (!record.views) return "0.0";
+      return (((record.saves + record.messages) / record.views) * 100).toFixed(1);
+    }
+
+    function romi(record) {
+      if (!record.spend) return "0.0";
+      return (((record.revenue - record.spend) / record.spend) * 100).toFixed(1);
+    }
+
+    function getLatestRecord(items) {
+      return [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("ru-RU").format(value || 0);
+    }
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value || 0);
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      return new Intl.DateTimeFormat("ru-RU").format(new Date(`${value}T00:00:00`));
+    }
+
+    function formatShortDate(value) {
+      if (!value) return "";
+      return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(new Date(`${value}T00:00:00`));
+    }
+
+    function formatDateTime(value) {
+      return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(value);
+    }
+
+    function csvCell(value) {
+      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
