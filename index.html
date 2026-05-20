@@ -466,9 +466,26 @@
     }
 
     .chart-panel h3 {
-      margin: 0 0 14px;
+      margin: 0;
       font-size: 18px;
       letter-spacing: 0;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .chart-header select {
+      width: auto;
+      min-width: 150px;
+      min-height: 36px;
+      padding: 7px 10px;
+      font-size: 13px;
     }
 
     .bars {
@@ -1086,7 +1103,15 @@
         <section class="dashboard-grid">
           <div class="dashboard-stack">
             <section class="panel chart-panel">
-              <h3 id="timelineTitle">Динамика просмотров</h3>
+              <div class="chart-header">
+                <h3 id="timelineTitle">Динамика просмотров</h3>
+                <select id="timelineScale" aria-label="Масштаб динамики">
+                  <option value="day">По дням</option>
+                  <option value="week">По неделям</option>
+                  <option value="month">По месяцам</option>
+                  <option value="year">По годам</option>
+                </select>
+              </div>
               <div class="timeline" id="timeline"></div>
               <div class="dashboard-empty hidden" id="timelineEmpty">Добавь записи в разделе рекламы, и здесь появится динамика.</div>
             </section>
@@ -1547,6 +1572,7 @@
     const cloudKey = document.querySelector("#cloudKey");
     const cloudWorkspace = document.querySelector("#cloudWorkspace");
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
+    const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
     const cancelEditBtn = document.querySelector("#cancelEditBtn");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
@@ -1719,6 +1745,7 @@
     sortBy.addEventListener("change", render);
     funnelSortBy.addEventListener("change", render);
     dashboardPeriod.addEventListener("change", renderDashboard);
+    timelineScale.addEventListener("change", renderDashboard);
     document.querySelectorAll("[data-dashboard-metric]").forEach((metric) => {
       metric.addEventListener("click", () => {
         activeDashboardMetric = metric.dataset.dashboardMetric;
@@ -2695,14 +2722,15 @@
       const empty = document.querySelector("#timelineEmpty");
       const metric = getDashboardMetricConfig(activeDashboardMetric);
       const sourceItems = metric.source === "funnel" ? funnelItems : items;
-      const grouped = groupBy(sourceItems, "date");
+      const grouped = groupByTimelineScale(sourceItems, timelineScale.value);
       const points = Object.entries(grouped)
-        .map(([date, recordsForDate]) => {
+        .map(([key, group]) => {
+          const recordsForDate = group.items;
           const rawValue = metric.value(recordsForDate);
-          return { date, label: formatShortDate(date), value: rawValue };
+          return { key, label: group.label, value: rawValue };
         })
-        .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
-        .slice(-14);
+        .sort((a, b) => (a.key || "").localeCompare(b.key || ""))
+        .slice(-timelinePointLimit(timelineScale.value));
       const max = Math.max(...points.map((point) => point.value), 0);
 
       timelineTitle.textContent = `Динамика: ${metric.title}`;
@@ -2718,6 +2746,53 @@
           </div>
         `;
       }).join("");
+    }
+
+    function groupByTimelineScale(items, scale) {
+      return items.reduce((groups, item) => {
+        if (!item.date) return groups;
+        const bucket = timelineBucket(item.date, scale);
+        groups[bucket.key] = groups[bucket.key] || { label: bucket.label, items: [] };
+        groups[bucket.key].items.push(item);
+        return groups;
+      }, {});
+    }
+
+    function timelineBucket(value, scale) {
+      const date = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return { key: value, label: value };
+
+      if (scale === "week") {
+        const monday = startOfWeek(date);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return {
+          key: formatIsoDate(monday),
+          label: `${formatShortDate(formatIsoDate(monday))}-${formatShortDate(formatIsoDate(sunday))}`,
+        };
+      }
+
+      if (scale === "month") {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        return {
+          key,
+          label: new Intl.DateTimeFormat("ru-RU", { month: "short", year: "2-digit" }).format(date),
+        };
+      }
+
+      if (scale === "year") {
+        const year = String(date.getFullYear());
+        return { key: year, label: year };
+      }
+
+      return { key: value, label: formatShortDate(value) };
+    }
+
+    function timelinePointLimit(scale) {
+      if (scale === "week") return 12;
+      if (scale === "month") return 12;
+      if (scale === "year") return 8;
+      return 14;
     }
 
     function updateDashboardMetricSelection() {
@@ -3046,6 +3121,20 @@
     function formatShortDate(value) {
       if (!value) return "";
       return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(new Date(`${value}T00:00:00`));
+    }
+
+    function startOfWeek(date) {
+      const result = new Date(date);
+      const day = result.getDay() || 7;
+      result.setDate(result.getDate() - day + 1);
+      return result;
+    }
+
+    function formatIsoDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
 
     function formatDateTime(value) {
