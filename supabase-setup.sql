@@ -75,3 +75,81 @@ create policy "sportpro ads funnel anon update"
   with check (true);
 
 grant select, insert, update on public.sportpro_ads_funnel_records to anon;
+
+create table if not exists public.sportpro_sales_clients (
+  workspace_id text not null,
+  id text not null,
+  record jsonb,
+  deleted_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (workspace_id, id)
+);
+
+create index if not exists sportpro_sales_clients_workspace_updated_idx
+  on public.sportpro_sales_clients (workspace_id, updated_at desc);
+
+alter table public.sportpro_sales_clients enable row level security;
+
+drop policy if exists "sportpro sales clients anon read" on public.sportpro_sales_clients;
+drop policy if exists "sportpro sales clients anon insert" on public.sportpro_sales_clients;
+drop policy if exists "sportpro sales clients anon update" on public.sportpro_sales_clients;
+
+create policy "sportpro sales clients anon read"
+  on public.sportpro_sales_clients
+  for select
+  to anon
+  using (true);
+
+create policy "sportpro sales clients anon insert"
+  on public.sportpro_sales_clients
+  for insert
+  to anon
+  with check (true);
+
+create policy "sportpro sales clients anon update"
+  on public.sportpro_sales_clients
+  for update
+  to anon
+  using (true)
+  with check (true);
+
+grant select, insert, update on public.sportpro_sales_clients to anon;
+
+create table if not exists public.sportpro_sales_settings (
+  workspace_id text not null,
+  id text not null,
+  record jsonb,
+  deleted_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (workspace_id, id)
+);
+
+create index if not exists sportpro_sales_settings_workspace_updated_idx
+  on public.sportpro_sales_settings (workspace_id, updated_at desc);
+
+alter table public.sportpro_sales_settings enable row level security;
+
+drop policy if exists "sportpro sales settings anon read" on public.sportpro_sales_settings;
+drop policy if exists "sportpro sales settings anon insert" on public.sportpro_sales_settings;
+drop policy if exists "sportpro sales settings anon update" on public.sportpro_sales_settings;
+
+create policy "sportpro sales settings anon read"
+  on public.sportpro_sales_settings
+  for select
+  to anon
+  using (true);
+
+create policy "sportpro sales settings anon insert"
+  on public.sportpro_sales_settings
+  for insert
+  to anon
+  with check (true);
+
+create policy "sportpro sales settings anon update"
+  on public.sportpro_sales_settings
+  for update
+  to anon
+  using (true)
+  with check (true);
+
+grant select, insert, update on public.sportpro_sales_settings to anon;
