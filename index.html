@@ -412,6 +412,21 @@
       padding: 14px;
     }
 
+    .metric[data-dashboard-metric] {
+      cursor: pointer;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .metric[data-dashboard-metric]:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .metric.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+    }
+
     .metric span {
       display: block;
       color: var(--muted);
@@ -1053,25 +1068,25 @@
         </div>
 
         <section class="summary" aria-label="Итоги дашборда">
-          <div class="metric"><span>Записей</span><strong id="dashRows">0</strong></div>
-          <div class="metric"><span>Просмотры</span><strong id="dashViews">0</strong></div>
-          <div class="metric"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
-          <div class="metric"><span>Сообщения</span><strong id="dashMessages">0</strong></div>
-          <div class="metric"><span>Отклик</span><strong id="dashRate">0%</strong></div>
+          <div class="metric active" data-dashboard-metric="views"><span>Просмотры</span><strong id="dashViews">0</strong></div>
+          <div class="metric" data-dashboard-metric="rows"><span>Записей</span><strong id="dashRows">0</strong></div>
+          <div class="metric" data-dashboard-metric="saves"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
+          <div class="metric" data-dashboard-metric="messages"><span>Сообщения</span><strong id="dashMessages">0</strong></div>
+          <div class="metric" data-dashboard-metric="rate"><span>Отклик</span><strong id="dashRate">0%</strong></div>
         </section>
 
         <section class="summary" aria-label="Итоги воронки">
-          <div class="metric"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
-          <div class="metric"><span>Охват</span><strong id="dashReach">0</strong></div>
-          <div class="metric"><span>Reels</span><strong id="dashReels">0</strong></div>
-          <div class="metric"><span>Лиды</span><strong id="dashLeads">0</strong></div>
-          <div class="metric"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
+          <div class="metric" data-dashboard-metric="followers"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
+          <div class="metric" data-dashboard-metric="reach"><span>Охват</span><strong id="dashReach">0</strong></div>
+          <div class="metric" data-dashboard-metric="reelsViews"><span>Reels</span><strong id="dashReels">0</strong></div>
+          <div class="metric" data-dashboard-metric="leads"><span>Лиды</span><strong id="dashLeads">0</strong></div>
+          <div class="metric" data-dashboard-metric="revenue"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
         </section>
 
         <section class="dashboard-grid">
           <div class="dashboard-stack">
             <section class="panel chart-panel">
-              <h3>Динамика просмотров</h3>
+              <h3 id="timelineTitle">Динамика просмотров</h3>
               <div class="timeline" id="timeline"></div>
               <div class="dashboard-empty hidden" id="timelineEmpty">Добавь записи в разделе рекламы, и здесь появится динамика.</div>
             </section>
@@ -1532,6 +1547,7 @@
     const cloudKey = document.querySelector("#cloudKey");
     const cloudWorkspace = document.querySelector("#cloudWorkspace");
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
+    const timelineTitle = document.querySelector("#timelineTitle");
     const cancelEditBtn = document.querySelector("#cancelEditBtn");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
@@ -1598,6 +1614,7 @@
     let salesClients = loadSalesClients();
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
+    let activeDashboardMetric = "views";
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
     let deletedSalesClients = loadDeletedRecords(deletedSalesClientsKey);
@@ -1702,6 +1719,12 @@
     sortBy.addEventListener("change", render);
     funnelSortBy.addEventListener("change", render);
     dashboardPeriod.addEventListener("change", renderDashboard);
+    document.querySelectorAll("[data-dashboard-metric]").forEach((metric) => {
+      metric.addEventListener("click", () => {
+        activeDashboardMetric = metric.dataset.dashboardMetric;
+        renderDashboard();
+      });
+    });
     themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
     document.querySelector("#cloudToggleBtn").addEventListener("click", () => {
       cloudPanel.classList.toggle("hidden");
@@ -2518,7 +2541,8 @@
       document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
       document.querySelector("#dashRevenue").textContent = formatMoney(funnelRevenue);
 
-      renderTimeline(scoped);
+      renderTimeline(scoped, funnelScoped);
+      updateDashboardMetricSelection();
       renderGroupedBars("#typeBars", "#typeEmpty", groupBy(scoped, "type"), "views", 5);
       renderGroupedBars("#topicBars", "#topicEmpty", groupBy(scoped, "topic"), "views", 5);
       renderFunnelBars(funnelScoped);
@@ -2666,28 +2690,110 @@
       });
     }
 
-    function renderTimeline(items) {
+    function renderTimeline(items, funnelItems = []) {
       const target = document.querySelector("#timeline");
       const empty = document.querySelector("#timelineEmpty");
-      const grouped = groupBy(items, "date");
+      const metric = getDashboardMetricConfig(activeDashboardMetric);
+      const sourceItems = metric.source === "funnel" ? funnelItems : items;
+      const grouped = groupBy(sourceItems, "date");
       const points = Object.entries(grouped)
-        .map(([date, recordsForDate]) => ({ date, label: formatShortDate(date), value: sum(recordsForDate, "views") }))
+        .map(([date, recordsForDate]) => {
+          const rawValue = metric.value(recordsForDate);
+          return { date, label: formatShortDate(date), value: rawValue };
+        })
         .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
         .slice(-14);
       const max = Math.max(...points.map((point) => point.value), 0);
 
+      timelineTitle.textContent = `Динамика: ${metric.title}`;
       target.classList.toggle("hidden", points.length === 0);
       empty.classList.toggle("hidden", points.length > 0);
 
       target.innerHTML = points.map((point) => {
         const height = max ? Math.max(4, (point.value / max) * 100) : 0;
         return `
-          <div class="day" title="${point.label}: ${formatNumber(point.value)}">
+          <div class="day" title="${point.label}: ${metric.format(point.value)}">
             <div class="day-bar" style="--value: ${height}%"></div>
             <span class="day-label">${point.label}</span>
           </div>
         `;
       }).join("");
+    }
+
+    function updateDashboardMetricSelection() {
+      document.querySelectorAll("[data-dashboard-metric]").forEach((metric) => {
+        metric.classList.toggle("active", metric.dataset.dashboardMetric === activeDashboardMetric);
+      });
+    }
+
+    function getDashboardMetricConfig(metric) {
+      const configs = {
+        rows: {
+          title: "записи",
+          source: "content",
+          value: (items) => items.length,
+          format: (value) => formatNumber(value),
+        },
+        views: {
+          title: "просмотры",
+          source: "content",
+          value: (items) => sum(items, "views"),
+          format: (value) => formatNumber(value),
+        },
+        saves: {
+          title: "сохранения",
+          source: "content",
+          value: (items) => sum(items, "saves"),
+          format: (value) => formatNumber(value),
+        },
+        messages: {
+          title: "сообщения",
+          source: "content",
+          value: (items) => sum(items, "messages"),
+          format: (value) => formatNumber(value),
+        },
+        rate: {
+          title: "отклик",
+          source: "content",
+          value: (items) => {
+            const views = sum(items, "views");
+            return views ? ((sum(items, "saves") + sum(items, "messages")) / views) * 100 : 0;
+          },
+          format: (value) => `${value.toFixed(1)}%`,
+        },
+        followers: {
+          title: "подписчики",
+          source: "funnel",
+          value: (items) => getLatestRecord(items)?.followers || 0,
+          format: (value) => formatNumber(value),
+        },
+        reach: {
+          title: "охват",
+          source: "funnel",
+          value: (items) => sum(items, "reach"),
+          format: (value) => formatNumber(value),
+        },
+        reelsViews: {
+          title: "Reels",
+          source: "funnel",
+          value: (items) => sum(items, "reelsViews"),
+          format: (value) => formatNumber(value),
+        },
+        leads: {
+          title: "лиды",
+          source: "funnel",
+          value: (items) => sum(items, "leads"),
+          format: (value) => formatNumber(value),
+        },
+        revenue: {
+          title: "выручка",
+          source: "funnel",
+          value: (items) => sum(items, "revenue"),
+          format: (value) => formatMoney(value),
+        },
+      };
+
+      return configs[metric] || configs.views;
     }
 
     function renderGroupedBars(targetSelector, emptySelector, grouped, key, limit) {
