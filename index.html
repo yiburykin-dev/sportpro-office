@@ -818,6 +818,51 @@
       gap: 12px;
     }
 
+    .client-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .client-card {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(160px, .8fr) minmax(180px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 14px;
+    }
+
+    .client-main strong,
+    .client-meta strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .client-main span,
+    .client-meta span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .client-status {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
     .hidden {
       display: none;
     }
@@ -880,6 +925,7 @@
       .cloud-grid,
       .sales-layout,
       .lead-grid,
+      .client-card,
       .placeholder-grid {
         grid-template-columns: 1fr;
       }
@@ -1269,6 +1315,7 @@
           </section>
         </section>
       </section>
+      </section>
 
       <section id="salesView" class="hidden">
         <div class="topbar">
@@ -1283,6 +1330,7 @@
 
         <div class="module-tabs" aria-label="Вид раздела продаж">
           <button class="active" type="button" data-sales-mode="script">Скрипт</button>
+          <button type="button" data-sales-mode="clients">Клиенты</button>
           <button type="button" data-sales-mode="objections">Возражения</button>
           <button type="button" data-sales-mode="questions">Анкета</button>
         </div>
@@ -1312,6 +1360,22 @@
               <ol class="question-list" id="salesQuestions"></ol>
             </aside>
           </div>
+        </section>
+
+        <section id="salesClientsView" class="hidden">
+          <section class="panel sales-card">
+            <div class="toolbar">
+              <div>
+                <h3>Клиенты</h3>
+                <p class="sales-goal">Карточки лидов из разговоров: контакт, этап, бюджет и следующий шаг.</p>
+              </div>
+              <div class="actions">
+                <button class="btn primary" id="clientFromDraftBtn" type="button">Сохранить из анкеты</button>
+              </div>
+            </div>
+            <div class="client-list" id="salesClientsList"></div>
+            <div class="empty" id="salesClientsEmpty">Клиентов пока нет. Заполните анкету и нажмите “Сохранить клиента”.</div>
+          </section>
         </section>
 
         <section id="salesObjectionsView" class="hidden">
@@ -1348,6 +1412,24 @@
             <h3>Анкета разговора</h3>
             <p class="sales-goal">Эти поля помогают быстро собрать вводные и подготовить два варианта комплектации: бюджетный и оптимальный.</p>
             <div class="lead-grid">
+              <label>Имя клиента
+                <input data-lead-field="name" type="text" placeholder="Имя или название клуба">
+              </label>
+              <label>Контакт
+                <input data-lead-field="contact" type="text" placeholder="Телефон, WhatsApp, Instagram">
+              </label>
+              <label>Источник
+                <input data-lead-field="source" type="text" placeholder="Instagram, WhatsApp, сайт, рекомендация">
+              </label>
+              <label>Статус
+                <select data-lead-field="status">
+                  <option value="Новый">Новый</option>
+                  <option value="Квалифицирован">Квалифицирован</option>
+                  <option value="КП">КП</option>
+                  <option value="Сделка">Сделка</option>
+                  <option value="Отказ">Отказ</option>
+                </select>
+              </label>
               <label>Площадь помещения
                 <input data-lead-field="area" type="text" placeholder="Например: 250 м2">
               </label>
@@ -1372,12 +1454,16 @@
               <label>Следующий шаг
                 <input data-lead-field="nextStep" type="text" placeholder="Планировка, КП, звонок">
               </label>
+              <label>Дата следующего касания
+                <input data-lead-field="nextContactDate" type="date">
+              </label>
             </div>
             <label style="margin-top: 12px;">Комментарий
               <textarea data-lead-field="comment" placeholder="Важные детали разговора"></textarea>
             </label>
             <div class="actions" style="margin-top: 12px;">
               <button class="btn primary" id="leadCopyBtn" type="button">Скопировать анкету</button>
+              <button class="btn" id="leadSaveClientBtn" type="button">Сохранить клиента</button>
               <button class="btn" id="leadClearBtn" type="button">Очистить</button>
             </div>
           </section>
@@ -1418,6 +1504,7 @@
     const themeStorageKey = "workspace-tables.theme";
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
+    const salesClientsStorageKey = "workspace-tables.sales.clients";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
@@ -1458,6 +1545,7 @@
     };
     const salesModeViews = {
       script: document.querySelector("#salesScriptView"),
+      clients: document.querySelector("#salesClientsView"),
       objections: document.querySelector("#salesObjectionsView"),
       questions: document.querySelector("#salesQuestionsView"),
     };
@@ -1472,6 +1560,8 @@
     const objectionGoal = document.querySelector("#objectionGoal");
     const objectionText = document.querySelector("#objectionText");
     const objectionFollowup = document.querySelector("#objectionFollowup");
+    const salesClientsList = document.querySelector("#salesClientsList");
+    const salesClientsEmpty = document.querySelector("#salesClientsEmpty");
 
     const fields = {
       id: document.querySelector("#entryId"),
@@ -1502,6 +1592,7 @@
     let records = loadRecords();
     let funnelRecords = loadFunnelRecords();
     let salesScript = loadSalesScript();
+    let salesClients = loadSalesClients();
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
@@ -1514,6 +1605,7 @@
     funnelFields.date.valueAsDate = new Date();
     render();
     renderSales();
+    renderSalesClients();
     loadLeadDraft();
 
     document.querySelectorAll("[data-view]").forEach((button) => {
@@ -1620,10 +1712,14 @@
     document.querySelector("#objectionSaveBtn").addEventListener("click", saveActiveObjection);
     document.querySelector("#salesResetBtn").addEventListener("click", resetSalesScript);
     document.querySelector("#leadCopyBtn").addEventListener("click", copyLeadDraft);
+    document.querySelector("#leadSaveClientBtn").addEventListener("click", saveClientFromDraft);
+    document.querySelector("#clientFromDraftBtn").addEventListener("click", saveClientFromDraft);
     document.querySelector("#leadClearBtn").addEventListener("click", clearLeadDraft);
     document.querySelectorAll("[data-lead-field]").forEach((field) => {
       field.addEventListener("input", saveLeadDraft);
+      field.addEventListener("change", saveLeadDraft);
     });
+    salesClientsList.addEventListener("click", handleClientAction);
 
     document.querySelector("#exportBtn").addEventListener("click", () => {
       const header = ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Вывод"];
@@ -1991,19 +2087,29 @@
     }
 
     function saveLeadDraft() {
+      const draft = collectLeadDraft();
+      localStorage.setItem(salesLeadDraftKey, JSON.stringify(draft));
+    }
+
+    function collectLeadDraft() {
       const draft = {};
       document.querySelectorAll("[data-lead-field]").forEach((field) => {
         draft[field.dataset.leadField] = field.value;
       });
-      localStorage.setItem(salesLeadDraftKey, JSON.stringify(draft));
+      return draft;
     }
 
     function loadLeadDraft() {
       const draft = readStorage(salesLeadDraftKey);
       if (!draft || Array.isArray(draft)) return;
+      setLeadDraft(draft);
+    }
+
+    function setLeadDraft(draft) {
       document.querySelectorAll("[data-lead-field]").forEach((field) => {
         field.value = draft[field.dataset.leadField] || "";
       });
+      saveLeadDraft();
     }
 
     function clearLeadDraft() {
@@ -2014,7 +2120,16 @@
     }
 
     function copyLeadDraft() {
-      const labels = {
+      const lines = leadDraftLines(collectLeadDraft());
+      copyText(lines.join("\n"));
+    }
+
+    function leadFieldLabels() {
+      return {
+        name: "Клиент",
+        contact: "Контакт",
+        source: "Источник",
+        status: "Статус",
         area: "Площадь",
         format: "Формат",
         projectType: "Проект",
@@ -2023,14 +2138,104 @@
         deadline: "Срок запуска",
         spaceStatus: "Помещение",
         nextStep: "Следующий шаг",
+        nextContactDate: "Дата следующего касания",
         comment: "Комментарий",
       };
+    }
+
+    function leadDraftLines(draft) {
+      const labels = leadFieldLabels();
       const lines = ["Анкета клиента SPORTPRO"];
-      document.querySelectorAll("[data-lead-field]").forEach((field) => {
-        const value = field.value.trim();
-        if (value) lines.push(`${labels[field.dataset.leadField]}: ${value}`);
+      Object.keys(labels).forEach((key) => {
+        const value = String(draft[key] || "").trim();
+        if (value) lines.push(`${labels[key]}: ${value}`);
       });
-      copyText(lines.join("\n"));
+      return lines;
+    }
+
+    function loadSalesClients() {
+      const saved = readStorage(salesClientsStorageKey);
+      return Array.isArray(saved) ? saved : [];
+    }
+
+    function saveSalesClients() {
+      localStorage.setItem(salesClientsStorageKey, JSON.stringify(salesClients));
+    }
+
+    function saveClientFromDraft() {
+      const draft = collectLeadDraft();
+      const hasRequiredInfo = String(draft.name || "").trim() || String(draft.contact || "").trim();
+      if (!hasRequiredInfo) {
+        alert("Добавьте имя клиента или контакт, чтобы сохранить карточку.");
+        return;
+      }
+
+      salesClients.unshift({
+        ...draft,
+        id: createId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      saveSalesClients();
+      renderSalesClients();
+      alert("Клиент сохранен");
+    }
+
+    function renderSalesClients() {
+      salesClientsEmpty.classList.toggle("hidden", salesClients.length > 0);
+      salesClientsList.innerHTML = salesClients.map((client) => {
+        const name = client.name || "Без имени";
+        const contact = client.contact || "Контакт не указан";
+        const status = client.status || "Новый";
+        const source = client.source || "Источник не указан";
+        const budget = client.budget || "Бюджет не указан";
+        const nextStep = client.nextStep || "Следующий шаг не указан";
+        const nextDate = client.nextContactDate ? `Дата: ${formatDate(client.nextContactDate)}` : "Дата не назначена";
+        return `
+          <article class="client-card" data-client-id="${escapeHtml(client.id)}">
+            <div class="client-main">
+              <strong>${escapeHtml(name)}</strong>
+              <span>${escapeHtml(contact)}</span>
+              <span>${escapeHtml(source)}</span>
+            </div>
+            <span class="client-status">${escapeHtml(status)}</span>
+            <div class="client-meta">
+              <strong>${escapeHtml(budget)}</strong>
+              <span>${escapeHtml(nextStep)}</span>
+              <span>${escapeHtml(nextDate)}</span>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button" data-client-action="open">Открыть</button>
+              <button class="btn" type="button" data-client-action="copy">Копия</button>
+              <button class="btn danger" type="button" data-client-action="delete">Удалить</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function handleClientAction(event) {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const card = event.target.closest("[data-client-id]");
+      const client = salesClients.find((item) => item.id === card?.dataset.clientId);
+      if (!client) return;
+
+      if (button.dataset.clientAction === "open") {
+        setLeadDraft(client);
+        document.querySelector('[data-sales-mode="questions"]').click();
+      }
+
+      if (button.dataset.clientAction === "copy") {
+        copyText(leadDraftLines(client).join("\n"));
+      }
+
+      if (button.dataset.clientAction === "delete" && confirm("Удалить клиента?")) {
+        salesClients = salesClients.filter((item) => item.id !== client.id);
+        saveSalesClients();
+        renderSalesClients();
+      }
     }
 
     async function copyText(text) {
