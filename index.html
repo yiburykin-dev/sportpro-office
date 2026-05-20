@@ -1508,8 +1508,11 @@
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
+    const deletedSalesClientsKey = "workspace-tables.sales.clients.deleted";
     const cloudTable = "sportpro_ads_records";
     const funnelCloudTable = "sportpro_ads_funnel_records";
+    const salesClientsCloudTable = "sportpro_sales_clients";
+    const salesSettingsCloudTable = "sportpro_sales_settings";
     const form = document.querySelector("#entryForm");
     const funnelForm = document.querySelector("#funnelForm");
     const rowsEl = document.querySelector("#rows");
@@ -1597,6 +1600,7 @@
     let activeObjection = salesScript.objections[0].id;
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
+    let deletedSalesClients = loadDeletedRecords(deletedSalesClientsKey);
     let cloudConfig = loadCloudConfig();
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
@@ -1992,7 +1996,8 @@
       return defaultSalesScript();
     }
 
-    function saveSalesScript() {
+    function saveSalesScript(options = {}) {
+      if (options.touch !== false) salesScript.updatedAt = new Date().toISOString();
       localStorage.setItem(salesScriptStorageKey, JSON.stringify(salesScript));
     }
 
@@ -2181,6 +2186,42 @@
       alert("Клиент сохранен");
     }
 
+    function normalizeSalesClient(client) {
+      return {
+        id: client.id || createId(),
+        name: client.name || "",
+        contact: client.contact || "",
+        source: client.source || "",
+        status: client.status || "Новый",
+        area: client.area || "",
+        format: client.format || "",
+        projectType: client.projectType || "",
+        audience: client.audience || "",
+        budget: client.budget || "",
+        deadline: client.deadline || "",
+        spaceStatus: client.spaceStatus || "",
+        nextStep: client.nextStep || "",
+        nextContactDate: client.nextContactDate || "",
+        comment: client.comment || "",
+        createdAt: client.createdAt || new Date().toISOString(),
+        updatedAt: client.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeSalesScript(script) {
+      const baseScript = defaultSalesScript();
+      return {
+        id: "main",
+        stages: Array.isArray(script.stages) ? script.stages : baseScript.stages,
+        objections: Array.isArray(script.objections) ? script.objections : baseScript.objections,
+        updatedAt: script.updatedAt || "1970-01-01T00:00:00.000Z",
+      };
+    }
+
+    function salesScriptCloudRecord() {
+      return normalizeSalesScript({ ...salesScript, id: "main" });
+    }
+
     function renderSalesClients() {
       salesClientsEmpty.classList.toggle("hidden", salesClients.length > 0);
       salesClientsList.innerHTML = salesClients.map((client) => {
@@ -2233,7 +2274,9 @@
 
       if (button.dataset.clientAction === "delete" && confirm("Удалить клиента?")) {
         salesClients = salesClients.filter((item) => item.id !== client.id);
+        deletedSalesClients[client.id] = new Date().toISOString();
         saveSalesClients();
+        saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
         renderSalesClients();
       }
     }
@@ -2320,6 +2363,8 @@
         updateCloudStatus("Проверка подключения...");
         await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         updateCloudStatus("Подключение работает");
       } catch (error) {
         updateCloudStatus("Подключение не работает");
@@ -2330,16 +2375,21 @@
     async function pushToCloud() {
       await pushRowsToCloud(cloudTable, records, deletedRecords, normalizeRecord);
       await pushRowsToCloud(funnelCloudTable, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+      await pushRowsToCloud(salesClientsCloudTable, salesClients, deletedSalesClients, normalizeSalesClient);
+      await pushRowsToCloud(salesSettingsCloudTable, [salesScriptCloudRecord()], {}, normalizeSalesScript);
     }
 
     async function pushRowsToCloud(table, localRecords, deletedMap, normalizer) {
-      const activeRows = localRecords.map((record) => ({
-        workspace_id: cloudConfig.workspace,
-        id: record.id,
-        record: normalizer(record),
-        deleted_at: null,
-        updated_at: record.updatedAt || new Date().toISOString(),
-      }));
+      const activeRows = localRecords.map((record) => {
+        const normalized = normalizer(record);
+        return {
+          workspace_id: cloudConfig.workspace,
+          id: normalized.id,
+          record: normalized,
+          deleted_at: null,
+          updated_at: normalized.updatedAt || new Date().toISOString(),
+        };
+      });
       const deletedRows = Object.entries(deletedMap).map(([id, deletedAt]) => ({
         workspace_id: cloudConfig.workspace,
         id,
@@ -2368,13 +2418,23 @@
         if (!options.silent) updateCloudStatus("Загрузка из облака...");
         const cloudRows = await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const funnelCloudRows = await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const salesClientRows = await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
         funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+        salesClients = mergeCloudRows(salesClientRows, salesClients, deletedSalesClients, normalizeSalesClient);
+        const mergedScripts = mergeCloudRows(salesScriptRows, [salesScriptCloudRecord()], {}, normalizeSalesScript);
+        salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         saveFunnelRecords();
         saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
+        saveSalesClients();
+        saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
+        saveSalesScript({ touch: false });
         render();
+        renderSales();
+        renderSalesClients();
         if (!options.silent) updateCloudStatus(`Загружено: ${formatDateTime(new Date())}`);
       } catch (error) {
         if (options.silent) throw error;
