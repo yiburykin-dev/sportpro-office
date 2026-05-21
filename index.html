@@ -600,6 +600,44 @@
       top: 18px;
     }
 
+    .measurement-panel {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .measurement-panel.hidden {
+      display: none;
+    }
+
+    .measurement-history {
+      display: grid;
+      gap: 8px;
+    }
+
+    .measurement-history-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      font-size: 13px;
+    }
+
+    .measurement-history-row strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .measurement-history-row span {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
     .panel h3 {
       margin: 0 0 16px;
       font-size: 18px;
@@ -1188,14 +1226,14 @@
                 <input id="topic" type="text" placeholder="Например: акция, кейс, отзыв" required>
               </label>
               <div class="two">
-                <label>Просмотры
+                <label>Просмотры сейчас
                   <input id="views" type="number" min="0" step="1" value="0" required>
                 </label>
-                <label>Сохранения
+                <label>Сохранения сейчас
                   <input id="saves" type="number" min="0" step="1" value="0" required>
                 </label>
               </div>
-              <label>Сообщения
+              <label>Сообщения сейчас
                 <input id="messages" type="number" min="0" step="1" value="0" required>
               </label>
               <label>Вывод
@@ -1204,6 +1242,53 @@
               <button class="btn primary" type="submit">Сохранить</button>
               <button class="btn hidden" id="cancelEditBtn" type="button">Отменить</button>
             </form>
+
+            <div class="measurement-panel hidden" id="measurementPanel">
+              <h3 id="measurementTitle">Замер публикации</h3>
+              <form id="measurementForm">
+                <input id="measurementRecordId" type="hidden">
+                <div class="two">
+                  <label>Дата замера
+                    <input id="measurementDate" type="date" required>
+                  </label>
+                  <label>Просмотры
+                    <input id="measurementViews" type="number" min="0" step="1" value="0" required>
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Сохранения
+                    <input id="measurementSaves" type="number" min="0" step="1" value="0" required>
+                  </label>
+                  <label>Сообщения
+                    <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Лиды
+                    <input id="measurementLeads" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>КП
+                    <input id="measurementOffers" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Сделки
+                    <input id="measurementDeals" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Выручка
+                    <input id="measurementRevenue" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <label>Комментарий к замеру
+                  <textarea id="measurementNote" placeholder="Например: 24 часа после публикации, 7 дней, обновили цифры"></textarea>
+                </label>
+                <div class="actions">
+                  <button class="btn primary" type="submit">Сохранить замер</button>
+                  <button class="btn" id="measurementCancelBtn" type="button">Закрыть</button>
+                </div>
+              </form>
+              <div class="measurement-history" id="measurementHistory"></div>
+            </div>
           </aside>
 
           <section class="panel table-panel">
@@ -1232,6 +1317,7 @@
                     <th class="numeric">Сохранения</th>
                     <th class="numeric">Сообщения</th>
                     <th class="numeric">Отклик</th>
+                    <th>Замеры</th>
                     <th>Вывод</th>
                     <th class="numeric">Действия</th>
                   </tr>
@@ -1554,6 +1640,7 @@
     const salesClientsCloudTable = "sportpro_sales_clients";
     const salesSettingsCloudTable = "sportpro_sales_settings";
     const form = document.querySelector("#entryForm");
+    const measurementForm = document.querySelector("#measurementForm");
     const funnelForm = document.querySelector("#funnelForm");
     const rowsEl = document.querySelector("#rows");
     const funnelRowsEl = document.querySelector("#funnelRows");
@@ -1575,6 +1662,9 @@
     const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
     const cancelEditBtn = document.querySelector("#cancelEditBtn");
+    const measurementPanel = document.querySelector("#measurementPanel");
+    const measurementTitle = document.querySelector("#measurementTitle");
+    const measurementHistory = document.querySelector("#measurementHistory");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const funnelFormTitle = document.querySelector("#funnelFormTitle");
@@ -1617,6 +1707,19 @@
       saves: document.querySelector("#saves"),
       messages: document.querySelector("#messages"),
       conclusion: document.querySelector("#conclusion"),
+    };
+
+    const measurementFields = {
+      recordId: document.querySelector("#measurementRecordId"),
+      date: document.querySelector("#measurementDate"),
+      views: document.querySelector("#measurementViews"),
+      saves: document.querySelector("#measurementSaves"),
+      messages: document.querySelector("#measurementMessages"),
+      leads: document.querySelector("#measurementLeads"),
+      offers: document.querySelector("#measurementOffers"),
+      deals: document.querySelector("#measurementDeals"),
+      revenue: document.querySelector("#measurementRevenue"),
+      note: document.querySelector("#measurementNote"),
     };
 
     const funnelFields = {
@@ -1691,19 +1794,49 @@
         saves: Number(fields.saves.value) || 0,
         messages: Number(fields.messages.value) || 0,
         conclusion: fields.conclusion.value.trim(),
+        measurements: [],
         updatedAt: new Date().toISOString(),
       };
 
       const index = records.findIndex((record) => record.id === id);
       if (index >= 0) {
+        entry.measurements = records[index].measurements || [];
         records[index] = entry;
       } else {
+        const firstMeasurement = createMeasurementFromEntry(entry);
+        if (firstMeasurement) entry.measurements = [firstMeasurement];
         records.push(entry);
       }
 
       saveRecords();
       resetForm();
       render();
+    });
+
+    measurementForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const record = records.find((item) => item.id === measurementFields.recordId.value);
+      if (!record) return;
+
+      record.measurements = Array.isArray(record.measurements) ? record.measurements : [];
+      record.measurements.push({
+        id: createId(),
+        date: measurementFields.date.value,
+        views: Number(measurementFields.views.value) || 0,
+        saves: Number(measurementFields.saves.value) || 0,
+        messages: Number(measurementFields.messages.value) || 0,
+        leads: Number(measurementFields.leads.value) || 0,
+        offers: Number(measurementFields.offers.value) || 0,
+        deals: Number(measurementFields.deals.value) || 0,
+        revenue: Number(measurementFields.revenue.value) || 0,
+        note: measurementFields.note.value.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+      record.updatedAt = new Date().toISOString();
+      syncRecordWithLatestMeasurement(record);
+      saveRecords();
+      render();
+      openMeasurementPanel(record.id);
     });
 
     funnelForm.addEventListener("submit", (event) => {
@@ -1738,6 +1871,7 @@
     });
 
     cancelEditBtn.addEventListener("click", resetForm);
+    document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
     funnelCancelEditBtn.addEventListener("click", resetFunnelForm);
     search.addEventListener("input", render);
     funnelSearch.addEventListener("input", render);
@@ -1869,6 +2003,10 @@
         formTitle.textContent = "Редактирование";
         cancelEditBtn.classList.remove("hidden");
         fields.topic.focus();
+      }
+
+      if (button.dataset.action === "measure") {
+        openMeasurementPanel(record.id);
       }
 
       if (button.dataset.action === "delete" && confirm("Удалить запись?")) {
@@ -2614,22 +2752,30 @@
     function renderRows() {
       const visible = getVisibleRecords();
       emptyState.classList.toggle("hidden", visible.length > 0);
-      rowsEl.innerHTML = visible.map((record) => `
-        <tr>
-          <td>${formatDate(record.date)}</td>
-          <td><span class="type-pill">${escapeHtml(record.type)}</span></td>
-          <td>${escapeHtml(record.topic)}</td>
-          <td class="numeric">${formatNumber(record.views)}</td>
-          <td class="numeric">${formatNumber(record.saves)}</td>
-          <td class="numeric">${formatNumber(record.messages)}</td>
-          <td class="numeric">${rate(record)}%</td>
-          <td class="result">${escapeHtml(record.conclusion || "-")}</td>
-          <td class="numeric">
-            <button class="btn icon" type="button" title="Редактировать" data-action="edit" data-id="${record.id}">✎</button>
-            <button class="btn icon danger" type="button" title="Удалить" data-action="delete" data-id="${record.id}">×</button>
-          </td>
-        </tr>
-      `).join("");
+      rowsEl.innerHTML = visible.map((record) => {
+        const latest = getLatestMeasurement(record);
+        const measureInfo = latest
+          ? `${record.measurements.length} / ${formatDate(latest.date)}`
+          : "Нет";
+        return `
+          <tr>
+            <td>${formatDate(record.date)}</td>
+            <td><span class="type-pill">${escapeHtml(record.type)}</span></td>
+            <td>${escapeHtml(record.topic)}</td>
+            <td class="numeric">${formatNumber(record.views)}</td>
+            <td class="numeric">${formatNumber(record.saves)}</td>
+            <td class="numeric">${formatNumber(record.messages)}</td>
+            <td class="numeric">${rate(record)}%</td>
+            <td>${escapeHtml(measureInfo)}</td>
+            <td class="result">${escapeHtml(record.conclusion || "-")}</td>
+            <td class="numeric">
+              <button class="btn icon" type="button" title="Добавить замер" data-action="measure" data-id="${record.id}">＋</button>
+              <button class="btn icon" type="button" title="Редактировать" data-action="edit" data-id="${record.id}">✎</button>
+              <button class="btn icon danger" type="button" title="Удалить" data-action="delete" data-id="${record.id}">×</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function renderFunnelRows() {
@@ -2721,7 +2867,7 @@
       const target = document.querySelector("#timeline");
       const empty = document.querySelector("#timelineEmpty");
       const metric = getDashboardMetricConfig(activeDashboardMetric);
-      const sourceItems = metric.source === "funnel" ? funnelItems : items;
+      const sourceItems = getTimelineSourceItems(items, funnelItems, metric);
       const grouped = groupByTimelineScale(sourceItems, timelineScale.value);
       const points = Object.entries(grouped)
         .map(([key, group]) => {
@@ -2746,6 +2892,22 @@
           </div>
         `;
       }).join("");
+    }
+
+    function getTimelineSourceItems(items, funnelItems, metric) {
+      if (metric.source === "funnel") return funnelItems;
+      if (!metric.useMeasurements) return items;
+
+      return items.flatMap((record) => {
+        const measurements = Array.isArray(record.measurements) ? record.measurements.map(normalizeMeasurement) : [];
+        if (!measurements.length) return [record];
+        return measurements.map((measurement) => ({
+          ...measurement,
+          parentId: record.id,
+          type: record.type,
+          topic: record.topic,
+        }));
+      });
     }
 
     function groupByTimelineScale(items, scale) {
@@ -2812,24 +2974,28 @@
         views: {
           title: "просмотры",
           source: "content",
+          useMeasurements: true,
           value: (items) => sum(items, "views"),
           format: (value) => formatNumber(value),
         },
         saves: {
           title: "сохранения",
           source: "content",
+          useMeasurements: true,
           value: (items) => sum(items, "saves"),
           format: (value) => formatNumber(value),
         },
         messages: {
           title: "сообщения",
           source: "content",
+          useMeasurements: true,
           value: (items) => sum(items, "messages"),
           format: (value) => formatNumber(value),
         },
         rate: {
           title: "отклик",
           source: "content",
+          useMeasurements: true,
           value: (items) => {
             const views = sum(items, "views");
             return views ? ((sum(items, "saves") + sum(items, "messages")) / views) * 100 : 0;
@@ -2982,6 +3148,62 @@
       cancelEditBtn.classList.add("hidden");
     }
 
+    function openMeasurementPanel(recordId) {
+      const record = records.find((item) => item.id === recordId);
+      if (!record) return;
+
+      const latest = getLatestMeasurement(record) || record;
+      measurementPanel.classList.remove("hidden");
+      measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
+      measurementFields.recordId.value = record.id;
+      measurementFields.date.valueAsDate = new Date();
+      measurementFields.views.value = Number(latest.views) || 0;
+      measurementFields.saves.value = Number(latest.saves) || 0;
+      measurementFields.messages.value = Number(latest.messages) || 0;
+      measurementFields.leads.value = Number(latest.leads) || 0;
+      measurementFields.offers.value = Number(latest.offers) || 0;
+      measurementFields.deals.value = Number(latest.deals) || 0;
+      measurementFields.revenue.value = Number(latest.revenue) || 0;
+      measurementFields.note.value = "";
+      renderMeasurementHistory(record);
+      measurementFields.views.focus();
+    }
+
+    function closeMeasurementPanel() {
+      measurementForm.reset();
+      measurementFields.recordId.value = "";
+      measurementPanel.classList.add("hidden");
+      measurementHistory.innerHTML = "";
+    }
+
+    function renderMeasurementHistory(record) {
+      const measurements = [...(record.measurements || [])]
+        .map(normalizeMeasurement)
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+        .slice(0, 6);
+
+      if (!measurements.length) {
+        measurementHistory.innerHTML = `
+          <div class="measurement-history-row">
+            <strong>Нет</strong>
+            <span>Первый замер появится после сохранения текущих показателей.</span>
+          </div>
+        `;
+        return;
+      }
+
+      measurementHistory.innerHTML = measurements.map((measurement) => `
+        <div class="measurement-history-row">
+          <strong>${formatDate(measurement.date)}</strong>
+          <span>
+            ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.saves)} сохранений,
+            ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.leads)} лидов,
+            ${formatNumber(measurement.deals)} сделок${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
+          </span>
+        </div>
+      `).join("");
+    }
+
     function resetFunnelForm() {
       funnelForm.reset();
       funnelFields.id.value = "";
@@ -3049,7 +3271,10 @@
     }
 
     function normalizeRecord(record) {
-      return {
+      const measurements = Array.isArray(record.measurements)
+        ? record.measurements.map(normalizeMeasurement)
+        : [];
+      const normalized = {
         id: record.id || createId(),
         date: record.date || "",
         type: record.type || "Другое",
@@ -3057,9 +3282,64 @@
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
+        measurements,
         conclusion: record.conclusion || "",
         updatedAt: record.updatedAt || new Date().toISOString(),
       };
+
+      if (!normalized.measurements.length) {
+        const firstMeasurement = createMeasurementFromEntry(normalized);
+        if (firstMeasurement) normalized.measurements = [firstMeasurement];
+      }
+
+      syncRecordWithLatestMeasurement(normalized);
+      return normalized;
+    }
+
+    function normalizeMeasurement(measurement) {
+      return {
+        id: measurement.id || createId(),
+        date: measurement.date || "",
+        views: Number(measurement.views) || 0,
+        saves: Number(measurement.saves) || 0,
+        messages: Number(measurement.messages) || 0,
+        leads: Number(measurement.leads) || 0,
+        offers: Number(measurement.offers) || 0,
+        deals: Number(measurement.deals) || 0,
+        revenue: Number(measurement.revenue) || 0,
+        note: measurement.note || "",
+        updatedAt: measurement.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function createMeasurementFromEntry(record) {
+      const hasMetrics = Number(record.views) || Number(record.saves) || Number(record.messages);
+      if (!hasMetrics) return null;
+      return normalizeMeasurement({
+        date: record.date,
+        views: record.views,
+        saves: record.saves,
+        messages: record.messages,
+        note: "Первый замер",
+        updatedAt: record.updatedAt,
+      });
+    }
+
+    function getLatestMeasurement(record) {
+      const measurements = Array.isArray(record.measurements) ? record.measurements.map(normalizeMeasurement) : [];
+      return measurements
+        .filter((measurement) => measurement.date)
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0] || null;
+    }
+
+    function syncRecordWithLatestMeasurement(record) {
+      const latest = getLatestMeasurement(record);
+      if (!latest) return record;
+      record.views = latest.views;
+      record.saves = latest.saves;
+      record.messages = latest.messages;
+      record.measurements = (Array.isArray(record.measurements) ? record.measurements : []).map(normalizeMeasurement);
+      return record;
     }
 
     function normalizeFunnelRecord(record) {
