@@ -76,6 +76,84 @@ create policy "sportpro ads funnel anon update"
 
 grant select, insert, update on public.sportpro_ads_funnel_records to anon;
 
+create table if not exists public.sportpro_content_plan_items (
+  workspace_id text not null,
+  id text not null,
+  record jsonb,
+  deleted_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (workspace_id, id)
+);
+
+create index if not exists sportpro_content_plan_items_workspace_updated_idx
+  on public.sportpro_content_plan_items (workspace_id, updated_at desc);
+
+alter table public.sportpro_content_plan_items enable row level security;
+
+drop policy if exists "sportpro content plan anon read" on public.sportpro_content_plan_items;
+drop policy if exists "sportpro content plan anon insert" on public.sportpro_content_plan_items;
+drop policy if exists "sportpro content plan anon update" on public.sportpro_content_plan_items;
+
+create policy "sportpro content plan anon read"
+  on public.sportpro_content_plan_items
+  for select
+  to anon
+  using (true);
+
+create policy "sportpro content plan anon insert"
+  on public.sportpro_content_plan_items
+  for insert
+  to anon
+  with check (true);
+
+create policy "sportpro content plan anon update"
+  on public.sportpro_content_plan_items
+  for update
+  to anon
+  using (true)
+  with check (true);
+
+grant select, insert, update on public.sportpro_content_plan_items to anon;
+
+create table if not exists public.sportpro_content_ideas (
+  workspace_id text not null,
+  id text not null,
+  record jsonb,
+  deleted_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (workspace_id, id)
+);
+
+create index if not exists sportpro_content_ideas_workspace_updated_idx
+  on public.sportpro_content_ideas (workspace_id, updated_at desc);
+
+alter table public.sportpro_content_ideas enable row level security;
+
+drop policy if exists "sportpro content ideas anon read" on public.sportpro_content_ideas;
+drop policy if exists "sportpro content ideas anon insert" on public.sportpro_content_ideas;
+drop policy if exists "sportpro content ideas anon update" on public.sportpro_content_ideas;
+
+create policy "sportpro content ideas anon read"
+  on public.sportpro_content_ideas
+  for select
+  to anon
+  using (true);
+
+create policy "sportpro content ideas anon insert"
+  on public.sportpro_content_ideas
+  for insert
+  to anon
+  with check (true);
+
+create policy "sportpro content ideas anon update"
+  on public.sportpro_content_ideas
+  for update
+  to anon
+  using (true)
+  with check (true);
+
+grant select, insert, update on public.sportpro_content_ideas to anon;
+
 create table if not exists public.sportpro_sales_clients (
   workspace_id text not null,
   id text not null,
