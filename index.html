@@ -933,6 +933,125 @@
       white-space: nowrap;
     }
 
+    .content-calendar-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .calendar-day {
+      min-height: 138px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .calendar-day.today {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .calendar-date {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .calendar-items {
+      display: grid;
+      gap: 6px;
+    }
+
+    .content-card {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .content-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .content-card span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .status-idea { border-left-color: #64748b; }
+    .status-work { border-left-color: #2563eb; }
+    .status-review { border-left-color: #ca8a04; }
+    .status-planned { border-left-color: #16a34a; }
+    .status-published { border-left-color: #0f766e; }
+    .status-paused { border-left-color: #b91c1c; }
+
+    .idea-list,
+    .rubric-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .idea-card,
+    .rubric-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 14px;
+    }
+
+    .idea-card strong,
+    .rubric-card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .idea-card span,
+    .rubric-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .hidden {
       display: none;
     }
@@ -996,6 +1115,7 @@
       .sales-layout,
       .lead-grid,
       .client-card,
+      .calendar-grid,
       .placeholder-grid {
         grid-template-columns: 1fr;
       }
@@ -1032,6 +1152,10 @@
         <button class="active" type="button" data-view="ads" title="Реклама">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v10H4V5Zm2 2v6h12V7H6Zm2 10h8v2H8v-2Zm-2 4h12v2H6v-2Z"/></svg>
           Реклама
+        </button>
+        <button type="button" data-view="contentPlan" title="Контент-план">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm3 4h4v4H7v-4Zm6 0h4v2h-4v-2Z"/></svg>
+          Контент-план
         </button>
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
@@ -1443,6 +1567,202 @@
       </section>
       </section>
 
+      <section id="contentPlanView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Контент-план</h2>
+            <p>Календарь публикаций, список задач, банк идей и рубрики.</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="contentQuickAddBtn" type="button">Добавить публикацию</button>
+          </div>
+        </div>
+
+        <div class="module-tabs" aria-label="Вид раздела контент-плана">
+          <button class="active" type="button" data-content-mode="calendar">Календарь</button>
+          <button type="button" data-content-mode="list">Список</button>
+          <button type="button" data-content-mode="ideas">Идеи</button>
+          <button type="button" data-content-mode="rubrics">Рубрики</button>
+        </div>
+
+        <section id="contentCalendarView">
+          <section class="panel chart-panel">
+            <div class="content-calendar-toolbar">
+              <div class="actions">
+                <button class="btn" id="calendarPrevBtn" type="button">Назад</button>
+                <button class="btn" id="calendarTodayBtn" type="button">Сегодня</button>
+                <button class="btn" id="calendarNextBtn" type="button">Вперед</button>
+              </div>
+              <div class="calendar-title" id="calendarTitle">Календарь</div>
+              <div class="module-tabs" aria-label="Масштаб календаря">
+                <button class="active" type="button" data-calendar-mode="week">Неделя</button>
+                <button type="button" data-calendar-mode="month">Месяц</button>
+              </div>
+            </div>
+            <div class="calendar-grid" id="contentCalendarGrid"></div>
+            <div class="empty hidden" id="contentCalendarEmpty">На выбранный период публикаций пока нет.</div>
+          </section>
+        </section>
+
+        <section id="contentListView" class="hidden">
+          <section class="workspace">
+            <aside class="panel form-panel">
+              <h3 id="contentFormTitle">Новая публикация</h3>
+              <form id="contentPlanForm">
+                <input id="contentItemId" type="hidden">
+                <div class="two">
+                  <label>Дата публикации
+                    <input id="contentDate" type="date" required>
+                  </label>
+                  <label>Время
+                    <input id="contentTime" type="time">
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Площадка
+                    <select id="contentPlatform">
+                      <option value="Instagram">Instagram</option>
+                      <option value="TikTok">TikTok</option>
+                      <option value="YouTube">YouTube</option>
+                      <option value="VK">VK</option>
+                      <option value="Сайт">Сайт</option>
+                      <option value="Другое">Другое</option>
+                    </select>
+                  </label>
+                  <label>Тип
+                    <select id="contentType">
+                      <option value="Reels">Reels</option>
+                      <option value="Пост">Пост</option>
+                      <option value="Сторис">Сторис</option>
+                      <option value="Статья">Статья</option>
+                      <option value="Рекламный креатив">Рекламный креатив</option>
+                      <option value="Другое">Другое</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Рубрика
+                  <select id="contentRubric"></select>
+                </label>
+                <label>Тема
+                  <input id="contentTopic" type="text" placeholder="Например: кейс клуба, подбор тренажеров, акция" required>
+                </label>
+                <div class="two">
+                  <label>Статус
+                    <select id="contentStatus">
+                      <option value="Идея">Идея</option>
+                      <option value="В работе">В работе</option>
+                      <option value="На согласовании">На согласовании</option>
+                      <option value="Запланировано">Запланировано</option>
+                      <option value="Опубликовано">Опубликовано</option>
+                      <option value="Отложено">Отложено</option>
+                    </select>
+                  </label>
+                  <label>Ответственный
+                    <input id="contentOwner" type="text" placeholder="Кто готовит">
+                  </label>
+                </div>
+                <label>Дедлайн подготовки
+                  <input id="contentPrepDeadline" type="date">
+                </label>
+                <label>Ссылка на текст / макет / публикацию
+                  <input id="contentLink" type="url" placeholder="https://...">
+                </label>
+                <label>Комментарий
+                  <textarea id="contentComment" placeholder="Что важно учесть, цель публикации, правки"></textarea>
+                </label>
+                <button class="btn primary" type="submit">Сохранить</button>
+                <button class="btn hidden" id="contentCancelEditBtn" type="button">Отменить</button>
+              </form>
+            </aside>
+
+            <section class="panel table-panel">
+              <div class="toolbar">
+                <input class="search" id="contentSearch" type="search" placeholder="Поиск по теме, рубрике или комментарию">
+                <div class="filters">
+                  <select id="contentStatusFilter" aria-label="Фильтр по статусу">
+                    <option value="">Все статусы</option>
+                  </select>
+                  <select id="contentPlatformFilter" aria-label="Фильтр по площадке">
+                    <option value="">Все площадки</option>
+                  </select>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Площадка</th>
+                      <th>Тип</th>
+                      <th>Рубрика</th>
+                      <th>Тема</th>
+                      <th>Статус</th>
+                      <th>Ответственный</th>
+                      <th>Дедлайн</th>
+                      <th class="numeric">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contentRows"></tbody>
+                </table>
+                <div class="empty" id="contentEmptyState">Публикаций пока нет</div>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <section id="contentIdeasView" class="hidden">
+          <section class="workspace">
+            <aside class="panel form-panel">
+              <h3>Новая идея</h3>
+              <form id="contentIdeaForm">
+                <input id="contentIdeaId" type="hidden">
+                <label>Идея
+                  <input id="ideaTitle" type="text" placeholder="Коротко о чем контент" required>
+                </label>
+                <div class="two">
+                  <label>Рубрика
+                    <select id="ideaRubric"></select>
+                  </label>
+                  <label>Приоритет
+                    <select id="ideaPriority">
+                      <option value="Средний">Средний</option>
+                      <option value="Высокий">Высокий</option>
+                      <option value="Низкий">Низкий</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Площадка
+                  <input id="ideaPlatform" type="text" placeholder="Instagram, YouTube, сайт">
+                </label>
+                <label>Комментарий
+                  <textarea id="ideaComment" placeholder="Почему идея важна, кому подойдет, что показать"></textarea>
+                </label>
+                <button class="btn primary" type="submit">Сохранить идею</button>
+              </form>
+            </aside>
+
+            <section class="panel sales-card">
+              <div class="toolbar">
+                <div>
+                  <h3>Банк идей</h3>
+                  <p class="sales-goal">Идеи можно быстро запланировать в календарь.</p>
+                </div>
+              </div>
+              <div class="idea-list" id="contentIdeasList"></div>
+              <div class="empty" id="contentIdeasEmpty">Идей пока нет</div>
+            </section>
+          </section>
+        </section>
+
+        <section id="contentRubricsView" class="hidden">
+          <section class="panel sales-card">
+            <h3>Рубрики</h3>
+            <p class="sales-goal">Справочник помогает держать баланс между охватом, доверием и продажами.</p>
+            <div class="rubric-grid" id="contentRubricsGrid"></div>
+          </section>
+        </section>
+      </section>
+
       <section id="salesView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -1628,27 +1948,46 @@
     const funnelStorageKey = "workspace-tables.ads.funnel";
     const legacyStorageKey = "ads-tracker-records";
     const themeStorageKey = "workspace-tables.theme";
+    const contentPlanStorageKey = "workspace-tables.contentPlan.items";
+    const contentIdeasStorageKey = "workspace-tables.contentPlan.ideas";
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
     const salesClientsStorageKey = "workspace-tables.sales.clients";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
+    const deletedContentPlanKey = "workspace-tables.contentPlan.deleted";
+    const deletedContentIdeasKey = "workspace-tables.contentPlan.ideas.deleted";
     const deletedSalesClientsKey = "workspace-tables.sales.clients.deleted";
     const cloudTable = "sportpro_ads_records";
     const funnelCloudTable = "sportpro_ads_funnel_records";
+    const contentPlanCloudTable = "sportpro_content_plan_items";
+    const contentIdeasCloudTable = "sportpro_content_ideas";
     const salesClientsCloudTable = "sportpro_sales_clients";
     const salesSettingsCloudTable = "sportpro_sales_settings";
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
+    const contentPlanForm = document.querySelector("#contentPlanForm");
+    const contentIdeaForm = document.querySelector("#contentIdeaForm");
     const funnelForm = document.querySelector("#funnelForm");
     const rowsEl = document.querySelector("#rows");
+    const contentRowsEl = document.querySelector("#contentRows");
+    const contentIdeasList = document.querySelector("#contentIdeasList");
     const funnelRowsEl = document.querySelector("#funnelRows");
     const emptyState = document.querySelector("#emptyState");
+    const contentEmptyState = document.querySelector("#contentEmptyState");
+    const contentIdeasEmpty = document.querySelector("#contentIdeasEmpty");
+    const contentCalendarGrid = document.querySelector("#contentCalendarGrid");
+    const contentCalendarEmpty = document.querySelector("#contentCalendarEmpty");
+    const calendarTitle = document.querySelector("#calendarTitle");
+    const contentRubricsGrid = document.querySelector("#contentRubricsGrid");
     const funnelEmptyState = document.querySelector("#funnelEmptyState");
     const typeFilter = document.querySelector("#typeFilter");
     const sortBy = document.querySelector("#sortBy");
     const search = document.querySelector("#search");
+    const contentSearch = document.querySelector("#contentSearch");
+    const contentStatusFilter = document.querySelector("#contentStatusFilter");
+    const contentPlatformFilter = document.querySelector("#contentPlatformFilter");
     const funnelSearch = document.querySelector("#funnelSearch");
     const funnelSortBy = document.querySelector("#funnelSortBy");
     const themeSelect = document.querySelector("#themeSelect");
@@ -1667,9 +2006,12 @@
     const measurementHistory = document.querySelector("#measurementHistory");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
+    const contentFormTitle = document.querySelector("#contentFormTitle");
+    const contentCancelEditBtn = document.querySelector("#contentCancelEditBtn");
     const funnelFormTitle = document.querySelector("#funnelFormTitle");
     const views = {
       ads: document.querySelector("#adsView"),
+      contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
       future: document.querySelector("#futureView"),
     };
@@ -1677,6 +2019,12 @@
       dashboard: document.querySelector("#adsDashboardView"),
       table: document.querySelector("#adsTableView"),
       funnel: document.querySelector("#adsFunnelView"),
+    };
+    const contentModeViews = {
+      calendar: document.querySelector("#contentCalendarView"),
+      list: document.querySelector("#contentListView"),
+      ideas: document.querySelector("#contentIdeasView"),
+      rubrics: document.querySelector("#contentRubricsView"),
     };
     const salesModeViews = {
       script: document.querySelector("#salesScriptView"),
@@ -1709,6 +2057,30 @@
       conclusion: document.querySelector("#conclusion"),
     };
 
+    const contentFields = {
+      id: document.querySelector("#contentItemId"),
+      date: document.querySelector("#contentDate"),
+      time: document.querySelector("#contentTime"),
+      platform: document.querySelector("#contentPlatform"),
+      type: document.querySelector("#contentType"),
+      rubric: document.querySelector("#contentRubric"),
+      topic: document.querySelector("#contentTopic"),
+      status: document.querySelector("#contentStatus"),
+      owner: document.querySelector("#contentOwner"),
+      prepDeadline: document.querySelector("#contentPrepDeadline"),
+      link: document.querySelector("#contentLink"),
+      comment: document.querySelector("#contentComment"),
+    };
+
+    const ideaFields = {
+      id: document.querySelector("#contentIdeaId"),
+      title: document.querySelector("#ideaTitle"),
+      rubric: document.querySelector("#ideaRubric"),
+      priority: document.querySelector("#ideaPriority"),
+      platform: document.querySelector("#ideaPlatform"),
+      comment: document.querySelector("#ideaComment"),
+    };
+
     const measurementFields = {
       recordId: document.querySelector("#measurementRecordId"),
       date: document.querySelector("#measurementDate"),
@@ -1739,21 +2111,31 @@
 
     let records = loadRecords();
     let funnelRecords = loadFunnelRecords();
+    let contentPlanItems = loadContentPlanItems();
+    let contentIdeas = loadContentIdeas();
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
     let activeDashboardMetric = "views";
+    let activeCalendarMode = "week";
+    let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
+    let deletedContentPlan = loadDeletedRecords(deletedContentPlanKey);
+    let deletedContentIdeas = loadDeletedRecords(deletedContentIdeasKey);
     let deletedSalesClients = loadDeletedRecords(deletedSalesClientsKey);
     let cloudConfig = loadCloudConfig();
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
     applyCloudConfig();
     fields.date.valueAsDate = new Date();
+    contentFields.date.valueAsDate = new Date();
+    contentFields.prepDeadline.valueAsDate = new Date();
     funnelFields.date.valueAsDate = new Date();
+    renderContentRubricOptions();
     render();
+    renderContentPlan();
     renderSales();
     renderSalesClients();
     loadLeadDraft();
@@ -1771,6 +2153,22 @@
         const mode = button.dataset.adsMode;
         document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item === button));
         Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+      });
+    });
+
+    document.querySelectorAll("[data-content-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.contentMode;
+        document.querySelectorAll("[data-content-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        Object.entries(contentModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+      });
+    });
+
+    document.querySelectorAll("[data-calendar-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        activeCalendarMode = button.dataset.calendarMode;
+        document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        renderContentCalendar();
       });
     });
 
@@ -1839,6 +2237,65 @@
       openMeasurementPanel(record.id);
     });
 
+    contentPlanForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const id = contentFields.id.value || createId();
+      const entry = {
+        id,
+        date: contentFields.date.value,
+        time: contentFields.time.value,
+        platform: contentFields.platform.value,
+        type: contentFields.type.value,
+        rubric: contentFields.rubric.value,
+        topic: contentFields.topic.value.trim(),
+        status: contentFields.status.value,
+        owner: contentFields.owner.value.trim(),
+        prepDeadline: contentFields.prepDeadline.value,
+        link: contentFields.link.value.trim(),
+        comment: contentFields.comment.value.trim(),
+        linkedAdId: contentPlanItems.find((item) => item.id === id)?.linkedAdId || "",
+        updatedAt: new Date().toISOString(),
+      };
+
+      const index = contentPlanItems.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        contentPlanItems[index] = entry;
+      } else {
+        contentPlanItems.push(entry);
+      }
+
+      saveContentPlanItems();
+      resetContentForm();
+      renderContentPlan();
+    });
+
+    contentIdeaForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const id = ideaFields.id.value || createId();
+      const idea = {
+        id,
+        title: ideaFields.title.value.trim(),
+        rubric: ideaFields.rubric.value,
+        priority: ideaFields.priority.value,
+        platform: ideaFields.platform.value.trim(),
+        comment: ideaFields.comment.value.trim(),
+        status: "Новая",
+        updatedAt: new Date().toISOString(),
+      };
+
+      const index = contentIdeas.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        contentIdeas[index] = idea;
+      } else {
+        contentIdeas.unshift(idea);
+      }
+
+      saveContentIdeas();
+      contentIdeaForm.reset();
+      ideaFields.id.value = "";
+      renderContentIdeas();
+    });
+
     funnelForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const id = funnelFields.id.value || createId();
@@ -1872,8 +2329,22 @@
 
     cancelEditBtn.addEventListener("click", resetForm);
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
+    contentCancelEditBtn.addEventListener("click", resetContentForm);
+    document.querySelector("#contentQuickAddBtn").addEventListener("click", () => {
+      document.querySelector('[data-content-mode="list"]').click();
+      contentFields.topic.focus();
+    });
+    document.querySelector("#calendarPrevBtn").addEventListener("click", () => moveCalendar(-1));
+    document.querySelector("#calendarTodayBtn").addEventListener("click", () => {
+      calendarCursor = new Date();
+      renderContentCalendar();
+    });
+    document.querySelector("#calendarNextBtn").addEventListener("click", () => moveCalendar(1));
     funnelCancelEditBtn.addEventListener("click", resetFunnelForm);
     search.addEventListener("input", render);
+    contentSearch.addEventListener("input", renderContentList);
+    contentStatusFilter.addEventListener("change", renderContentList);
+    contentPlatformFilter.addEventListener("change", renderContentList);
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
@@ -2018,6 +2489,61 @@
       }
     });
 
+    contentRowsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      const item = contentPlanItems.find((record) => record.id === id);
+      if (!item) return;
+
+      if (button.dataset.action === "edit-content") {
+        fillContentForm(item);
+      }
+
+      if (button.dataset.action === "publish-content") {
+        publishContentItem(item);
+      }
+
+      if (button.dataset.action === "delete-content" && confirm("Удалить публикацию из контент-плана?")) {
+        deletedContentPlan[id] = new Date().toISOString();
+        contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
+        saveContentPlanItems();
+        saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
+        renderContentPlan();
+      }
+    });
+
+    contentCalendarGrid.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-content-id]");
+      if (!card) return;
+      const item = contentPlanItems.find((record) => record.id === card.dataset.contentId);
+      if (!item) return;
+      fillContentForm(item);
+      document.querySelector('[data-content-mode="list"]').click();
+    });
+
+    contentIdeasList.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      const idea = contentIdeas.find((record) => record.id === id);
+      if (!idea) return;
+
+      if (button.dataset.action === "schedule-idea") {
+        scheduleIdea(idea);
+      }
+
+      if (button.dataset.action === "delete-idea" && confirm("Удалить идею?")) {
+        deletedContentIdeas[id] = new Date().toISOString();
+        contentIdeas = contentIdeas.filter((record) => record.id !== id);
+        saveContentIdeas();
+        saveDeletedRecords(deletedContentIdeasKey, deletedContentIdeas);
+        renderContentIdeas();
+      }
+    });
+
     funnelRowsEl.addEventListener("click", (event) => {
       const button = event.target.closest("button");
       if (!button) return;
@@ -2060,6 +2586,7 @@
       renderRows();
       renderFunnelSummary();
       renderFunnelRows();
+      renderContentPlan();
     }
 
     function applyTheme(theme) {
@@ -2551,6 +3078,8 @@
         updateCloudStatus("Проверка подключения...");
         await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(contentPlanCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(contentIdeasCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         updateCloudStatus("Подключение работает");
@@ -2563,6 +3092,8 @@
     async function pushToCloud() {
       await pushRowsToCloud(cloudTable, records, deletedRecords, normalizeRecord);
       await pushRowsToCloud(funnelCloudTable, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+      await pushRowsToCloud(contentPlanCloudTable, contentPlanItems, deletedContentPlan, normalizeContentPlanItem);
+      await pushRowsToCloud(contentIdeasCloudTable, contentIdeas, deletedContentIdeas, normalizeContentIdea);
       await pushRowsToCloud(salesClientsCloudTable, salesClients, deletedSalesClients, normalizeSalesClient);
       await pushRowsToCloud(salesSettingsCloudTable, [salesScriptCloudRecord()], {}, normalizeSalesScript);
     }
@@ -2606,10 +3137,14 @@
         if (!options.silent) updateCloudStatus("Загрузка из облака...");
         const cloudRows = await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const funnelCloudRows = await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const contentPlanRows = await cloudRequest(`${cloudEndpoint(contentPlanCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const contentIdeaRows = await cloudRequest(`${cloudEndpoint(contentIdeasCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const salesClientRows = await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
         funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
+        contentPlanItems = mergeCloudRows(contentPlanRows, contentPlanItems, deletedContentPlan, normalizeContentPlanItem);
+        contentIdeas = mergeCloudRows(contentIdeaRows, contentIdeas, deletedContentIdeas, normalizeContentIdea);
         salesClients = mergeCloudRows(salesClientRows, salesClients, deletedSalesClients, normalizeSalesClient);
         const mergedScripts = mergeCloudRows(salesScriptRows, [salesScriptCloudRecord()], {}, normalizeSalesScript);
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
@@ -2617,6 +3152,10 @@
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         saveFunnelRecords();
         saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
+        saveContentPlanItems();
+        saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
+        saveContentIdeas();
+        saveDeletedRecords(deletedContentIdeasKey, deletedContentIdeas);
         saveSalesClients();
         saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
         saveSalesScript({ touch: false });
@@ -2801,6 +3340,193 @@
           </td>
         </tr>
       `).join("");
+    }
+
+    function renderContentPlan() {
+      renderContentRubricOptions();
+      renderContentFilters();
+      renderContentCalendar();
+      renderContentList();
+      renderContentIdeas();
+      renderContentRubrics();
+    }
+
+    function renderContentCalendar() {
+      const days = getCalendarDays();
+      const itemsByDate = groupBy(contentPlanItems, "date");
+      calendarTitle.textContent = activeCalendarMode === "week"
+        ? `Неделя ${formatShortDate(formatIsoDate(days[0]))}-${formatShortDate(formatIsoDate(days[days.length - 1]))}`
+        : new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(calendarCursor);
+
+      const todayKey = formatIsoDate(new Date());
+      const hasItems = days.some((date) => (itemsByDate[formatIsoDate(date)] || []).length);
+      contentCalendarEmpty.classList.toggle("hidden", hasItems);
+      contentCalendarGrid.innerHTML = days.map((date) => {
+        const key = formatIsoDate(date);
+        const items = (itemsByDate[key] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+        return `
+          <div class="calendar-day ${key === todayKey ? "today" : ""}">
+            <div class="calendar-date">
+              <span>${formatShortDate(key)}</span>
+              <span>${weekdayLabel(date)}</span>
+            </div>
+            <div class="calendar-items">
+              ${items.map((item) => contentCalendarCard(item)).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function contentCalendarCard(item) {
+      return `
+        <button class="content-card ${statusClass(item.status)}" type="button" data-content-id="${escapeHtml(item.id)}">
+          <strong>${escapeHtml(item.time ? `${item.time} · ${item.topic}` : item.topic)}</strong>
+          <span>${escapeHtml(item.platform)} · ${escapeHtml(item.type)}</span>
+          <span>${escapeHtml(item.status)}</span>
+        </button>
+      `;
+    }
+
+    function renderContentList() {
+      const visible = getVisibleContentItems();
+      contentEmptyState.classList.toggle("hidden", visible.length > 0);
+      contentRowsEl.innerHTML = visible.map((item) => `
+        <tr>
+          <td>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>
+          <td>${escapeHtml(item.platform)}</td>
+          <td>${escapeHtml(item.type)}</td>
+          <td>${escapeHtml(item.rubric)}</td>
+          <td>${escapeHtml(item.topic)}</td>
+          <td><span class="status-pill">${escapeHtml(item.status)}</span></td>
+          <td>${escapeHtml(item.owner || "-")}</td>
+          <td>${item.prepDeadline ? formatDate(item.prepDeadline) : "-"}</td>
+          <td class="numeric">
+            <button class="btn icon" type="button" title="Перенести в рекламу" data-action="publish-content" data-id="${item.id}">↗</button>
+            <button class="btn icon" type="button" title="Редактировать" data-action="edit-content" data-id="${item.id}">✎</button>
+            <button class="btn icon danger" type="button" title="Удалить" data-action="delete-content" data-id="${item.id}">×</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderContentIdeas() {
+      contentIdeasEmpty.classList.toggle("hidden", contentIdeas.length > 0);
+      contentIdeasList.innerHTML = contentIdeas.map((idea) => `
+        <article class="idea-card">
+          <strong>${escapeHtml(idea.title)}</strong>
+          <span>${escapeHtml(idea.rubric)} · ${escapeHtml(idea.priority)}${idea.platform ? ` · ${escapeHtml(idea.platform)}` : ""}</span>
+          <span>${escapeHtml(idea.comment || "")}</span>
+          <div class="actions" style="margin-top: 10px;">
+            <button class="btn primary" type="button" data-action="schedule-idea" data-id="${idea.id}">Запланировать</button>
+            <button class="btn danger" type="button" data-action="delete-idea" data-id="${idea.id}">Удалить</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderContentRubrics() {
+      contentRubricsGrid.innerHTML = defaultContentRubrics().map((rubric) => `
+        <article class="rubric-card">
+          <strong>${escapeHtml(rubric.name)}</strong>
+          <span>${escapeHtml(rubric.goal)}</span>
+          <span>Форматы: ${escapeHtml(rubric.formats)}</span>
+        </article>
+      `).join("");
+    }
+
+    function renderContentRubricOptions() {
+      const options = defaultContentRubrics().map((rubric) => `<option value="${escapeHtml(rubric.name)}">${escapeHtml(rubric.name)}</option>`).join("");
+      if (contentFields.rubric.innerHTML !== options) contentFields.rubric.innerHTML = options;
+      if (ideaFields.rubric.innerHTML !== options) ideaFields.rubric.innerHTML = options;
+    }
+
+    function renderContentFilters() {
+      fillSelectOptions(contentStatusFilter, contentPlanItems.map((item) => item.status), "Все статусы");
+      fillSelectOptions(contentPlatformFilter, contentPlanItems.map((item) => item.platform), "Все площадки");
+    }
+
+    function getVisibleContentItems() {
+      const query = contentSearch.value.trim().toLowerCase();
+      const status = contentStatusFilter.value;
+      const platform = contentPlatformFilter.value;
+      return contentPlanItems
+        .filter((item) => {
+          const haystack = `${item.topic} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
+          return (!query || haystack.includes(query))
+            && (!status || item.status === status)
+            && (!platform || item.platform === platform);
+        })
+        .sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
+    }
+
+    function fillSelectOptions(select, values, placeholder) {
+      const current = select.value;
+      const unique = [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+      select.innerHTML = `<option value="">${placeholder}</option>` + unique.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      select.value = unique.includes(current) ? current : "";
+    }
+
+    function getCalendarDays() {
+      if (activeCalendarMode === "month") {
+        const first = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1);
+        const start = startOfWeek(first);
+        const last = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 0);
+        const end = startOfWeek(last);
+        end.setDate(end.getDate() + 6);
+        const days = [];
+        for (const date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+          days.push(new Date(date));
+        }
+        return days;
+      }
+
+      const start = startOfWeek(calendarCursor);
+      return Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        return date;
+      });
+    }
+
+    function moveCalendar(direction) {
+      const next = new Date(calendarCursor);
+      if (activeCalendarMode === "month") {
+        next.setMonth(next.getMonth() + direction);
+      } else {
+        next.setDate(next.getDate() + direction * 7);
+      }
+      calendarCursor = next;
+      renderContentCalendar();
+    }
+
+    function weekdayLabel(date) {
+      return new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date);
+    }
+
+    function statusClass(status) {
+      const map = {
+        "Идея": "status-idea",
+        "В работе": "status-work",
+        "На согласовании": "status-review",
+        "Запланировано": "status-planned",
+        "Опубликовано": "status-published",
+        "Отложено": "status-paused",
+      };
+      return map[status] || "status-idea";
+    }
+
+    function defaultContentRubrics() {
+      return [
+        { name: "Кейсы", goal: "Показывает опыт и готовые решения для залов.", formats: "Reels, пост, статья" },
+        { name: "Отзывы", goal: "Усиливает доверие и снимает сомнения.", formats: "Пост, сторис, короткое видео" },
+        { name: "Экспертность", goal: "Объясняет, как не ошибиться при запуске клуба.", formats: "Reels, карусель, статья" },
+        { name: "Ошибки", goal: "Показывает риски неправильной комплектации.", formats: "Reels, пост-разбор" },
+        { name: "Оборудование", goal: "Раскрывает линейки, преимущества и сценарии применения.", formats: "Видео, пост, сторис" },
+        { name: "Акции", goal: "Создает быстрый повод обратиться.", formats: "Пост, сторис, рекламный креатив" },
+        { name: "До/после", goal: "Визуально показывает результат оснащения.", formats: "Reels, карусель" },
+        { name: "FAQ", goal: "Отвечает на частые вопросы клиентов.", formats: "Сторис, пост, видео" },
+      ];
     }
 
     function getVisibleRecords() {
@@ -3148,6 +3874,81 @@
       cancelEditBtn.classList.add("hidden");
     }
 
+    function fillContentForm(item) {
+      contentFields.id.value = item.id;
+      contentFields.date.value = item.date;
+      contentFields.time.value = item.time;
+      contentFields.platform.value = item.platform;
+      contentFields.type.value = item.type;
+      contentFields.rubric.value = item.rubric;
+      contentFields.topic.value = item.topic;
+      contentFields.status.value = item.status;
+      contentFields.owner.value = item.owner;
+      contentFields.prepDeadline.value = item.prepDeadline;
+      contentFields.link.value = item.link;
+      contentFields.comment.value = item.comment;
+      contentFormTitle.textContent = "Редактирование";
+      contentCancelEditBtn.classList.remove("hidden");
+      contentFields.topic.focus();
+    }
+
+    function resetContentForm() {
+      contentPlanForm.reset();
+      contentFields.id.value = "";
+      contentFields.date.valueAsDate = new Date();
+      contentFields.prepDeadline.valueAsDate = new Date();
+      contentFormTitle.textContent = "Новая публикация";
+      contentCancelEditBtn.classList.add("hidden");
+    }
+
+    function scheduleIdea(idea) {
+      document.querySelector('[data-content-mode="list"]').click();
+      resetContentForm();
+      contentFields.topic.value = idea.title;
+      contentFields.rubric.value = idea.rubric;
+      contentFields.platform.value = idea.platform || "Instagram";
+      contentFields.status.value = "Идея";
+      contentFields.comment.value = idea.comment || "";
+      contentFields.topic.focus();
+    }
+
+    function publishContentItem(item) {
+      item.status = "Опубликовано";
+      item.updatedAt = new Date().toISOString();
+
+      if (!item.linkedAdId) {
+        const adRecord = normalizeRecord({
+          id: createId(),
+          date: item.date || formatIsoDate(new Date()),
+          type: contentTypeToAdType(item.type),
+          topic: item.topic,
+          views: 0,
+          saves: 0,
+          messages: 0,
+          conclusion: `Из контент-плана: ${item.rubric}`,
+          measurements: [],
+          updatedAt: new Date().toISOString(),
+        });
+        item.linkedAdId = adRecord.id;
+        records.push(adRecord);
+        saveRecords();
+      }
+
+      saveContentPlanItems();
+      render();
+      alert("Публикация перенесена в Реклама → Контент с нулевыми показателями.");
+    }
+
+    function contentTypeToAdType(type) {
+      const map = {
+        "Reels": "Рилс",
+        "Пост": "Пост",
+        "Сторис": "Сторис",
+        "Рекламный креатив": "Реклама",
+      };
+      return map[type] || "Другое";
+    }
+
     function openMeasurementPanel(recordId) {
       const record = records.find((item) => item.id === recordId);
       if (!record) return;
@@ -3240,6 +4041,18 @@
       return [];
     }
 
+    function loadContentPlanItems() {
+      const existing = readStorage(contentPlanStorageKey);
+      if (existing.length) return existing.map(normalizeContentPlanItem);
+      return [];
+    }
+
+    function loadContentIdeas() {
+      const existing = readStorage(contentIdeasStorageKey);
+      if (existing.length) return existing.map(normalizeContentIdea);
+      return [];
+    }
+
     function loadDeletedRecords(key) {
       const saved = readStorage(key);
       if (!saved || Array.isArray(saved) || typeof saved !== "object") {
@@ -3264,6 +4077,16 @@
     function saveFunnelRecords() {
       funnelRecords = funnelRecords.map(normalizeFunnelRecord);
       localStorage.setItem(funnelStorageKey, JSON.stringify(funnelRecords));
+    }
+
+    function saveContentPlanItems() {
+      contentPlanItems = contentPlanItems.map(normalizeContentPlanItem);
+      localStorage.setItem(contentPlanStorageKey, JSON.stringify(contentPlanItems));
+    }
+
+    function saveContentIdeas() {
+      contentIdeas = contentIdeas.map(normalizeContentIdea);
+      localStorage.setItem(contentIdeasStorageKey, JSON.stringify(contentIdeas));
     }
 
     function saveDeletedRecords(key, deletedMap) {
@@ -3357,6 +4180,38 @@
         spend: Number(record.spend) || 0,
         conclusion: record.conclusion || "",
         updatedAt: record.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeContentPlanItem(item) {
+      return {
+        id: item.id || createId(),
+        date: item.date || "",
+        time: item.time || "",
+        platform: item.platform || "Instagram",
+        type: item.type || "Reels",
+        rubric: item.rubric || defaultContentRubrics()[0].name,
+        topic: item.topic || "",
+        status: item.status || "Идея",
+        owner: item.owner || "",
+        prepDeadline: item.prepDeadline || "",
+        link: item.link || "",
+        comment: item.comment || "",
+        linkedAdId: item.linkedAdId || "",
+        updatedAt: item.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeContentIdea(idea) {
+      return {
+        id: idea.id || createId(),
+        title: idea.title || "",
+        rubric: idea.rubric || defaultContentRubrics()[0].name,
+        priority: idea.priority || "Средний",
+        platform: idea.platform || "",
+        comment: idea.comment || "",
+        status: idea.status || "Новая",
+        updatedAt: idea.updatedAt || new Date().toISOString(),
       };
     }
 
