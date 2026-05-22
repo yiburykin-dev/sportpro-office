@@ -377,6 +377,46 @@
       white-space: nowrap;
     }
 
+    .followers-card {
+      display: grid;
+      gap: 6px;
+      min-width: 230px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .followers-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .followers-card span,
+    .followers-card small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .followers-card strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .followers-editor {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .followers-editor input {
+      min-height: 34px;
+      max-width: 140px;
+    }
+
     .btn {
       border: 1px solid var(--line);
       background: var(--surface);
@@ -1258,6 +1298,20 @@
             <h2>Реклама</h2>
             <p>Дашборд и таблица для учета рекламных размещений.</p>
           </div>
+          <div class="followers-card" aria-label="Подписчики аккаунта">
+            <div class="followers-card-head">
+              <div>
+                <span>Подписчики</span>
+                <strong id="accountFollowersTotal">0</strong>
+              </div>
+              <button class="btn icon" id="followersEditBtn" type="button" title="Изменить исходное число">✎</button>
+            </div>
+            <div class="followers-editor hidden" id="followersEditor">
+              <input id="followersBaseInput" type="number" min="0" step="1" placeholder="Исходное число">
+              <button class="btn primary" id="followersSaveBtn" type="button">OK</button>
+            </div>
+            <small>База: <span id="followersBaseValue">0</span> + прирост: <span id="followersGrowthValue">0</span></small>
+          </div>
           <div class="actions">
             <span class="cloud-status" id="cloudStatus">Облако не настроено</span>
             <button class="btn" id="cloudToggleBtn" type="button">Облако</button>
@@ -1610,7 +1664,7 @@
                 <label>Дата / период
                   <input id="funnelDate" type="date" required>
                 </label>
-                <label>Подписчики
+                <label>Новые подписчики
                   <input id="funnelFollowers" type="number" min="0" step="1" value="0" required>
                 </label>
               </div>
@@ -1671,7 +1725,7 @@
                 <thead>
                   <tr>
                     <th>Дата</th>
-                    <th class="numeric">Подписчики</th>
+                    <th class="numeric">Новые подписчики</th>
                     <th class="numeric">Охват</th>
                     <th class="numeric">Reels</th>
                     <th class="numeric">Сообщения</th>
@@ -2135,6 +2189,7 @@
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
     const salesClientsStorageKey = "workspace-tables.sales.clients";
+    const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
@@ -2183,6 +2238,11 @@
     const cloudEmail = document.querySelector("#cloudEmail");
     const cloudPassword = document.querySelector("#cloudPassword");
     const cloudAuthStatus = document.querySelector("#cloudAuthStatus");
+    const accountFollowersTotal = document.querySelector("#accountFollowersTotal");
+    const followersBaseValue = document.querySelector("#followersBaseValue");
+    const followersGrowthValue = document.querySelector("#followersGrowthValue");
+    const followersEditor = document.querySelector("#followersEditor");
+    const followersBaseInput = document.querySelector("#followersBaseInput");
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
     const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
@@ -2310,6 +2370,7 @@
     let contentIdeas = loadContentIdeas();
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
+    let adsSettings = loadAdsSettings();
     let workspaceMembers = [];
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
@@ -2573,6 +2634,12 @@
       });
     });
     themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
+    document.querySelector("#followersEditBtn").addEventListener("click", () => {
+      followersBaseInput.value = adsSettings.followersBase || 0;
+      followersEditor.classList.toggle("hidden");
+      if (!followersEditor.classList.contains("hidden")) followersBaseInput.focus();
+    });
+    document.querySelector("#followersSaveBtn").addEventListener("click", saveFollowersBase);
     document.querySelector("#cloudToggleBtn").addEventListener("click", () => {
       cloudPanel.classList.toggle("hidden");
     });
@@ -2624,7 +2691,7 @@
     });
 
     document.querySelector("#funnelExportBtn").addEventListener("click", () => {
-      const header = ["Дата", "Подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"];
+      const header = ["Дата", "Новые подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"];
       const lines = [header, ...getVisibleFunnelRecords().map((record) => [
         record.date,
         record.followers,
@@ -2809,6 +2876,7 @@
     function render() {
       renderDashboard();
       renderInputHub();
+      renderFollowersSummary();
       renderFilters();
       renderSummary();
       renderRows();
@@ -3149,6 +3217,36 @@
         createdAt: client.createdAt || new Date().toISOString(),
         updatedAt: client.updatedAt || new Date().toISOString(),
       };
+    }
+
+    function loadAdsSettings() {
+      const saved = readStorage(adsSettingsStorageKey);
+      return normalizeAdsSettings(saved && !Array.isArray(saved) ? saved : {});
+    }
+
+    function saveAdsSettings() {
+      adsSettings = normalizeAdsSettings(adsSettings);
+      localStorage.setItem(adsSettingsStorageKey, JSON.stringify(adsSettings));
+      renderFollowersSummary();
+    }
+
+    function normalizeAdsSettings(settings) {
+      return {
+        id: "ads-followers",
+        followersBase: Number(settings.followersBase) || 0,
+        updatedAt: settings.updatedAt || "1970-01-01T00:00:00.000Z",
+      };
+    }
+
+    function adsSettingsCloudRecord() {
+      return normalizeAdsSettings({ ...adsSettings, id: "ads-followers" });
+    }
+
+    function saveFollowersBase() {
+      adsSettings.followersBase = Math.max(0, Number(followersBaseInput.value) || 0);
+      adsSettings.updatedAt = new Date().toISOString();
+      saveAdsSettings();
+      followersEditor.classList.add("hidden");
     }
 
     function normalizeSalesScript(script) {
@@ -3570,6 +3668,7 @@
       await pushRowsToCloud(contentIdeasCloudTable, contentIdeas, deletedContentIdeas, normalizeContentIdea);
       await pushRowsToCloud(salesClientsCloudTable, salesClients, deletedSalesClients, normalizeSalesClient);
       await pushRowsToCloud(salesSettingsCloudTable, [salesScriptCloudRecord()], {}, normalizeSalesScript);
+      await pushRowsToCloud(salesSettingsCloudTable, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
     }
 
     async function pushRowsToCloud(table, localRecords, deletedMap, normalizer) {
@@ -3614,7 +3713,8 @@
         const contentPlanRows = await cloudRequest(`${cloudEndpoint(contentPlanCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const contentIdeaRows = await cloudRequest(`${cloudEndpoint(contentIdeasCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const salesClientRows = await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
-        const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
+        const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.main&select=id,record,deleted_at,updated_at`);
+        const adsSettingsRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.ads-followers&select=id,record,deleted_at,updated_at`);
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
         funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
         contentPlanItems = mergeCloudRows(contentPlanRows, contentPlanItems, deletedContentPlan, normalizeContentPlanItem);
@@ -3622,6 +3722,8 @@
         salesClients = mergeCloudRows(salesClientRows, salesClients, deletedSalesClients, normalizeSalesClient);
         const mergedScripts = mergeCloudRows(salesScriptRows, [salesScriptCloudRecord()], {}, normalizeSalesScript);
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
+        const mergedAdsSettings = mergeCloudRows(adsSettingsRows, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
+        adsSettings = normalizeAdsSettings(mergedAdsSettings.find((item) => item.id === "ads-followers") || adsSettings);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         saveFunnelRecords();
@@ -3633,6 +3735,7 @@
         saveSalesClients();
         saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
         saveSalesScript({ touch: false });
+        saveAdsSettings();
         render();
         renderSales();
         renderSalesClients();
@@ -3730,7 +3833,6 @@
       const totalViews = sum(scoped, "views");
       const saves = sum(scoped, "saves");
       const messages = sum(scoped, "messages");
-      const latestFunnel = getLatestRecord(funnelScoped);
       const funnelReach = sum(funnelScoped, "reach");
       const funnelReels = sum(funnelScoped, "reelsViews");
       const funnelLeads = sum(funnelScoped, "leads");
@@ -3741,7 +3843,7 @@
       document.querySelector("#dashSaves").textContent = formatNumber(saves);
       document.querySelector("#dashMessages").textContent = formatNumber(messages);
       document.querySelector("#dashRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
-      document.querySelector("#dashFollowers").textContent = formatNumber(latestFunnel?.followers || 0);
+      document.querySelector("#dashFollowers").textContent = formatNumber(getAccountFollowersTotal());
       document.querySelector("#dashReach").textContent = formatNumber(funnelReach);
       document.querySelector("#dashReels").textContent = formatNumber(funnelReels);
       document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
@@ -3765,6 +3867,22 @@
       if (selected && sorted.some((record) => record.id === selected)) {
         quickMeasurementRecord.value = selected;
       }
+    }
+
+    function getFollowersGrowth() {
+      return sum(funnelRecords, "followers");
+    }
+
+    function getAccountFollowersTotal() {
+      return (Number(adsSettings.followersBase) || 0) + getFollowersGrowth();
+    }
+
+    function renderFollowersSummary() {
+      const base = Number(adsSettings.followersBase) || 0;
+      const growth = getFollowersGrowth();
+      accountFollowersTotal.textContent = formatNumber(base + growth);
+      followersBaseValue.textContent = formatNumber(base);
+      followersGrowthValue.textContent = formatNumber(growth);
     }
 
     function renderSummary() {
