@@ -662,6 +662,44 @@
       line-height: 1.4;
     }
 
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .input-card {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      min-height: 230px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .input-card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .input-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .input-card .hint-list {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
     .panel h3 {
       margin: 0 0 16px;
       font-size: 18px;
@@ -1137,6 +1175,7 @@
       .two,
       .cloud-grid,
       .cloud-auth,
+      .input-grid,
       .sales-layout,
       .lead-grid,
       .client-card,
@@ -1272,8 +1311,9 @@
 
         <div class="module-tabs" aria-label="Вид раздела рекламы">
           <button class="active" type="button" data-ads-mode="dashboard">Дашборд</button>
-          <button type="button" data-ads-mode="table">Контент</button>
-          <button type="button" data-ads-mode="funnel">Воронка</button>
+          <button type="button" data-ads-mode="input">Ввод данных</button>
+          <button type="button" data-ads-mode="table">Публикации</button>
+          <button type="button" data-ads-mode="funnel">Итоги дня</button>
         </div>
 
         <section id="adsDashboardView">
@@ -1351,10 +1391,52 @@
         </section>
       </section>
 
+      <section id="adsInputView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Ввод данных</h2>
+            <p>Выбери, что именно нужно внести: новую публикацию, свежий замер или итог дня.</p>
+          </div>
+        </div>
+
+        <section class="input-grid">
+          <article class="input-card">
+            <h3>Новая публикация</h3>
+            <p>Используй, когда пост, Reels, сторис или рекламный креатив только опубликован. Показатели могут быть нулевыми.</p>
+            <div class="hint-list">
+              <span>Дата, тип, тема</span>
+              <span>Первые цифры, если уже есть</span>
+              <span>Вывод или гипотеза</span>
+            </div>
+            <button class="btn primary" id="quickPublicationBtn" type="button">Добавить публикацию</button>
+          </article>
+
+          <article class="input-card">
+            <h3>Замер публикации</h3>
+            <p>Используй, когда публикация уже набрала просмотры, сохранения, сообщения или лиды.</p>
+            <label>Публикация
+              <select id="quickMeasurementRecord"></select>
+            </label>
+            <button class="btn primary" id="quickMeasurementBtn" type="button">Добавить замер</button>
+          </article>
+
+          <article class="input-card">
+            <h3>Итог дня</h3>
+            <p>Используй для общего результата за день или отчетный период: охват, лиды, КП, сделки, выручка и расходы.</p>
+            <div class="hint-list">
+              <span>Общие показатели рекламы</span>
+              <span>Продажи и выручка</span>
+              <span>Короткий вывод по дню</span>
+            </div>
+            <button class="btn primary" id="quickFunnelBtn" type="button">Добавить итог дня</button>
+          </article>
+        </section>
+      </section>
+
       <section id="adsTableView" class="hidden">
         <div class="topbar">
           <div class="title">
-            <h2>Реклама</h2>
+            <h2>Публикации</h2>
             <p>Контент, показатели и выводы по каждому размещению.</p>
           </div>
           <div class="actions">
@@ -1373,7 +1455,7 @@
 
         <section class="workspace">
           <aside class="panel form-panel">
-            <h3 id="formTitle">Новая запись</h3>
+            <h3 id="formTitle">Новая публикация</h3>
             <form id="entryForm">
               <input id="entryId" type="hidden">
               <div class="two">
@@ -1502,7 +1584,7 @@
       <section id="adsFunnelView" class="hidden">
         <div class="topbar">
           <div class="title">
-            <h2>Воронка</h2>
+            <h2>Итоги дня</h2>
             <p>Бизнес-показатели рекламы по дням или отчетным периодам.</p>
           </div>
           <div class="actions">
@@ -1521,7 +1603,7 @@
 
         <section class="workspace">
           <aside class="panel form-panel">
-            <h3 id="funnelFormTitle">Новая запись</h3>
+            <h3 id="funnelFormTitle">Новый итог дня</h3>
             <form id="funnelForm">
               <input id="funnelId" type="hidden">
               <div class="two">
@@ -2108,6 +2190,7 @@
     const measurementPanel = document.querySelector("#measurementPanel");
     const measurementTitle = document.querySelector("#measurementTitle");
     const measurementHistory = document.querySelector("#measurementHistory");
+    const quickMeasurementRecord = document.querySelector("#quickMeasurementRecord");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const contentFormTitle = document.querySelector("#contentFormTitle");
@@ -2122,6 +2205,7 @@
     };
     const adsModeViews = {
       dashboard: document.querySelector("#adsDashboardView"),
+      input: document.querySelector("#adsInputView"),
       table: document.querySelector("#adsTableView"),
       funnel: document.querySelector("#adsFunnelView"),
     };
@@ -2265,9 +2349,7 @@
 
     document.querySelectorAll("[data-ads-mode]").forEach((button) => {
       button.addEventListener("click", () => {
-        const mode = button.dataset.adsMode;
-        document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item === button));
-        Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+        setAdsMode(button.dataset.adsMode);
       });
     });
 
@@ -2444,6 +2526,24 @@
 
     cancelEditBtn.addEventListener("click", resetForm);
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
+    document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
+      setAdsMode("table");
+      resetForm();
+      fields.topic.focus();
+    });
+    document.querySelector("#quickMeasurementBtn").addEventListener("click", () => {
+      const recordId = quickMeasurementRecord.value;
+      if (!recordId) {
+        alert("Сначала добавьте публикацию, затем можно будет внести замер.");
+        return;
+      }
+      openMeasurementPanel(recordId);
+    });
+    document.querySelector("#quickFunnelBtn").addEventListener("click", () => {
+      setAdsMode("funnel");
+      resetFunnelForm();
+      funnelFields.followers.focus();
+    });
     contentCancelEditBtn.addEventListener("click", resetContentForm);
     document.querySelector("#contentQuickAddBtn").addEventListener("click", () => {
       document.querySelector('[data-content-mode="list"]').click();
@@ -2700,8 +2800,15 @@
       }
     });
 
+    function setAdsMode(mode) {
+      const nextMode = adsModeViews[mode] ? mode : "dashboard";
+      document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item.dataset.adsMode === nextMode));
+      Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+    }
+
     function render() {
       renderDashboard();
+      renderInputHub();
       renderFilters();
       renderSummary();
       renderRows();
@@ -3648,6 +3755,18 @@
       renderInsights(scoped, funnelScoped);
     }
 
+    function renderInputHub() {
+      const selected = quickMeasurementRecord.value;
+      const sorted = [...records].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      quickMeasurementRecord.innerHTML = sorted.length
+        ? sorted.map((record) => `<option value="${record.id}">${formatDate(record.date)} - ${escapeHtml(record.type)} - ${escapeHtml(record.topic || "Без темы")}</option>`).join("")
+        : '<option value="">Нет публикаций для замера</option>';
+
+      if (selected && sorted.some((record) => record.id === selected)) {
+        quickMeasurementRecord.value = selected;
+      }
+    }
+
     function renderSummary() {
       const visible = getVisibleRecords();
       const totalViews = sum(visible, "views");
@@ -4265,7 +4384,7 @@
       fields.views.value = 0;
       fields.saves.value = 0;
       fields.messages.value = 0;
-      formTitle.textContent = "Новая запись";
+      formTitle.textContent = "Новая публикация";
       cancelEditBtn.classList.add("hidden");
     }
 
@@ -4348,6 +4467,7 @@
       const record = records.find((item) => item.id === recordId);
       if (!record) return;
 
+      setAdsMode("table");
       const latest = getLatestMeasurement(record) || record;
       measurementPanel.classList.remove("hidden");
       measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
@@ -4413,7 +4533,7 @@
       funnelFields.deals.value = 0;
       funnelFields.revenue.value = 0;
       funnelFields.spend.value = 0;
-      funnelFormTitle.textContent = "Новая запись";
+      funnelFormTitle.textContent = "Новый итог дня";
       funnelCancelEditBtn.classList.add("hidden");
     }
 
