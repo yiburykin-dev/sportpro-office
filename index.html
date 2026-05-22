@@ -341,6 +341,30 @@
       gap: 10px;
     }
 
+    .cloud-auth {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(180px, .8fr) minmax(180px, .8fr) auto;
+      gap: 10px;
+      align-items: end;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .cloud-auth > div:first-child {
+      display: grid;
+      gap: 4px;
+      align-self: center;
+    }
+
+    .cloud-auth strong {
+      font-size: 14px;
+    }
+
+    .cloud-auth span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .cloud-status {
       display: inline-flex;
       align-items: center;
@@ -1112,6 +1136,7 @@
       .summary,
       .two,
       .cloud-grid,
+      .cloud-auth,
       .sales-layout,
       .lead-grid,
       .client-card,
@@ -1160,6 +1185,10 @@
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           Продажи
+        </button>
+        <button type="button" data-view="access" title="Доступ">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Zm7-5V6h-3V4h3V1h2v3h3v2h-3v3h-2Z"/></svg>
+          Доступ
         </button>
         <button type="button" data-view="future" title="Будущие таблицы">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v4h14V5H5Zm0 6v8h4v-8H5Zm6 0v8h8v-8h-8Z"/></svg>
@@ -1220,8 +1249,24 @@
               <input id="cloudWorkspace" type="text" placeholder="sportpro-main">
             </label>
           </div>
+          <div class="cloud-auth">
+            <div>
+              <strong>Вход для доступа к данным</strong>
+              <span id="cloudAuthStatus">Вход не выполнен</span>
+            </div>
+            <label>Email
+              <input id="cloudEmail" type="email" autocomplete="email" placeholder="manager@sportpro.kz">
+            </label>
+            <label>Пароль
+              <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Пароль Supabase">
+            </label>
+            <div class="actions">
+              <button class="btn primary" id="cloudLoginBtn" type="button">Войти</button>
+              <button class="btn" id="cloudLogoutBtn" type="button">Выйти</button>
+            </div>
+          </div>
           <div class="cloud-help">
-            Для руководителя можно настроить доступ к этой же базе и открыть ему этот файл программы. В этой первой версии доступ общий для тех, у кого есть настройки облака.
+            Данные открываются только после входа. Руководителю или менеджеру нужно создать пользователя в Supabase и добавить его в рабочее пространство.
           </div>
         </section>
 
@@ -1916,6 +1961,60 @@
         </section>
       </section>
 
+      <section id="accessView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Доступ</h2>
+            <p>Пользователи, которые могут входить в облако и работать с общими данными SPORTPRO Office.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="membersRefreshBtn" type="button">Обновить список</button>
+          </div>
+        </div>
+
+        <section class="workspace">
+          <aside class="panel form-panel">
+            <h3>Добавить пользователя</h3>
+            <p class="sales-goal">Сначала пользователь должен быть создан в Supabase Authentication. После этого владелец добавляет его сюда по email.</p>
+            <form id="memberForm">
+              <label>Email
+                <input id="memberEmail" type="email" autocomplete="email" placeholder="manager@sportpro.kz" required>
+              </label>
+              <label>Роль
+                <select id="memberRole">
+                  <option value="member">Менеджер</option>
+                  <option value="owner">Владелец</option>
+                </select>
+              </label>
+              <button class="btn primary" type="submit">Добавить доступ</button>
+            </form>
+            <div class="cloud-help" id="memberStatus">Для управления доступом нужно войти в облако как владелец.</div>
+          </aside>
+
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Пользователи</h3>
+                <p class="sales-goal">Список доступен владельцу рабочего пространства.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Добавлен</th>
+                  </tr>
+                </thead>
+                <tbody id="membersRows"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="membersEmpty">Пользователи пока не загружены.</div>
+          </section>
+        </section>
+      </section>
+
       <section id="futureView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -1954,6 +2053,7 @@
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
     const salesClientsStorageKey = "workspace-tables.sales.clients";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
+    const cloudSessionKey = "workspace-tables.cloud.session";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
     const deletedContentPlanKey = "workspace-tables.contentPlan.deleted";
@@ -1997,6 +2097,9 @@
     const cloudUrl = document.querySelector("#cloudUrl");
     const cloudKey = document.querySelector("#cloudKey");
     const cloudWorkspace = document.querySelector("#cloudWorkspace");
+    const cloudEmail = document.querySelector("#cloudEmail");
+    const cloudPassword = document.querySelector("#cloudPassword");
+    const cloudAuthStatus = document.querySelector("#cloudAuthStatus");
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
     const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
@@ -2013,6 +2116,7 @@
       ads: document.querySelector("#adsView"),
       contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
+      access: document.querySelector("#accessView"),
       future: document.querySelector("#futureView"),
     };
     const adsModeViews = {
@@ -2045,6 +2149,12 @@
     const objectionFollowup = document.querySelector("#objectionFollowup");
     const salesClientsList = document.querySelector("#salesClientsList");
     const salesClientsEmpty = document.querySelector("#salesClientsEmpty");
+    const memberForm = document.querySelector("#memberForm");
+    const memberEmail = document.querySelector("#memberEmail");
+    const memberRole = document.querySelector("#memberRole");
+    const memberStatus = document.querySelector("#memberStatus");
+    const membersRows = document.querySelector("#membersRows");
+    const membersEmpty = document.querySelector("#membersEmpty");
 
     const fields = {
       id: document.querySelector("#entryId"),
@@ -2115,6 +2225,7 @@
     let contentIdeas = loadContentIdeas();
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
+    let workspaceMembers = [];
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
     let activeDashboardMetric = "views";
@@ -2126,9 +2237,11 @@
     let deletedContentIdeas = loadDeletedRecords(deletedContentIdeasKey);
     let deletedSalesClients = loadDeletedRecords(deletedSalesClientsKey);
     let cloudConfig = loadCloudConfig();
+    let cloudSession = loadCloudSession();
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
     applyCloudConfig();
+    updateCloudAuthStatus();
     fields.date.valueAsDate = new Date();
     contentFields.date.valueAsDate = new Date();
     contentFields.prepDeadline.valueAsDate = new Date();
@@ -2138,6 +2251,7 @@
     renderContentPlan();
     renderSales();
     renderSalesClients();
+    renderWorkspaceMembers();
     loadLeadDraft();
 
     document.querySelectorAll("[data-view]").forEach((button) => {
@@ -2363,8 +2477,12 @@
     });
     document.querySelector("#cloudSaveBtn").addEventListener("click", saveCloudConfig);
     document.querySelector("#cloudTestBtn").addEventListener("click", testCloudConnection);
+    document.querySelector("#cloudLoginBtn").addEventListener("click", loginCloud);
+    document.querySelector("#cloudLogoutBtn").addEventListener("click", logoutCloud);
     document.querySelector("#cloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
+    document.querySelector("#membersRefreshBtn").addEventListener("click", () => loadWorkspaceMembers());
+    memberForm.addEventListener("submit", addWorkspaceMember);
     document.querySelector("#salesCopyBtn").addEventListener("click", () => copyText(salesStageText.value));
     document.querySelector("#salesSaveStageBtn").addEventListener("click", saveActiveSalesStage);
     document.querySelector("#objectionCopyBtn").addEventListener("click", () => copyText(`${objectionText.value}\n\n${objectionFollowup.value}`.trim()));
@@ -3017,20 +3135,39 @@
       };
     }
 
+    function loadCloudSession() {
+      const saved = readStorage(cloudSessionKey);
+      if (!saved || Array.isArray(saved) || typeof saved !== "object") {
+        return { accessToken: "", refreshToken: "", expiresAt: 0, email: "" };
+      }
+      return {
+        accessToken: saved.accessToken || "",
+        refreshToken: saved.refreshToken || "",
+        expiresAt: Number(saved.expiresAt) || 0,
+        email: saved.email || "",
+      };
+    }
+
     function applyCloudConfig() {
       cloudUrl.value = cloudConfig.url;
       cloudKey.value = cloudConfig.key;
       cloudWorkspace.value = cloudConfig.workspace;
-      updateCloudStatus(isCloudReady() ? "Облако настроено" : "Облако не настроено");
+      updateCloudStatus(isCloudConfigured() ? "Облако настроено" : "Облако не настроено");
+      updateCloudAuthStatus();
     }
 
     function saveCloudConfig() {
+      const previousUrl = cloudConfig.url;
+      const previousKey = cloudConfig.key;
       cloudConfig = {
         url: normalizeCloudUrl(cloudUrl.value),
         key: cloudKey.value.trim(),
         workspace: cloudWorkspace.value.trim() || "sportpro-main",
       };
       localStorage.setItem(cloudConfigKey, JSON.stringify(cloudConfig));
+      if (previousUrl !== cloudConfig.url || previousKey !== cloudConfig.key) {
+        clearCloudSession();
+      }
       applyCloudConfig();
       updateCloudStatus("Настройки сохранены");
     }
@@ -3039,18 +3176,186 @@
       return value.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
     }
 
-    function isCloudReady() {
+    function isCloudConfigured() {
       return Boolean(cloudConfig.url && cloudConfig.key && cloudConfig.workspace);
+    }
+
+    function isCloudReady() {
+      return Boolean(isCloudConfigured() && cloudSession.accessToken);
+    }
+
+    function cloudReadyMessage() {
+      return isCloudConfigured() ? "Войдите в облако" : "Заполни настройки облака";
     }
 
     function updateCloudStatus(text) {
       cloudStatus.textContent = text;
     }
 
+    function updateCloudAuthStatus() {
+      if (!cloudAuthStatus) return;
+      if (cloudSession.accessToken) {
+        cloudAuthStatus.textContent = `Вход выполнен: ${cloudSession.email || "пользователь Supabase"}`;
+      } else {
+        cloudAuthStatus.textContent = "Вход не выполнен";
+      }
+    }
+
+    function saveCloudSession(session) {
+      cloudSession = session;
+      localStorage.setItem(cloudSessionKey, JSON.stringify(cloudSession));
+      updateCloudAuthStatus();
+    }
+
+    function clearCloudSession() {
+      cloudSession = { accessToken: "", refreshToken: "", expiresAt: 0, email: "" };
+      localStorage.removeItem(cloudSessionKey);
+      updateCloudAuthStatus();
+    }
+
+    async function loginCloud() {
+      saveCloudConfig();
+      if (!isCloudConfigured()) {
+        cloudPanel.classList.remove("hidden");
+        updateCloudStatus("Заполни настройки облака");
+        return;
+      }
+
+      const email = cloudEmail.value.trim();
+      const password = cloudPassword.value;
+      if (!email || !password) {
+        updateCloudStatus("Укажи email и пароль");
+        return;
+      }
+
+      try {
+        updateCloudStatus("Выполняется вход...");
+        const session = await authRequest("token?grant_type=password", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        saveCloudSession({
+          accessToken: session.access_token || "",
+          refreshToken: session.refresh_token || "",
+          expiresAt: Date.now() + (Number(session.expires_in) || 3600) * 1000,
+          email: session.user?.email || email,
+        });
+        cloudPassword.value = "";
+        updateCloudStatus("Вход выполнен");
+        await loadWorkspaceMembers({ silent: true });
+      } catch (error) {
+        clearCloudSession();
+        updateCloudStatus("Вход не выполнен");
+        alert(`Не удалось войти: ${error.message}`);
+      }
+    }
+
+    async function logoutCloud() {
+      try {
+        if (cloudSession.accessToken && isCloudConfigured()) {
+          await authRequest("logout", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${cloudSession.accessToken}` },
+          });
+        }
+      } catch {
+        // Local logout still matters even if the remote session is already expired.
+      }
+      clearCloudSession();
+      updateCloudStatus("Вы вышли из облака");
+    }
+
+    async function ensureCloudSession() {
+      if (!cloudSession.accessToken) {
+        throw new Error("Войдите в облако по email и паролю");
+      }
+      if (cloudSession.refreshToken && cloudSession.expiresAt && Date.now() > cloudSession.expiresAt - 60000) {
+        const refreshed = await authRequest("token?grant_type=refresh_token", {
+          method: "POST",
+          body: JSON.stringify({ refresh_token: cloudSession.refreshToken }),
+        });
+        saveCloudSession({
+          accessToken: refreshed.access_token || "",
+          refreshToken: refreshed.refresh_token || cloudSession.refreshToken,
+          expiresAt: Date.now() + (Number(refreshed.expires_in) || 3600) * 1000,
+          email: refreshed.user?.email || cloudSession.email,
+        });
+      }
+      return cloudSession.accessToken;
+    }
+
+    function renderWorkspaceMembers() {
+      membersRows.innerHTML = "";
+      workspaceMembers.forEach((member) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(member.email || "Без email")}</td>
+          <td>${member.role === "owner" ? "Владелец" : "Менеджер"}</td>
+          <td>${member.created_at ? formatDate(member.created_at.slice(0, 10)) : "—"}</td>
+        `;
+        membersRows.appendChild(tr);
+      });
+      membersEmpty.classList.toggle("hidden", workspaceMembers.length > 0);
+    }
+
+    async function loadWorkspaceMembers(options = {}) {
+      if (!isCloudReady()) {
+        if (!options.silent) {
+          cloudPanel.classList.remove("hidden");
+          memberStatus.textContent = cloudReadyMessage();
+        }
+        renderWorkspaceMembers();
+        return;
+      }
+
+      try {
+        if (!options.silent) memberStatus.textContent = "Загрузка пользователей...";
+        workspaceMembers = await cloudRpc("sportpro_list_workspace_members", {
+          workspace_id_input: cloudConfig.workspace,
+        }) || [];
+        renderWorkspaceMembers();
+        memberStatus.textContent = workspaceMembers.length ? "Список пользователей загружен." : "Пользователи не найдены.";
+      } catch (error) {
+        workspaceMembers = [];
+        renderWorkspaceMembers();
+        memberStatus.textContent = "Список доступен только владельцу рабочего пространства.";
+        if (!options.silent) alert(`Не удалось загрузить пользователей: ${error.message}`);
+      }
+    }
+
+    async function addWorkspaceMember(event) {
+      event.preventDefault();
+      saveCloudConfig();
+      if (!isCloudReady()) {
+        cloudPanel.classList.remove("hidden");
+        memberStatus.textContent = cloudReadyMessage();
+        return;
+      }
+
+      const email = memberEmail.value.trim();
+      const role = memberRole.value;
+      if (!email) return;
+
+      try {
+        memberStatus.textContent = "Добавляем пользователя...";
+        await cloudRpc("sportpro_add_workspace_member", {
+          workspace_id_input: cloudConfig.workspace,
+          email_input: email,
+          role_input: role,
+        });
+        memberEmail.value = "";
+        await loadWorkspaceMembers({ silent: true });
+        memberStatus.textContent = "Пользователь добавлен в рабочее пространство.";
+      } catch (error) {
+        memberStatus.textContent = "Не удалось добавить пользователя.";
+        alert(`Не удалось добавить пользователя: ${error.message}`);
+      }
+    }
+
     async function syncWithCloud() {
       if (!isCloudReady()) {
         cloudPanel.classList.remove("hidden");
-        updateCloudStatus("Заполни настройки облака");
+        updateCloudStatus(cloudReadyMessage());
         return;
       }
 
@@ -3070,7 +3375,7 @@
       saveCloudConfig();
       if (!isCloudReady()) {
         cloudPanel.classList.remove("hidden");
-        updateCloudStatus("Заполни настройки облака");
+        updateCloudStatus(cloudReadyMessage());
         return;
       }
 
@@ -3129,7 +3434,7 @@
     async function pullFromCloud(options = {}) {
       if (!isCloudReady()) {
         cloudPanel.classList.remove("hidden");
-        updateCloudStatus("Заполни настройки облака");
+        updateCloudStatus(cloudReadyMessage());
         return;
       }
 
@@ -3198,11 +3503,39 @@
     }
 
     async function cloudRequest(url, options = {}) {
+      const accessToken = await ensureCloudSession();
       const response = await fetch(url, {
         ...options,
         headers: {
           apikey: cloudConfig.key,
-          Authorization: `Bearer ${cloudConfig.key}`,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `${response.status} ${response.statusText}`);
+      }
+
+      if (response.status === 204) return null;
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function cloudRpc(name, body) {
+      return cloudRequest(`${cloudConfig.url}/rest/v1/rpc/${name}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function authRequest(path, options = {}) {
+      const response = await fetch(`${cloudConfig.url}/auth/v1/${path}`, {
+        ...options,
+        headers: {
+          apikey: cloudConfig.key,
           "Content-Type": "application/json",
           ...(options.headers || {}),
         },
