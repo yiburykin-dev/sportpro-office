@@ -2005,6 +2005,7 @@
                     <th>Email</th>
                     <th>Роль</th>
                     <th>Добавлен</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody id="membersRows"></tbody>
@@ -2483,6 +2484,8 @@
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
     document.querySelector("#membersRefreshBtn").addEventListener("click", () => loadWorkspaceMembers());
     memberForm.addEventListener("submit", addWorkspaceMember);
+    membersRows.addEventListener("change", handleWorkspaceMemberChange);
+    membersRows.addEventListener("click", handleWorkspaceMemberAction);
     document.querySelector("#salesCopyBtn").addEventListener("click", () => copyText(salesStageText.value));
     document.querySelector("#salesSaveStageBtn").addEventListener("click", saveActiveSalesStage);
     document.querySelector("#objectionCopyBtn").addEventListener("click", () => copyText(`${objectionText.value}\n\n${objectionFollowup.value}`.trim()));
@@ -3288,10 +3291,20 @@
       membersRows.innerHTML = "";
       workspaceMembers.forEach((member) => {
         const tr = document.createElement("tr");
+        const email = escapeHtml(member.email || "");
+        const isOwner = member.role === "owner";
         tr.innerHTML = `
-          <td>${escapeHtml(member.email || "Без email")}</td>
-          <td>${member.role === "owner" ? "Владелец" : "Менеджер"}</td>
+          <td>${email || "Без email"}</td>
+          <td>
+            <select data-member-action="role" data-member-email="${email}">
+              <option value="member"${isOwner ? "" : " selected"}>Менеджер</option>
+              <option value="owner"${isOwner ? " selected" : ""}>Владелец</option>
+            </select>
+          </td>
           <td>${member.created_at ? formatDate(member.created_at.slice(0, 10)) : "—"}</td>
+          <td>
+            <button class="btn" type="button" data-member-action="delete" data-member-email="${email}">Удалить</button>
+          </td>
         `;
         membersRows.appendChild(tr);
       });
@@ -3349,6 +3362,55 @@
       } catch (error) {
         memberStatus.textContent = "Не удалось добавить пользователя.";
         alert(`Не удалось добавить пользователя: ${error.message}`);
+      }
+    }
+
+    async function handleWorkspaceMemberChange(event) {
+      const select = event.target.closest("[data-member-action='role']");
+      if (!select) return;
+      await updateWorkspaceMemberRole(select.dataset.memberEmail, select.value);
+    }
+
+    async function handleWorkspaceMemberAction(event) {
+      const button = event.target.closest("button[data-member-action='delete']");
+      if (!button) return;
+      await removeWorkspaceMember(button.dataset.memberEmail);
+    }
+
+    async function updateWorkspaceMemberRole(email, role) {
+      if (!email || !isCloudReady()) return;
+
+      try {
+        memberStatus.textContent = "Обновляем роль...";
+        await cloudRpc("sportpro_add_workspace_member", {
+          workspace_id_input: cloudConfig.workspace,
+          email_input: email,
+          role_input: role,
+        });
+        await loadWorkspaceMembers({ silent: true });
+        memberStatus.textContent = "Роль пользователя обновлена.";
+      } catch (error) {
+        memberStatus.textContent = "Не удалось обновить роль.";
+        alert(`Не удалось обновить роль: ${error.message}`);
+        await loadWorkspaceMembers({ silent: true });
+      }
+    }
+
+    async function removeWorkspaceMember(email) {
+      if (!email || !isCloudReady()) return;
+      if (!confirm(`Удалить доступ для ${email}?`)) return;
+
+      try {
+        memberStatus.textContent = "Удаляем доступ...";
+        await cloudRpc("sportpro_remove_workspace_member", {
+          workspace_id_input: cloudConfig.workspace,
+          email_input: email,
+        });
+        await loadWorkspaceMembers({ silent: true });
+        memberStatus.textContent = "Доступ пользователя удален.";
+      } catch (error) {
+        memberStatus.textContent = "Не удалось удалить доступ.";
+        alert(`Не удалось удалить доступ: ${error.message}`);
       }
     }
 
