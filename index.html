@@ -897,6 +897,123 @@
       line-height: 1.45;
     }
 
+    .guide-layout {
+      display: grid;
+      grid-template-columns: minmax(240px, .8fr) minmax(0, 1.6fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .guide-stack,
+    .guide-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .guide-grid {
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+
+    .guide-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .guide-card h3,
+    .guide-card h4 {
+      margin: 0 0 10px;
+      letter-spacing: 0;
+    }
+
+    .guide-card h3 {
+      font-size: 18px;
+    }
+
+    .guide-card h4 {
+      font-size: 15px;
+    }
+
+    .guide-card p,
+    .guide-card li {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .guide-card p {
+      margin: 0;
+    }
+
+    .guide-card ul,
+    .guide-card ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .guide-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .guide-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .guide-flow {
+      counter-reset: guide-step;
+      display: grid;
+      gap: 10px;
+    }
+
+    .guide-step {
+      counter-increment: guide-step;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .guide-step::before {
+      content: counter(guide-step);
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .guide-step strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .guide-step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .sales-layout {
       display: grid;
       grid-template-columns: 240px minmax(0, 1fr) 320px;
@@ -1334,6 +1451,8 @@
       .input-grid,
       .content-type-summary,
       .calendar-grid.year,
+      .guide-layout,
+      .guide-grid,
       .sales-layout,
       .lead-grid,
       .client-card,
@@ -1382,6 +1501,10 @@
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           Продажи
+        </button>
+        <button type="button" data-view="guide" title="Гайд">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
+          Гайд
         </button>
         <button type="button" data-view="access" title="Доступ">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Zm7-5V6h-3V4h3V1h2v3h3v2h-3v3h-2Z"/></svg>
@@ -2219,6 +2342,161 @@
         </section>
       </section>
 
+      <section id="guideView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Гайд</h2>
+            <p>Шпаргалка для менеджеров: как вести программу каждый день, что заполнять и как читать данные.</p>
+          </div>
+        </div>
+
+        <div class="guide-layout">
+          <aside class="guide-stack">
+            <section class="guide-card">
+              <h3>Главный принцип</h3>
+              <p>Программа ведется не ради заполнения таблиц, а ради решений: что публиковать, что усиливать, где есть лиды, какие темы приводят к заявкам и продажам.</p>
+              <div class="guide-tags">
+                <span class="guide-tag">План</span>
+                <span class="guide-tag">Публикация</span>
+                <span class="guide-tag">Замер</span>
+                <span class="guide-tag">Итог дня</span>
+                <span class="guide-tag">Вывод</span>
+              </div>
+            </section>
+
+            <section class="guide-card">
+              <h3>Быстрый маршрут</h3>
+              <div class="guide-flow">
+                <div class="guide-step">
+                  <div>
+                    <strong>Запланировать</strong>
+                    <span>Создай публикации в Контент-плане: дата, время, тип, рубрика, тема, статус.</span>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div>
+                    <strong>Опубликовать</strong>
+                    <span>После выхода материала перенеси его в Рекламу или создай запись публикации.</span>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div>
+                    <strong>Снимать показатели</strong>
+                    <span>Добавляй замеры просмотров, сохранений, сообщений, лидов и сделок по мере роста данных.</span>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div>
+                    <strong>Подвести итог</strong>
+                    <span>В конце дня заполни Итоги дня: подписчики, охват, сообщения, лиды, КП, сделки, выручка.</span>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div>
+                    <strong>Сделать вывод</strong>
+                    <span>На неделе смотри дашборд и решай, какие темы, типы и рубрики повторять.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+
+          <section class="guide-stack">
+            <div class="guide-grid">
+              <section class="guide-card">
+                <h3>После одного дня</h3>
+                <ul>
+                  <li>Проверь, какие публикации вышли сегодня.</li>
+                  <li>Добавь первый замер, если уже есть просмотры или реакции.</li>
+                  <li>Заполни Итоги дня: новые подписчики, охват, сообщения, лиды, КП, сделки, выручка.</li>
+                  <li>Если были обращения клиентов, занеси их в Продажи → Клиенты.</li>
+                  <li>Коротко запиши вывод: что сработало, что нужно проверить завтра.</li>
+                </ul>
+              </section>
+
+              <section class="guide-card">
+                <h3>После недели</h3>
+                <ul>
+                  <li>Открой Реклама → Дашборд и выбери период недели.</li>
+                  <li>Сравни типы контента: Reels, посты, сторис, статьи, рекламные креативы.</li>
+                  <li>Посмотри, какие темы дали сообщения, лиды и сделки, а не только просмотры.</li>
+                  <li>Обнови Контент-план на следующую неделю с учетом сильных рубрик.</li>
+                  <li>Проверь клиентов в Продажах: у кого есть следующий шаг и дата касания.</li>
+                </ul>
+              </section>
+
+              <section class="guide-card">
+                <h3>Контент-план</h3>
+                <p>Используется до публикации. Здесь планируется будущий контент: что, когда и зачем должно выйти.</p>
+                <ul>
+                  <li>Обязательно: дата, тип, рубрика, тема, статус.</li>
+                  <li>Желательно: площадка, ответственный, срок подготовки, ссылка, комментарий.</li>
+                  <li>Статус помогает понять, что еще идея, что в работе, а что уже опубликовано.</li>
+                  <li>Календарь нужен для планирования недели, месяца и года без провалов по рубрикам.</li>
+                </ul>
+              </section>
+
+              <section class="guide-card">
+                <h3>Реклама</h3>
+                <p>Используется после публикации и для учета результата. Здесь фиксируется факт выхода материала и его показатели.</p>
+                <ul>
+                  <li>Публикация: дата, тип, тема и первичный вывод.</li>
+                  <li>Замер: просмотры, сохранения, сообщения, лиды, сделки по конкретной публикации.</li>
+                  <li>Итоги дня: общие дневные показатели аккаунта и продажной воронки.</li>
+                  <li>Дашборд показывает, какие материалы реально дают отклик и продажи.</li>
+                </ul>
+              </section>
+
+              <section class="guide-card">
+                <h3>Продажи</h3>
+                <p>Раздел нужен менеджеру во время общения с клиентом и после контакта.</p>
+                <ul>
+                  <li>Скрипт: готовые фразы по этапам разговора.</li>
+                  <li>Возражения: быстрые ответы на “дорого”, “подумаю”, “нашел дешевле”, “нет бюджета”.</li>
+                  <li>Клиенты: контакт, источник, этап, бюджет, следующий шаг, дата касания.</li>
+                  <li>Анкета: площадь, формат клуба, сроки, помещение, бюджет, комментарии.</li>
+                </ul>
+              </section>
+
+              <section class="guide-card">
+                <h3>Как читать данные</h3>
+                <ul>
+                  <li>Просмотры показывают интерес, но не всегда качество.</li>
+                  <li>Сохранения показывают полезность темы.</li>
+                  <li>Сообщения показывают реальный спрос.</li>
+                  <li>Лиды, КП, сделки и выручка важнее красивых охватов.</li>
+                  <li>Если тема дает заявки, ее нужно повторять в разных форматах.</li>
+                </ul>
+              </section>
+            </div>
+
+            <section class="guide-card">
+              <h3>Мини-стандарт заполнения</h3>
+              <div class="guide-grid">
+                <div>
+                  <h4>Обязательно каждый день</h4>
+                  <ol>
+                    <li>Проверить, что опубликовано.</li>
+                    <li>Добавить свежие замеры по опубликованным материалам.</li>
+                    <li>Заполнить Итоги дня.</li>
+                    <li>Добавить новых клиентов и следующий шаг в Продажи.</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4>Обязательно каждую неделю</h4>
+                  <ol>
+                    <li>Посмотреть дашборд за неделю.</li>
+                    <li>Выбрать 3 сильные темы и 3 слабые темы.</li>
+                    <li>Обновить контент-план на следующую неделю.</li>
+                    <li>Проверить, что у каждого активного клиента есть следующий шаг.</li>
+                  </ol>
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+      </section>
+
       <section id="accessView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -2384,6 +2662,7 @@
       ads: document.querySelector("#adsView"),
       contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
+      guide: document.querySelector("#guideView"),
       access: document.querySelector("#accessView"),
       future: document.querySelector("#futureView"),
     };
