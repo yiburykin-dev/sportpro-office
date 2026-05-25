@@ -1055,12 +1055,57 @@
       gap: 10px;
     }
 
+    .calendar-grid.year {
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+    }
+
     .calendar-day {
       min-height: 138px;
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--surface-2);
+    }
+
+    .calendar-month-card {
+      min-height: 180px;
+    }
+
+    .calendar-month-card .calendar-date span:first-child {
+      font-size: 16px;
+    }
+
+    .content-type-summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(110px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .content-type-header {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .content-type-metric {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .content-type-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .content-type-metric strong {
+      font-size: 22px;
     }
 
     .calendar-day.today {
@@ -1216,6 +1261,8 @@
       .cloud-grid,
       .cloud-auth,
       .input-grid,
+      .content-type-summary,
+      .calendar-grid.year,
       .sales-layout,
       .lead-grid,
       .client-card,
@@ -1778,8 +1825,12 @@
               <div class="module-tabs" aria-label="Масштаб календаря">
                 <button class="active" type="button" data-calendar-mode="week">Неделя</button>
                 <button type="button" data-calendar-mode="month">Месяц</button>
+                <button type="button" data-calendar-mode="year">Год</button>
               </div>
+              <select id="calendarMonthSelect" aria-label="Выбор месяца"></select>
             </div>
+            <div class="content-type-header">Типы за выбранный период</div>
+            <div class="content-type-summary" id="contentTypeSummary"></div>
             <div class="calendar-grid" id="contentCalendarGrid"></div>
             <div class="empty hidden" id="contentCalendarEmpty">На выбранный период публикаций пока нет.</div>
           </section>
@@ -2218,6 +2269,8 @@
     const contentCalendarGrid = document.querySelector("#contentCalendarGrid");
     const contentCalendarEmpty = document.querySelector("#contentCalendarEmpty");
     const calendarTitle = document.querySelector("#calendarTitle");
+    const calendarMonthSelect = document.querySelector("#calendarMonthSelect");
+    const contentTypeSummary = document.querySelector("#contentTypeSummary");
     const contentRubricsGrid = document.querySelector("#contentRubricsGrid");
     const funnelEmptyState = document.querySelector("#funnelEmptyState");
     const typeFilter = document.querySelector("#typeFilter");
@@ -2392,6 +2445,7 @@
     contentFields.date.valueAsDate = new Date();
     contentFields.prepDeadline.valueAsDate = new Date();
     funnelFields.date.valueAsDate = new Date();
+    renderCalendarMonthSelect();
     renderContentRubricOptions();
     render();
     renderContentPlan();
@@ -2426,8 +2480,20 @@
       button.addEventListener("click", () => {
         activeCalendarMode = button.dataset.calendarMode;
         document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item === button));
+        if (activeCalendarMode === "year") {
+          calendarCursor = new Date(new Date().getFullYear(), 0, 1);
+        }
         renderContentCalendar();
       });
+    });
+
+    calendarMonthSelect.addEventListener("change", () => {
+      const selectedMonth = Number(calendarMonthSelect.value);
+      const year = new Date().getFullYear();
+      calendarCursor = new Date(year, selectedMonth, 1);
+      activeCalendarMode = "month";
+      document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item.dataset.calendarMode === "month"));
+      renderContentCalendar();
     });
 
     document.querySelectorAll("[data-sales-mode]").forEach((button) => {
@@ -3984,6 +4050,12 @@
     }
 
     function renderContentCalendar() {
+      renderCalendarMonthSelect();
+      if (activeCalendarMode === "year") {
+        renderContentYearCalendar();
+        return;
+      }
+
       const days = getCalendarDays();
       const itemsByDate = groupBy(contentPlanItems, "date");
       calendarTitle.textContent = activeCalendarMode === "week"
@@ -3993,6 +4065,11 @@
       const todayKey = formatIsoDate(new Date());
       const hasItems = days.some((date) => (itemsByDate[formatIsoDate(date)] || []).length);
       contentCalendarEmpty.classList.toggle("hidden", hasItems);
+      contentCalendarGrid.classList.remove("year");
+      const summaryItems = activeCalendarMode === "month"
+        ? getContentItemsForMonth(calendarCursor)
+        : getContentItemsForDates(days);
+      renderContentTypeSummary(summaryItems);
       contentCalendarGrid.innerHTML = days.map((date) => {
         const key = formatIsoDate(date);
         const items = (itemsByDate[key] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
@@ -4008,6 +4085,75 @@
           </div>
         `;
       }).join("");
+    }
+
+    function renderContentYearCalendar() {
+      const year = new Date().getFullYear();
+      const today = new Date();
+      const items = contentPlanItems.filter((item) => item.date && new Date(`${item.date}T00:00:00`).getFullYear() === year);
+      const itemsByMonth = items.reduce((groups, item) => {
+        const month = String(new Date(`${item.date}T00:00:00`).getMonth());
+        groups[month] = groups[month] || [];
+        groups[month].push(item);
+        return groups;
+      }, {});
+      calendarTitle.textContent = `Год ${year}`;
+      contentCalendarEmpty.classList.toggle("hidden", items.length > 0);
+      contentCalendarGrid.classList.add("year");
+      renderContentTypeSummary(items);
+      contentCalendarGrid.innerHTML = Array.from({ length: 12 }, (_, month) => {
+        const monthItems = (itemsByMonth[String(month)] || []).sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
+        const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(year, month, 1));
+        const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+        return `
+          <div class="calendar-day calendar-month-card ${isCurrentMonth ? "today" : ""}">
+            <div class="calendar-date">
+              <span>${escapeHtml(monthName)}</span>
+              <span>${monthItems.length} публ.</span>
+            </div>
+            <div class="calendar-items">
+              ${monthItems.slice(0, 6).map((item) => contentCalendarCard(item)).join("")}
+              ${monthItems.length > 6 ? `<span class="status-pill">Еще ${monthItems.length - 6}</span>` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderCalendarMonthSelect() {
+      const currentMonth = calendarCursor.getMonth();
+      const year = new Date().getFullYear();
+      calendarMonthSelect.innerHTML = Array.from({ length: 12 }, (_, month) => {
+        const label = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(year, month, 1));
+        return `<option value="${month}">${label}</option>`;
+      }).join("");
+      calendarMonthSelect.value = String(currentMonth);
+    }
+
+    function getContentItemsForDates(days) {
+      const keys = new Set(days.map((date) => formatIsoDate(date)));
+      return contentPlanItems.filter((item) => keys.has(item.date));
+    }
+
+    function getContentItemsForMonth(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      return contentPlanItems.filter((item) => {
+        if (!item.date) return false;
+        const itemDate = new Date(`${item.date}T00:00:00`);
+        return itemDate.getFullYear() === year && itemDate.getMonth() === month;
+      });
+    }
+
+    function renderContentTypeSummary(items) {
+      const types = ["Reels", "Пост", "Сторис", "Статья", "Рекламный креатив", "Другое"];
+      const counts = groupBy(items, "type");
+      contentTypeSummary.innerHTML = types.map((type) => `
+        <div class="content-type-metric">
+          <span>${escapeHtml(type)}</span>
+          <strong>${formatNumber((counts[type] || []).length)}</strong>
+        </div>
+      `).join("");
     }
 
     function contentCalendarCard(item) {
@@ -4122,6 +4268,9 @@
     }
 
     function moveCalendar(direction) {
+      if (activeCalendarMode === "year") {
+        return;
+      }
       const next = new Date(calendarCursor);
       if (activeCalendarMode === "month") {
         next.setMonth(next.getMonth() + direction);
