@@ -1068,11 +1068,82 @@
     }
 
     .calendar-month-card {
-      min-height: 180px;
+      min-height: 0;
+      height: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
     }
 
     .calendar-month-card .calendar-date span:first-child {
       font-size: 16px;
+    }
+
+    .calendar-month-card:hover {
+      border-color: var(--accent);
+    }
+
+    .year-weekdays,
+    .year-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .year-weekdays span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .year-days-grid {
+      flex: 1;
+      grid-template-rows: repeat(6, minmax(0, 1fr));
+    }
+
+    .year-day {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .year-day.outside {
+      opacity: 0;
+    }
+
+    .year-day.has-items {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .year-day.today {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .year-day b {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-size: 9px;
+      line-height: 1;
     }
 
     .content-type-summary {
@@ -2869,6 +2940,16 @@
     });
 
     contentCalendarGrid.addEventListener("click", (event) => {
+      const monthCard = event.target.closest("[data-calendar-month]");
+      if (monthCard) {
+        const year = new Date().getFullYear();
+        calendarCursor = new Date(year, Number(monthCard.dataset.calendarMonth), 1);
+        activeCalendarMode = "month";
+        document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item.dataset.calendarMode === "month"));
+        renderContentCalendar();
+        return;
+      }
+
       const card = event.target.closest("[data-content-id]");
       if (!card) return;
       const item = contentPlanItems.find((record) => record.id === card.dataset.contentId);
@@ -4097,6 +4178,7 @@
         groups[month].push(item);
         return groups;
       }, {});
+      const itemsByDate = groupBy(items, "date");
       calendarTitle.textContent = `Год ${year}`;
       contentCalendarEmpty.classList.toggle("hidden", items.length > 0);
       contentCalendarGrid.classList.add("year");
@@ -4105,17 +4187,30 @@
         const monthItems = (itemsByMonth[String(month)] || []).sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(year, month, 1));
         const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+        const monthDays = getFixedMonthDays(year, month);
         return `
-          <div class="calendar-day calendar-month-card ${isCurrentMonth ? "today" : ""}">
+          <button class="calendar-day calendar-month-card ${isCurrentMonth ? "today" : ""}" type="button" data-calendar-month="${month}">
             <div class="calendar-date">
               <span>${escapeHtml(monthName)}</span>
               <span>${monthItems.length} публ.</span>
             </div>
-            <div class="calendar-items">
-              ${monthItems.slice(0, 6).map((item) => contentCalendarCard(item)).join("")}
-              ${monthItems.length > 6 ? `<span class="status-pill">Еще ${monthItems.length - 6}</span>` : ""}
+            <div class="year-weekdays">
+              <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
             </div>
-          </div>
+            <div class="year-days-grid">
+              ${monthDays.map((date) => {
+                const key = formatIsoDate(date);
+                const dayItems = itemsByDate[key] || [];
+                const inMonth = date.getMonth() === month;
+                const isToday = formatIsoDate(today) === key;
+                return `
+                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${isToday ? "today" : ""}" title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ.` : formatShortDate(key)}">
+                    ${inMonth ? `<span>${date.getDate()}</span>${dayItems.length ? `<b>${dayItems.length}</b>` : ""}` : ""}
+                  </span>
+                `;
+              }).join("")}
+            </div>
+          </button>
         `;
       }).join("");
     }
@@ -4142,6 +4237,16 @@
         if (!item.date) return false;
         const itemDate = new Date(`${item.date}T00:00:00`);
         return itemDate.getFullYear() === year && itemDate.getMonth() === month;
+      });
+    }
+
+    function getFixedMonthDays(year, month) {
+      const first = new Date(year, month, 1);
+      const start = startOfWeek(first);
+      return Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        return date;
       });
     }
 
