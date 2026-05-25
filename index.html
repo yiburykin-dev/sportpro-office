@@ -2787,6 +2787,9 @@
     let deletedSalesClients = loadDeletedRecords(deletedSalesClientsKey);
     let cloudConfig = loadCloudConfig();
     let cloudSession = loadCloudSession();
+    let autoSyncTimer = null;
+    let isApplyingCloudData = false;
+    let isAutoSyncing = false;
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
     applyCloudConfig();
@@ -2803,6 +2806,7 @@
     renderSalesClients();
     renderWorkspaceMembers();
     loadLeadDraft();
+    startCloudAutoLoad();
 
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -3436,6 +3440,7 @@
     function saveSalesScript(options = {}) {
       if (options.touch !== false) salesScript.updatedAt = new Date().toISOString();
       localStorage.setItem(salesScriptStorageKey, JSON.stringify(salesScript));
+      queueCloudSync("Скрипт продаж");
     }
 
     function renderSales() {
@@ -3602,6 +3607,7 @@
 
     function saveSalesClients() {
       localStorage.setItem(salesClientsStorageKey, JSON.stringify(salesClients));
+      queueCloudSync("Клиенты");
     }
 
     function saveClientFromDraft() {
@@ -3654,6 +3660,7 @@
       adsSettings = normalizeAdsSettings(adsSettings);
       localStorage.setItem(adsSettingsStorageKey, JSON.stringify(adsSettings));
       renderFollowersSummary();
+      queueCloudSync("Подписчики");
     }
 
     function normalizeAdsSettings(settings) {
@@ -3877,6 +3884,7 @@
         cloudPassword.value = "";
         updateCloudStatus("Вход выполнен");
         await loadWorkspaceMembers({ silent: true });
+        await syncWithCloud({ silent: true });
       } catch (error) {
         clearCloudSession();
         updateCloudStatus("Вход не выполнен");
@@ -4045,7 +4053,7 @@
       }
     }
 
-    async function syncWithCloud() {
+    async function syncWithCloud(options = {}) {
       if (!isCloudReady()) {
         cloudPanel.classList.remove("hidden");
         updateCloudStatus(cloudReadyMessage());
@@ -4053,15 +4061,42 @@
       }
 
       try {
-        updateCloudStatus("Синхронизация...");
+        if (!options.silent) updateCloudStatus("Синхронизация...");
         await pullFromCloud({ silent: true });
         await pushToCloud();
         await pullFromCloud({ silent: true });
         updateCloudStatus(`Синхронизировано: ${formatDateTime(new Date())}`);
       } catch (error) {
         updateCloudStatus("Ошибка синхронизации");
-        alert(`Не удалось синхронизировать облако: ${error.message}`);
+        if (!options.silent) alert(`Не удалось синхронизировать облако: ${error.message}`);
       }
+    }
+
+    function queueCloudSync(reason = "Изменения") {
+      if (isApplyingCloudData || !isCloudReady()) return;
+      clearTimeout(autoSyncTimer);
+      autoSyncTimer = setTimeout(() => autoPushToCloud(reason), 900);
+    }
+
+    async function autoPushToCloud(reason) {
+      if (isAutoSyncing || isApplyingCloudData || !isCloudReady()) return;
+      try {
+        isAutoSyncing = true;
+        updateCloudStatus(`${reason}: отправка в облако...`);
+        await pushToCloud();
+        updateCloudStatus(`Автосохранено: ${formatDateTime(new Date())}`);
+      } catch (error) {
+        updateCloudStatus("Автосинхронизация не прошла");
+      } finally {
+        isAutoSyncing = false;
+      }
+    }
+
+    function startCloudAutoLoad() {
+      if (!isCloudReady()) return;
+      setTimeout(() => {
+        syncWithCloud({ silent: true }).catch(() => updateCloudStatus("Автозагрузка не прошла"));
+      }, 700);
     }
 
     async function testCloudConnection() {
@@ -4134,6 +4169,7 @@
 
       try {
         if (!options.silent) updateCloudStatus("Загрузка из облака...");
+        isApplyingCloudData = true;
         const cloudRows = await cloudRequest(`${cloudEndpoint()}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const funnelCloudRows = await cloudRequest(`${cloudEndpoint(funnelCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const contentPlanRows = await cloudRequest(`${cloudEndpoint(contentPlanCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
@@ -4170,6 +4206,8 @@
         if (options.silent) throw error;
         updateCloudStatus("Ошибка загрузки");
         alert(`Не удалось загрузить данные из облака: ${error.message}`);
+      } finally {
+        isApplyingCloudData = false;
       }
     }
 
@@ -5238,25 +5276,30 @@
     function saveRecords() {
       records = records.map(normalizeRecord);
       localStorage.setItem(storageKey, JSON.stringify(records));
+      queueCloudSync("Реклама");
     }
 
     function saveFunnelRecords() {
       funnelRecords = funnelRecords.map(normalizeFunnelRecord);
       localStorage.setItem(funnelStorageKey, JSON.stringify(funnelRecords));
+      queueCloudSync("Итоги дня");
     }
 
     function saveContentPlanItems() {
       contentPlanItems = contentPlanItems.map(normalizeContentPlanItem);
       localStorage.setItem(contentPlanStorageKey, JSON.stringify(contentPlanItems));
+      queueCloudSync("Контент-план");
     }
 
     function saveContentIdeas() {
       contentIdeas = contentIdeas.map(normalizeContentIdea);
       localStorage.setItem(contentIdeasStorageKey, JSON.stringify(contentIdeas));
+      queueCloudSync("Идеи контента");
     }
 
     function saveDeletedRecords(key, deletedMap) {
       localStorage.setItem(key, JSON.stringify(deletedMap));
+      queueCloudSync("Удаления");
     }
 
     function normalizeRecord(record) {
