@@ -2169,6 +2169,9 @@
             <p>Календарь публикаций, список задач, банк идей и рубрики.</p>
           </div>
           <div class="actions">
+            <span class="cloud-badge" id="contentCloudStatus">Облако не проверено</span>
+            <button class="btn" id="contentCloudPullBtn" type="button">Загрузить из облака</button>
+            <button class="btn" id="contentCloudSyncBtn" type="button">Синхронизировать</button>
             <button class="btn primary" id="contentQuickAddBtn" type="button">Добавить публикацию</button>
           </div>
         </div>
@@ -2867,6 +2870,9 @@
     const contentImportItem = document.querySelector("#contentImportItem");
     const contentImportBtn = document.querySelector("#contentImportBtn");
     const contentImportStatus = document.querySelector("#contentImportStatus");
+    const contentCloudStatus = document.querySelector("#contentCloudStatus");
+    const contentCloudPullBtn = document.querySelector("#contentCloudPullBtn");
+    const contentCloudSyncBtn = document.querySelector("#contentCloudSyncBtn");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const contentFormTitle = document.querySelector("#contentFormTitle");
@@ -3168,6 +3174,7 @@
       }
 
       saveContentPlanItems();
+      autoPushToCloud("Контент-план").catch(() => updateCloudStatus("Автосинхронизация не прошла"));
       resetContentForm();
       renderContentPlan();
     });
@@ -3252,6 +3259,8 @@
     });
     contentImportDate.addEventListener("change", renderContentImportControls);
     contentImportBtn.addEventListener("click", importSelectedContentToAds);
+    contentCloudPullBtn.addEventListener("click", () => pullFromCloud());
+    contentCloudSyncBtn.addEventListener("click", () => syncWithCloud());
     contentCancelEditBtn.addEventListener("click", resetContentForm);
     document.querySelector("#contentQuickAddBtn").addEventListener("click", () => {
       document.querySelector('[data-content-mode="list"]').click();
@@ -3948,6 +3957,7 @@
     }
 
     function saveSalesClients() {
+      salesClients = uniqueRecordsById(salesClients, normalizeSalesClient);
       localStorage.setItem(salesClientsStorageKey, JSON.stringify(salesClients));
       queueCloudSync("Клиенты");
     }
@@ -4173,6 +4183,7 @@
 
     function updateCloudStatus(text) {
       cloudStatus.textContent = text;
+      if (contentCloudStatus) contentCloudStatus.textContent = text;
     }
 
     function updateCloudAuthStatus() {
@@ -4475,24 +4486,33 @@
     }
 
     async function pushRowsToCloud(table, localRecords, deletedMap, normalizer) {
-      const activeRows = localRecords.map((record) => {
+      const rowsById = new Map();
+      localRecords.forEach((record) => {
         const normalized = normalizer(record);
-        return {
+        const row = {
           workspace_id: cloudConfig.workspace,
           id: normalized.id,
           record: normalized,
           deleted_at: null,
           updated_at: normalized.updatedAt || new Date().toISOString(),
         };
+        const existing = rowsById.get(row.id);
+        if (!existing || row.updated_at >= existing.updated_at) {
+          rowsById.set(row.id, row);
+        }
       });
-      const deletedRows = Object.entries(deletedMap).map(([id, deletedAt]) => ({
-        workspace_id: cloudConfig.workspace,
-        id,
-        record: null,
-        deleted_at: deletedAt,
-        updated_at: deletedAt,
-      }));
-      const rows = [...activeRows, ...deletedRows];
+      Object.entries(deletedMap).forEach(([id, deletedAt]) => {
+        const existing = rowsById.get(id);
+        if (existing && existing.updated_at >= deletedAt) return;
+        rowsById.set(id, {
+          workspace_id: cloudConfig.workspace,
+          id,
+          record: null,
+          deleted_at: deletedAt,
+          updated_at: deletedAt,
+        });
+      });
+      const rows = [...rowsById.values()];
       if (!rows.length) return;
 
       await cloudRequest(`${cloudEndpoint(table)}?on_conflict=workspace_id,id`, {
@@ -5812,27 +5832,39 @@
     }
 
     function saveRecords() {
-      records = records.map(normalizeRecord);
+      records = uniqueRecordsById(records, normalizeRecord);
       localStorage.setItem(storageKey, JSON.stringify(records));
       queueCloudSync("Реклама");
     }
 
     function saveFunnelRecords() {
-      funnelRecords = funnelRecords.map(normalizeFunnelRecord);
+      funnelRecords = uniqueRecordsById(funnelRecords, normalizeFunnelRecord);
       localStorage.setItem(funnelStorageKey, JSON.stringify(funnelRecords));
       queueCloudSync("Итоги дня");
     }
 
     function saveContentPlanItems() {
-      contentPlanItems = contentPlanItems.map(normalizeContentPlanItem);
+      contentPlanItems = uniqueRecordsById(contentPlanItems, normalizeContentPlanItem);
       localStorage.setItem(contentPlanStorageKey, JSON.stringify(contentPlanItems));
       queueCloudSync("Контент-план");
     }
 
     function saveContentIdeas() {
-      contentIdeas = contentIdeas.map(normalizeContentIdea);
+      contentIdeas = uniqueRecordsById(contentIdeas, normalizeContentIdea);
       localStorage.setItem(contentIdeasStorageKey, JSON.stringify(contentIdeas));
       queueCloudSync("Идеи контента");
+    }
+
+    function uniqueRecordsById(items, normalizer) {
+      const byId = new Map();
+      items.forEach((item) => {
+        const normalized = normalizer(item);
+        const existing = byId.get(normalized.id);
+        if (!existing || (normalized.updatedAt || "") >= (existing.updatedAt || "")) {
+          byId.set(normalized.id, normalized);
+        }
+      });
+      return [...byId.values()];
     }
 
     function saveDeletedRecords(key, deletedMap) {
