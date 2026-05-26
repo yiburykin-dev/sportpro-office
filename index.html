@@ -1476,6 +1476,23 @@
       gap: 6px;
     }
 
+    .content-text-cell {
+      max-width: 260px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .content-preview-thumb {
+      width: 54px;
+      height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--surface-2);
+      display: block;
+    }
+
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -1885,6 +1902,25 @@
           <div class="metric"><span>Отклик</span><strong id="totalRate">0%</strong></div>
         </section>
 
+        <section class="panel chart-panel">
+          <div class="toolbar">
+            <div>
+              <h3>Вставить из контент-плана</h3>
+              <p class="sales-goal">Выбери дату и публикацию. Она появится здесь с нулевыми показателями, чтобы дальше вносить замеры.</p>
+            </div>
+            <div class="actions">
+              <label>Дата
+                <select id="contentImportDate"></select>
+              </label>
+              <label>Публикация
+                <select id="contentImportItem"></select>
+              </label>
+              <button class="btn primary" id="contentImportBtn" type="button">Вставить</button>
+            </div>
+          </div>
+          <div class="cloud-help" id="contentImportStatus">Доступны публикации из контент-плана, которые еще не перенесены в рекламный учет.</div>
+        </section>
+
         <section class="workspace">
           <aside class="panel form-panel">
             <h3 id="formTitle">Новая публикация</h3>
@@ -2216,6 +2252,12 @@
                 <label>Тема
                   <input id="contentTopic" type="text" placeholder="Например: кейс клуба, подбор тренажеров, акция" required>
                 </label>
+                <label>Текст
+                  <textarea id="contentText" placeholder="Текст публикации, сценарий Reels или тезисы для сторис"></textarea>
+                </label>
+                <label>Хэштеги
+                  <input id="contentHashtags" type="text" placeholder="#sportpro #фитнесклуб #тренажеры">
+                </label>
                 <div class="two">
                   <label>Статус
                     <select id="contentStatus">
@@ -2236,6 +2278,9 @@
                 </label>
                 <label>Ссылка на текст / макет / публикацию
                   <input id="contentLink" type="url" placeholder="https://...">
+                </label>
+                <label>Превью / фото
+                  <input id="contentPreview" type="url" placeholder="Ссылка на изображение, макет или папку">
                 </label>
                 <label>Комментарий
                   <textarea id="contentComment" placeholder="Что важно учесть, цель публикации, правки"></textarea>
@@ -2266,6 +2311,9 @@
                       <th>Тип</th>
                       <th>Рубрика</th>
                       <th>Тема</th>
+                      <th>Текст</th>
+                      <th>Хэштеги</th>
+                      <th>Превью</th>
                       <th>Статус</th>
                       <th>Ответственный</th>
                       <th>Дедлайн</th>
@@ -2815,6 +2863,10 @@
     const measurementTitle = document.querySelector("#measurementTitle");
     const measurementHistory = document.querySelector("#measurementHistory");
     const quickMeasurementRecord = document.querySelector("#quickMeasurementRecord");
+    const contentImportDate = document.querySelector("#contentImportDate");
+    const contentImportItem = document.querySelector("#contentImportItem");
+    const contentImportBtn = document.querySelector("#contentImportBtn");
+    const contentImportStatus = document.querySelector("#contentImportStatus");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const contentFormTitle = document.querySelector("#contentFormTitle");
@@ -2886,10 +2938,13 @@
       type: document.querySelector("#contentType"),
       rubric: document.querySelector("#contentRubric"),
       topic: document.querySelector("#contentTopic"),
+      text: document.querySelector("#contentText"),
+      hashtags: document.querySelector("#contentHashtags"),
       status: document.querySelector("#contentStatus"),
       owner: document.querySelector("#contentOwner"),
       prepDeadline: document.querySelector("#contentPrepDeadline"),
       link: document.querySelector("#contentLink"),
+      preview: document.querySelector("#contentPreview"),
       comment: document.querySelector("#contentComment"),
     };
 
@@ -3092,12 +3147,16 @@
         type: contentFields.type.value,
         rubric: contentFields.rubric.value,
         topic: contentFields.topic.value.trim(),
+        text: contentFields.text.value.trim(),
+        hashtags: contentFields.hashtags.value.trim(),
         status: contentFields.status.value,
         owner: contentFields.owner.value.trim(),
         prepDeadline: contentFields.prepDeadline.value,
         link: contentFields.link.value.trim(),
+        preview: contentFields.preview.value.trim(),
         comment: contentFields.comment.value.trim(),
         linkedAdId: contentPlanItems.find((item) => item.id === id)?.linkedAdId || "",
+        archivedAt: contentPlanItems.find((item) => item.id === id)?.archivedAt || "",
         updatedAt: new Date().toISOString(),
       };
 
@@ -3191,6 +3250,8 @@
       resetFunnelForm();
       funnelFields.followers.focus();
     });
+    contentImportDate.addEventListener("change", renderContentImportControls);
+    contentImportBtn.addEventListener("click", importSelectedContentToAds);
     contentCancelEditBtn.addEventListener("click", resetContentForm);
     document.querySelector("#contentQuickAddBtn").addEventListener("click", () => {
       document.querySelector('[data-content-mode="list"]').click();
@@ -4614,6 +4675,44 @@
       }
     }
 
+    function renderContentImportControls() {
+      const currentDate = contentImportDate.value;
+      const currentItem = contentImportItem.value;
+      const available = getContentItemsAvailableForAds();
+      const dates = [...new Set(available.map((item) => item.date).filter(Boolean))]
+        .sort((a, b) => b.localeCompare(a));
+      const selectedDate = dates.includes(currentDate) ? currentDate : dates[0] || "";
+
+      contentImportDate.innerHTML = dates.length
+        ? dates.map((date) => `<option value="${date}">${formatDate(date)}</option>`).join("")
+        : '<option value="">Нет публикаций</option>';
+      contentImportDate.value = selectedDate;
+
+      const items = available
+        .filter((item) => item.date === selectedDate)
+        .sort((a, b) => `${a.time || ""} ${a.topic || ""}`.localeCompare(`${b.time || ""} ${b.topic || ""}`, "ru"));
+
+      contentImportItem.innerHTML = items.length
+        ? items.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(contentImportLabel(item))}</option>`).join("")
+        : '<option value="">Нет публикаций за дату</option>';
+      if (currentItem && items.some((item) => item.id === currentItem)) {
+        contentImportItem.value = currentItem;
+      }
+
+      contentImportBtn.disabled = !items.length;
+      contentImportStatus.textContent = items.length
+        ? `Найдено за дату: ${items.length}. После вставки публикация будет связана с контент-планом.`
+        : "Нет публикаций из контент-плана, которые можно перенести в рекламный учет.";
+    }
+
+    function getContentItemsAvailableForAds() {
+      return getActiveContentPlanItems().filter((item) => item.date && !item.linkedAdId);
+    }
+
+    function contentImportLabel(item) {
+      return `${item.time ? `${item.time} - ` : ""}${item.type} - ${item.topic || "Без темы"}`;
+    }
+
     function getFollowersGrowth() {
       return sum(funnelRecords, "followers");
     }
@@ -4727,6 +4826,7 @@
       renderContentIdeas();
       renderContentRubrics();
       renderContentArchive();
+      renderContentImportControls();
     }
 
     function renderContentCalendar() {
@@ -4966,6 +5066,9 @@
           <td>${escapeHtml(item.type)}</td>
           <td>${escapeHtml(item.rubric)}</td>
           <td>${escapeHtml(item.topic)}</td>
+          <td class="content-text-cell">${escapeHtml(shortText(item.text || "-", 140))}</td>
+          <td>${escapeHtml(item.hashtags || "-")}</td>
+          <td>${contentPreviewHtml(item.preview)}</td>
           <td><span class="status-pill">${escapeHtml(item.status)}</span></td>
           <td>${escapeHtml(item.owner || "-")}</td>
           <td>${item.prepDeadline ? formatDate(item.prepDeadline) : "-"}</td>
@@ -5012,6 +5115,9 @@
         <article class="idea-card archive-card" data-archive-id="${escapeHtml(item.id)}">
           <strong>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""} — ${escapeHtml(item.topic || "Без темы")}</strong>
           <span>${escapeHtml(item.platform)} · ${escapeHtml(item.type)} · ${escapeHtml(item.rubric)} · ${escapeHtml(item.status)}</span>
+          ${item.text ? `<span>${escapeHtml(shortText(item.text, 180))}</span>` : ""}
+          ${item.hashtags ? `<span>${escapeHtml(item.hashtags)}</span>` : ""}
+          ${item.preview ? `<span>Превью: <a href="${escapeHtml(item.preview)}" target="_blank" rel="noopener">открыть</a></span>` : ""}
           <span>В архиве: ${item.archivedAt ? formatDate(item.archivedAt.slice(0, 10)) : "-"}</span>
           ${item.comment ? `<span>${escapeHtml(item.comment)}</span>` : ""}
           <div class="actions" style="margin-top: 10px;">
@@ -5028,6 +5134,24 @@
       if (ideaFields.rubric.innerHTML !== options) ideaFields.rubric.innerHTML = options;
     }
 
+    function contentPreviewHtml(url) {
+      if (!url) return "-";
+      const safeUrl = escapeHtml(url);
+      if (isImageUrl(url)) {
+        return `<a href="${safeUrl}" target="_blank" rel="noopener"><img class="content-preview-thumb" src="${safeUrl}" alt="Превью публикации" loading="lazy"></a>`;
+      }
+      return `<a href="${safeUrl}" target="_blank" rel="noopener">Открыть</a>`;
+    }
+
+    function isImageUrl(url) {
+      return /^https?:\/\/.+\.(png|jpe?g|webp|gif|avif)(\?.*)?$/i.test(url);
+    }
+
+    function shortText(value, limit = 120) {
+      const text = String(value || "").trim();
+      return text.length > limit ? `${text.slice(0, limit).trim()}...` : text;
+    }
+
     function renderContentFilters() {
       const activeItems = getActiveContentPlanItems();
       fillSelectOptions(contentStatusFilter, activeItems.map((item) => item.status), "Все статусы");
@@ -5040,7 +5164,7 @@
       const platform = contentPlatformFilter.value;
       return getActiveContentPlanItems()
         .filter((item) => {
-          const haystack = `${item.topic} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
+          const haystack = `${item.topic} ${item.text} ${item.hashtags} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
           return (!query || haystack.includes(query))
             && (!status || item.status === status)
             && (!platform || item.platform === platform);
@@ -5481,10 +5605,13 @@
       contentFields.type.value = item.type;
       contentFields.rubric.value = item.rubric;
       contentFields.topic.value = item.topic;
+      contentFields.text.value = item.text || "";
+      contentFields.hashtags.value = item.hashtags || "";
       contentFields.status.value = item.status;
       contentFields.owner.value = item.owner;
       contentFields.prepDeadline.value = item.prepDeadline;
       contentFields.link.value = item.link;
+      contentFields.preview.value = item.preview || "";
       contentFields.comment.value = item.comment;
       contentFormTitle.textContent = "Редактирование";
       contentCancelEditBtn.classList.remove("hidden");
@@ -5508,10 +5635,23 @@
       contentFields.platform.value = idea.platform || "Instagram";
       contentFields.status.value = "Идея";
       contentFields.comment.value = idea.comment || "";
+      contentFields.text.value = "";
+      contentFields.hashtags.value = "";
+      contentFields.preview.value = "";
       contentFields.topic.focus();
     }
 
-    function publishContentItem(item) {
+    function importSelectedContentToAds() {
+      const item = contentPlanItems.find((record) => record.id === contentImportItem.value);
+      if (!item) {
+        alert("Выберите публикацию из контент-плана.");
+        return;
+      }
+      publishContentItem(item, { silent: true });
+      contentImportStatus.textContent = "Публикация добавлена в рекламный учет.";
+    }
+
+    function publishContentItem(item, options = {}) {
       item.status = "Опубликовано";
       item.updatedAt = new Date().toISOString();
 
@@ -5535,7 +5675,9 @@
 
       saveContentPlanItems();
       render();
-      alert("Публикация перенесена в Реклама → Контент с нулевыми показателями.");
+      if (!options.silent) {
+        alert("Публикация перенесена в Реклама → Публикации с нулевыми показателями.");
+      }
     }
 
     function contentTypeToAdType(type) {
@@ -5797,10 +5939,13 @@
         type: item.type || "Reels",
         rubric: item.rubric || defaultContentRubrics()[0].name,
         topic: item.topic || "",
+        text: item.text || "",
+        hashtags: item.hashtags || "",
         status: item.status || "Идея",
         owner: item.owner || "",
         prepDeadline: item.prepDeadline || "",
         link: item.link || "",
+        preview: item.preview || "",
         comment: item.comment || "",
         linkedAdId: item.linkedAdId || "",
         archivedAt: item.archivedAt || "",
