@@ -1178,10 +1178,12 @@
 
     .calendar-day {
       min-height: 138px;
+      height: 170px;
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--surface-2);
+      overflow: hidden;
     }
 
     .calendar-day.drop-target {
@@ -1252,7 +1254,18 @@
       border-color: var(--accent);
       background: var(--accent-soft);
       color: var(--text);
+      cursor: grab;
       font-weight: 800;
+    }
+
+    .year-day.drop-target {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent-soft);
+    }
+
+    .year-day.dragging {
+      opacity: .55;
+      cursor: grabbing;
     }
 
     .year-day.type-highlighted {
@@ -1336,17 +1349,21 @@
     .calendar-items {
       display: grid;
       gap: 6px;
+      max-height: 118px;
+      overflow-y: auto;
+      padding-right: 2px;
     }
 
     .content-card {
       border: 1px solid var(--line);
       border-left: 4px solid var(--accent);
       border-radius: 8px;
-      padding: 8px;
+      padding: 7px 8px;
       background: var(--surface);
       color: var(--ink);
       text-align: left;
       font-size: 12px;
+      min-height: 0;
     }
 
     .content-card[draggable="true"] {
@@ -1366,14 +1383,79 @@
 
     .content-card strong {
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       font-size: 13px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .content-card span {
       display: block;
       color: var(--muted);
-      line-height: 1.35;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .calendar-items.compact,
+    .calendar-items:has(.content-card:nth-child(2)) {
+      gap: 4px;
+    }
+
+    .calendar-items.compact .content-card,
+    .calendar-items:has(.content-card:nth-child(2)) .content-card {
+      padding: 5px 7px;
+      font-size: 11px;
+    }
+
+    .calendar-items.compact .content-card strong,
+    .calendar-items:has(.content-card:nth-child(2)) .content-card strong {
+      font-size: 12px;
+    }
+
+    .calendar-items.compact .content-card span:last-child,
+    .calendar-items:has(.content-card:nth-child(3)) .content-card span:last-child {
+      display: none;
+    }
+
+    .archive-drop-zone {
+      margin-top: 12px;
+      min-height: 76px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 12px;
+      transition: border-color .15s ease, background .15s ease, color .15s ease;
+    }
+
+    .archive-drop-zone strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 16px;
+    }
+
+    .archive-drop-zone.active {
+      border-color: #dc2626;
+      background: rgba(220, 38, 38, .12);
+      color: var(--ink);
+    }
+
+    .archive-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .archive-card {
+      display: grid;
+      gap: 6px;
     }
 
     .status-pill {
@@ -2042,6 +2124,7 @@
           <button type="button" data-content-mode="list">Список</button>
           <button type="button" data-content-mode="ideas">Идеи</button>
           <button type="button" data-content-mode="rubrics">Рубрики</button>
+          <button type="button" data-content-mode="archive">Архив</button>
         </div>
 
         <section id="contentCalendarView">
@@ -2063,6 +2146,12 @@
             <div class="content-type-header">Типы за выбранный период</div>
             <div class="content-type-summary" id="contentTypeSummary"></div>
             <div class="calendar-grid" id="contentCalendarGrid"></div>
+            <div class="archive-drop-zone hidden" id="calendarArchiveDrop">
+              <div>
+                <strong>Архив</strong>
+                <span>Перетащите сюда публикацию, если она не нужна или осталась черновиком.</span>
+              </div>
+            </div>
             <div class="empty hidden" id="contentCalendarEmpty">На выбранный период публикаций пока нет.</div>
           </section>
         </section>
@@ -2214,6 +2303,20 @@
               <div class="idea-list" id="contentIdeasList"></div>
               <div class="empty" id="contentIdeasEmpty">Идей пока нет</div>
             </section>
+          </section>
+        </section>
+
+        <section id="contentArchiveView" class="hidden">
+          <section class="panel sales-card">
+            <div class="toolbar">
+              <div>
+                <h3>Архив публикаций</h3>
+                <p class="sales-goal">Сюда попадают публикации, снятые с календаря. Их можно восстановить или удалить окончательно.</p>
+              </div>
+              <button class="btn danger" id="contentArchiveClearBtn" type="button">Удалить все</button>
+            </div>
+            <div class="archive-list" id="contentArchiveList"></div>
+            <div class="empty hidden" id="contentArchiveEmpty">Архив пуст.</div>
           </section>
         </section>
 
@@ -2654,6 +2757,10 @@
     const contentIdeasEmpty = document.querySelector("#contentIdeasEmpty");
     const contentCalendarGrid = document.querySelector("#contentCalendarGrid");
     const contentCalendarEmpty = document.querySelector("#contentCalendarEmpty");
+    const calendarArchiveDrop = document.querySelector("#calendarArchiveDrop");
+    const contentArchiveList = document.querySelector("#contentArchiveList");
+    const contentArchiveEmpty = document.querySelector("#contentArchiveEmpty");
+    const contentArchiveClearBtn = document.querySelector("#contentArchiveClearBtn");
     const calendarTitle = document.querySelector("#calendarTitle");
     const calendarMonthSelect = document.querySelector("#calendarMonthSelect");
     const contentTypeSummary = document.querySelector("#contentTypeSummary");
@@ -2714,6 +2821,7 @@
       list: document.querySelector("#contentListView"),
       ideas: document.querySelector("#contentIdeasView"),
       rubrics: document.querySelector("#contentRubricsView"),
+      archive: document.querySelector("#contentArchiveView"),
     };
     const salesModeViews = {
       script: document.querySelector("#salesScriptView"),
@@ -2818,6 +2926,7 @@
     let activeCalendarMode = "week";
     let activeContentTypeHighlight = "";
     let draggedContentId = "";
+    let draggedContentDate = "";
     let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
@@ -3261,6 +3370,27 @@
       }
     });
 
+    contentArchiveList.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const id = button.dataset.id;
+      if (button.dataset.archiveAction === "restore") {
+        restoreContentItem(id);
+      }
+
+      if (button.dataset.archiveAction === "delete" && confirm("Удалить публикацию из архива навсегда?")) {
+        deleteContentItemForever(id);
+      }
+    });
+
+    contentArchiveClearBtn.addEventListener("click", () => {
+      if (!getArchivedContentPlanItems().length) return;
+      if (confirm("Удалить весь архив навсегда?")) {
+        clearContentArchive();
+      }
+    });
+
     contentCalendarGrid.addEventListener("click", (event) => {
       const monthCard = event.target.closest("[data-calendar-month]");
       if (monthCard) {
@@ -3289,23 +3419,33 @@
 
     contentCalendarGrid.addEventListener("dragstart", (event) => {
       const card = event.target.closest("[data-content-id]");
-      if (!card) return;
-      draggedContentId = card.dataset.contentId;
-      card.classList.add("dragging");
+      const yearDay = event.target.closest("[data-year-source-date]");
+      if (!card && !yearDay) return;
+
+      draggedContentId = card?.dataset.contentId || "";
+      draggedContentDate = yearDay?.dataset.yearSourceDate || "";
+      if (card) card.classList.add("dragging");
+      if (yearDay) yearDay.classList.add("dragging");
+      calendarArchiveDrop.classList.remove("hidden");
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", draggedContentId);
+      event.dataTransfer.setData("text/plain", draggedContentId || `date:${draggedContentDate}`);
     });
 
     contentCalendarGrid.addEventListener("dragend", (event) => {
       const card = event.target.closest("[data-content-id]");
+      const yearDay = event.target.closest("[data-year-source-date]");
       if (card) card.classList.remove("dragging");
+      if (yearDay) yearDay.classList.remove("dragging");
       draggedContentId = "";
+      draggedContentDate = "";
+      calendarArchiveDrop.classList.add("hidden");
+      calendarArchiveDrop.classList.remove("active");
       contentCalendarGrid.querySelectorAll(".drop-target").forEach((day) => day.classList.remove("drop-target"));
     });
 
     contentCalendarGrid.addEventListener("dragover", (event) => {
       const day = event.target.closest("[data-calendar-date]");
-      if (!day || !draggedContentId) return;
+      if (!day || (!draggedContentId && !draggedContentDate)) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
       contentCalendarGrid.querySelectorAll(".drop-target").forEach((item) => {
@@ -3322,11 +3462,46 @@
 
     contentCalendarGrid.addEventListener("drop", (event) => {
       const day = event.target.closest("[data-calendar-date]");
-      const id = event.dataTransfer.getData("text/plain") || draggedContentId;
-      if (!day || !id) return;
+      const transfer = event.dataTransfer.getData("text/plain");
+      const id = transfer && !transfer.startsWith("date:") ? transfer : draggedContentId;
+      const sourceDate = transfer?.startsWith("date:") ? transfer.replace("date:", "") : draggedContentDate;
+      if (!day || (!id && !sourceDate)) return;
       event.preventDefault();
-      moveContentItemToDate(id, day.dataset.calendarDate);
+      if (id) {
+        moveContentItemToDate(id, day.dataset.calendarDate);
+      } else {
+        moveContentItemsFromDateToDate(sourceDate, day.dataset.calendarDate);
+      }
       contentCalendarGrid.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+    });
+
+    calendarArchiveDrop.addEventListener("dragover", (event) => {
+      if (!draggedContentId && !draggedContentDate) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      calendarArchiveDrop.classList.add("active");
+    });
+
+    calendarArchiveDrop.addEventListener("dragleave", (event) => {
+      if (calendarArchiveDrop.contains(event.relatedTarget)) return;
+      calendarArchiveDrop.classList.remove("active");
+    });
+
+    calendarArchiveDrop.addEventListener("drop", (event) => {
+      const transfer = event.dataTransfer.getData("text/plain");
+      const id = transfer && !transfer.startsWith("date:") ? transfer : draggedContentId;
+      const sourceDate = transfer?.startsWith("date:") ? transfer.replace("date:", "") : draggedContentDate;
+      if (!id && !sourceDate) return;
+      event.preventDefault();
+      if (id) {
+        archiveContentItem(id);
+      } else {
+        archiveContentItemsByDate(sourceDate);
+      }
+      calendarArchiveDrop.classList.add("hidden");
+      calendarArchiveDrop.classList.remove("active");
+      draggedContentId = "";
+      draggedContentDate = "";
     });
 
     contentIdeasList.addEventListener("click", (event) => {
@@ -4533,6 +4708,7 @@
       renderContentList();
       renderContentIdeas();
       renderContentRubrics();
+      renderContentArchive();
     }
 
     function renderContentCalendar() {
@@ -4543,7 +4719,8 @@
       }
 
       const days = getCalendarDays();
-      const itemsByDate = groupBy(contentPlanItems, "date");
+      const activeItems = getActiveContentPlanItems();
+      const itemsByDate = groupBy(activeItems, "date");
       calendarTitle.textContent = activeCalendarMode === "week"
         ? `Неделя ${formatShortDate(formatIsoDate(days[0]))}-${formatShortDate(formatIsoDate(days[days.length - 1]))}`
         : new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(calendarCursor);
@@ -4565,7 +4742,7 @@
               <span>${formatShortDate(key)}</span>
               <span>${weekdayLabel(date)}</span>
             </div>
-            <div class="calendar-items">
+            <div class="calendar-items ${items.length > 1 ? "compact" : ""}">
               ${items.map((item) => contentCalendarCard(item)).join("")}
             </div>
           </div>
@@ -4576,7 +4753,7 @@
     function renderContentYearCalendar() {
       const year = new Date().getFullYear();
       const today = new Date();
-      const items = contentPlanItems.filter((item) => item.date && new Date(`${item.date}T00:00:00`).getFullYear() === year);
+      const items = getActiveContentPlanItems().filter((item) => item.date && new Date(`${item.date}T00:00:00`).getFullYear() === year);
       const itemsByMonth = items.reduce((groups, item) => {
         const month = String(new Date(`${item.date}T00:00:00`).getMonth());
         groups[month] = groups[month] || [];
@@ -4594,7 +4771,7 @@
         const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
         const monthDays = getFixedMonthDays(year, month);
         return `
-          <button class="calendar-day calendar-month-card ${isCurrentMonth ? "today" : ""}" type="button" data-calendar-month="${month}">
+          <div class="calendar-day calendar-month-card ${isCurrentMonth ? "today" : ""}" role="button" tabindex="0" data-calendar-month="${month}">
             <div class="calendar-date">
               <span>${escapeHtml(monthName)}</span>
               <span>${monthItems.length} публ.</span>
@@ -4610,13 +4787,16 @@
                 const isToday = formatIsoDate(today) === key;
                 const typeHighlighted = activeContentTypeHighlight && dayItems.some((item) => item.type === activeContentTypeHighlight);
                 return `
-                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${typeHighlighted ? "type-highlighted" : ""} ${isToday ? "today" : ""}" title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ.` : formatShortDate(key)}">
+                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${typeHighlighted ? "type-highlighted" : ""} ${isToday ? "today" : ""}"
+                    data-calendar-date="${inMonth ? key : ""}"
+                    ${inMonth && dayItems.length ? `draggable="true" data-year-source-date="${key}"` : ""}
+                    title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ. Перетащите на другой день, чтобы перенести.` : formatShortDate(key)}">
                     ${inMonth ? `<span>${date.getDate()}</span>${dayItems.length ? `<b>${dayItems.length}</b>` : ""}` : ""}
                   </span>
                 `;
               }).join("")}
             </div>
-          </button>
+          </div>
         `;
       }).join("");
     }
@@ -4633,13 +4813,13 @@
 
     function getContentItemsForDates(days) {
       const keys = new Set(days.map((date) => formatIsoDate(date)));
-      return contentPlanItems.filter((item) => keys.has(item.date));
+      return getActiveContentPlanItems().filter((item) => keys.has(item.date));
     }
 
     function getContentItemsForMonth(date) {
       const year = date.getFullYear();
       const month = date.getMonth();
-      return contentPlanItems.filter((item) => {
+      return getActiveContentPlanItems().filter((item) => {
         if (!item.date) return false;
         const itemDate = new Date(`${item.date}T00:00:00`);
         return itemDate.getFullYear() === year && itemDate.getMonth() === month;
@@ -4681,9 +4861,80 @@
     function moveContentItemToDate(id, date) {
       const item = contentPlanItems.find((record) => record.id === id);
       if (!item || !date || item.date === date) return;
+      item.archivedAt = "";
       item.date = date;
       item.updatedAt = new Date().toISOString();
       saveContentPlanItems();
+      renderContentPlan();
+    }
+
+    function moveContentItemsFromDateToDate(sourceDate, targetDate) {
+      if (!sourceDate || !targetDate || sourceDate === targetDate) return;
+      const changedAt = new Date().toISOString();
+      let moved = 0;
+      contentPlanItems = contentPlanItems.map((item) => {
+        if (item.archivedAt || item.date !== sourceDate) return item;
+        moved += 1;
+        return { ...item, archivedAt: "", date: targetDate, updatedAt: changedAt };
+      });
+      if (!moved) return;
+      saveContentPlanItems();
+      renderContentPlan();
+    }
+
+    function archiveContentItem(id) {
+      const item = contentPlanItems.find((record) => record.id === id);
+      if (!item || item.archivedAt) return;
+      const changedAt = new Date().toISOString();
+      item.archivedAt = changedAt;
+      item.updatedAt = changedAt;
+      saveContentPlanItems();
+      renderContentPlan();
+    }
+
+    function archiveContentItemsByDate(date) {
+      if (!date) return;
+      const changedAt = new Date().toISOString();
+      let archived = 0;
+      contentPlanItems = contentPlanItems.map((item) => {
+        if (item.archivedAt || item.date !== date) return item;
+        archived += 1;
+        return { ...item, archivedAt: changedAt, updatedAt: changedAt };
+      });
+      if (!archived) return;
+      saveContentPlanItems();
+      renderContentPlan();
+    }
+
+    function restoreContentItem(id) {
+      const item = contentPlanItems.find((record) => record.id === id);
+      if (!item) return;
+      item.archivedAt = "";
+      item.updatedAt = new Date().toISOString();
+      saveContentPlanItems();
+      renderContentPlan();
+    }
+
+    function deleteContentItemForever(id) {
+      if (!id) return;
+      deletedContentPlan[id] = new Date().toISOString();
+      contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
+      saveContentPlanItems();
+      saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
+      renderContentPlan();
+    }
+
+    function clearContentArchive() {
+      const archived = getArchivedContentPlanItems();
+      if (!archived.length) return;
+      const changedAt = new Date().toISOString();
+      archived.forEach((item) => {
+        deletedContentPlan[item.id] = changedAt;
+      });
+      const archivedIds = new Set(archived.map((item) => item.id));
+      contentPlanItems = contentPlanItems.filter((item) => !archivedIds.has(item.id));
+      saveContentPlanItems();
+      saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
       renderContentPlan();
     }
 
@@ -4734,6 +4985,25 @@
       `).join("");
     }
 
+    function renderContentArchive() {
+      const archived = getArchivedContentPlanItems()
+        .sort((a, b) => (b.archivedAt || "").localeCompare(a.archivedAt || ""));
+      contentArchiveEmpty.classList.toggle("hidden", archived.length > 0);
+      contentArchiveClearBtn.disabled = !archived.length;
+      contentArchiveList.innerHTML = archived.map((item) => `
+        <article class="idea-card archive-card" data-archive-id="${escapeHtml(item.id)}">
+          <strong>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""} — ${escapeHtml(item.topic || "Без темы")}</strong>
+          <span>${escapeHtml(item.platform)} · ${escapeHtml(item.type)} · ${escapeHtml(item.rubric)} · ${escapeHtml(item.status)}</span>
+          <span>В архиве: ${item.archivedAt ? formatDate(item.archivedAt.slice(0, 10)) : "-"}</span>
+          ${item.comment ? `<span>${escapeHtml(item.comment)}</span>` : ""}
+          <div class="actions" style="margin-top: 10px;">
+            <button class="btn primary" type="button" data-archive-action="restore" data-id="${escapeHtml(item.id)}">Восстановить</button>
+            <button class="btn danger" type="button" data-archive-action="delete" data-id="${escapeHtml(item.id)}">Удалить</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
     function renderContentRubricOptions() {
       const options = defaultContentRubrics().map((rubric) => `<option value="${escapeHtml(rubric.name)}">${escapeHtml(rubric.name)}</option>`).join("");
       if (contentFields.rubric.innerHTML !== options) contentFields.rubric.innerHTML = options;
@@ -4741,15 +5011,16 @@
     }
 
     function renderContentFilters() {
-      fillSelectOptions(contentStatusFilter, contentPlanItems.map((item) => item.status), "Все статусы");
-      fillSelectOptions(contentPlatformFilter, contentPlanItems.map((item) => item.platform), "Все площадки");
+      const activeItems = getActiveContentPlanItems();
+      fillSelectOptions(contentStatusFilter, activeItems.map((item) => item.status), "Все статусы");
+      fillSelectOptions(contentPlatformFilter, activeItems.map((item) => item.platform), "Все площадки");
     }
 
     function getVisibleContentItems() {
       const query = contentSearch.value.trim().toLowerCase();
       const status = contentStatusFilter.value;
       const platform = contentPlatformFilter.value;
-      return contentPlanItems
+      return getActiveContentPlanItems()
         .filter((item) => {
           const haystack = `${item.topic} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
           return (!query || haystack.includes(query))
@@ -4757,6 +5028,14 @@
             && (!platform || item.platform === platform);
         })
         .sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
+    }
+
+    function getActiveContentPlanItems() {
+      return contentPlanItems.filter((item) => !item.archivedAt);
+    }
+
+    function getArchivedContentPlanItems() {
+      return contentPlanItems.filter((item) => item.archivedAt);
     }
 
     function fillSelectOptions(select, values, placeholder) {
@@ -5506,6 +5785,7 @@
         link: item.link || "",
         comment: item.comment || "",
         linkedAdId: item.linkedAdId || "",
+        archivedAt: item.archivedAt || "",
         updatedAt: item.updatedAt || new Date().toISOString(),
       };
     }
