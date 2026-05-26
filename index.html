@@ -1184,6 +1184,11 @@
       background: var(--surface-2);
     }
 
+    .calendar-day.drop-target {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent-soft);
+    }
+
     .calendar-month-card {
       min-height: 0;
       height: 260px;
@@ -1250,6 +1255,12 @@
       font-weight: 800;
     }
 
+    .year-day.type-highlighted {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
     .year-day.today {
       outline: 2px solid var(--accent);
       outline-offset: -2px;
@@ -1279,10 +1290,21 @@
     }
 
     .content-type-metric {
+      width: 100%;
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--surface-2);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .content-type-metric.active,
+    .content-type-metric:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     .content-type-metric span {
@@ -1325,6 +1347,21 @@
       color: var(--ink);
       text-align: left;
       font-size: 12px;
+    }
+
+    .content-card[draggable="true"] {
+      cursor: grab;
+    }
+
+    .content-card.dragging {
+      opacity: .55;
+      cursor: grabbing;
+    }
+
+    .content-card.type-highlighted {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 2px var(--accent-soft);
     }
 
     .content-card strong {
@@ -2779,6 +2816,8 @@
     let activeObjection = salesScript.objections[0].id;
     let activeDashboardMetric = "views";
     let activeCalendarMode = "week";
+    let activeContentTypeHighlight = "";
+    let draggedContentId = "";
     let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
@@ -3239,6 +3278,55 @@
       if (!item) return;
       fillContentForm(item);
       document.querySelector('[data-content-mode="list"]').click();
+    });
+
+    contentTypeSummary.addEventListener("click", (event) => {
+      const metric = event.target.closest("[data-content-type]");
+      if (!metric) return;
+      activeContentTypeHighlight = activeContentTypeHighlight === metric.dataset.contentType ? "" : metric.dataset.contentType;
+      renderContentCalendar();
+    });
+
+    contentCalendarGrid.addEventListener("dragstart", (event) => {
+      const card = event.target.closest("[data-content-id]");
+      if (!card) return;
+      draggedContentId = card.dataset.contentId;
+      card.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedContentId);
+    });
+
+    contentCalendarGrid.addEventListener("dragend", (event) => {
+      const card = event.target.closest("[data-content-id]");
+      if (card) card.classList.remove("dragging");
+      draggedContentId = "";
+      contentCalendarGrid.querySelectorAll(".drop-target").forEach((day) => day.classList.remove("drop-target"));
+    });
+
+    contentCalendarGrid.addEventListener("dragover", (event) => {
+      const day = event.target.closest("[data-calendar-date]");
+      if (!day || !draggedContentId) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      contentCalendarGrid.querySelectorAll(".drop-target").forEach((item) => {
+        if (item !== day) item.classList.remove("drop-target");
+      });
+      day.classList.add("drop-target");
+    });
+
+    contentCalendarGrid.addEventListener("dragleave", (event) => {
+      const day = event.target.closest("[data-calendar-date]");
+      if (!day || day.contains(event.relatedTarget)) return;
+      day.classList.remove("drop-target");
+    });
+
+    contentCalendarGrid.addEventListener("drop", (event) => {
+      const day = event.target.closest("[data-calendar-date]");
+      const id = event.dataTransfer.getData("text/plain") || draggedContentId;
+      if (!day || !id) return;
+      event.preventDefault();
+      moveContentItemToDate(id, day.dataset.calendarDate);
+      contentCalendarGrid.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
     });
 
     contentIdeasList.addEventListener("click", (event) => {
@@ -4472,7 +4560,7 @@
         const key = formatIsoDate(date);
         const items = (itemsByDate[key] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
         return `
-          <div class="calendar-day ${key === todayKey ? "today" : ""}">
+          <div class="calendar-day ${key === todayKey ? "today" : ""}" data-calendar-date="${key}">
             <div class="calendar-date">
               <span>${formatShortDate(key)}</span>
               <span>${weekdayLabel(date)}</span>
@@ -4520,8 +4608,9 @@
                 const dayItems = itemsByDate[key] || [];
                 const inMonth = date.getMonth() === month;
                 const isToday = formatIsoDate(today) === key;
+                const typeHighlighted = activeContentTypeHighlight && dayItems.some((item) => item.type === activeContentTypeHighlight);
                 return `
-                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${isToday ? "today" : ""}" title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ.` : formatShortDate(key)}">
+                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${typeHighlighted ? "type-highlighted" : ""} ${isToday ? "today" : ""}" title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ.` : formatShortDate(key)}">
                     ${inMonth ? `<span>${date.getDate()}</span>${dayItems.length ? `<b>${dayItems.length}</b>` : ""}` : ""}
                   </span>
                 `;
@@ -4571,21 +4660,31 @@
       const types = ["Reels", "Пост", "Сторис", "Статья", "Рекламный креатив", "Другое"];
       const counts = groupBy(items, "type");
       contentTypeSummary.innerHTML = types.map((type) => `
-        <div class="content-type-metric">
+        <button class="content-type-metric ${activeContentTypeHighlight === type ? "active" : ""}" type="button" data-content-type="${escapeHtml(type)}">
           <span>${escapeHtml(type)}</span>
           <strong>${formatNumber((counts[type] || []).length)}</strong>
-        </div>
+        </button>
       `).join("");
     }
 
     function contentCalendarCard(item) {
+      const highlighted = activeContentTypeHighlight && item.type === activeContentTypeHighlight;
       return `
-        <button class="content-card ${statusClass(item.status)}" type="button" data-content-id="${escapeHtml(item.id)}">
+        <button class="content-card ${statusClass(item.status)} ${highlighted ? "type-highlighted" : ""}" type="button" draggable="true" data-content-id="${escapeHtml(item.id)}">
           <strong>${escapeHtml(item.time ? `${item.time} · ${item.topic}` : item.topic)}</strong>
           <span>${escapeHtml(item.platform)} · ${escapeHtml(item.type)}</span>
           <span>${escapeHtml(item.status)}</span>
         </button>
       `;
+    }
+
+    function moveContentItemToDate(id, date) {
+      const item = contentPlanItems.find((record) => record.id === id);
+      if (!item || !date || item.date === date) return;
+      item.date = date;
+      item.updatedAt = new Date().toISOString();
+      saveContentPlanItems();
+      renderContentPlan();
     }
 
     function renderContentList() {
