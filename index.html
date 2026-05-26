@@ -129,15 +129,22 @@
       display: grid;
       grid-template-columns: 260px minmax(0, 1fr);
       min-height: 100vh;
+      transition: grid-template-columns .18s ease;
+    }
+
+    body.sidebar-collapsed .app {
+      grid-template-columns: 78px minmax(0, 1fr);
     }
 
     .sidebar {
+      position: relative;
       background: var(--sidebar-bg);
       color: var(--sidebar-text);
       padding: 22px 16px;
       display: flex;
       flex-direction: column;
       gap: 22px;
+      transition: padding .18s ease;
     }
 
     .brand {
@@ -150,6 +157,16 @@
       max-width: 100%;
       height: auto;
       margin-bottom: 16px;
+    }
+
+    .brand-avatar {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #fff;
+      border: 1px solid var(--sidebar-line);
     }
 
     .brand h1 {
@@ -195,10 +212,85 @@
       color: #fff;
     }
 
+    .nav-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .nav svg {
       width: 18px;
       height: 18px;
       flex: 0 0 auto;
+    }
+
+    .sidebar-toggle {
+      position: absolute;
+      top: 50%;
+      right: -14px;
+      z-index: 4;
+      width: 28px;
+      height: 54px;
+      border: 1px solid var(--sidebar-line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow);
+      display: grid;
+      place-items: center;
+      padding: 0;
+      transform: translateY(-50%);
+    }
+
+    .sidebar-toggle svg {
+      width: 18px;
+      height: 18px;
+      transition: transform .18s ease;
+    }
+
+    body.sidebar-collapsed .sidebar {
+      padding: 18px 10px;
+      align-items: center;
+    }
+
+    body.sidebar-collapsed .brand {
+      padding: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    body.sidebar-collapsed .brand-mark,
+    body.sidebar-collapsed .brand h1,
+    body.sidebar-collapsed .brand p,
+    body.sidebar-collapsed .sidebar-note,
+    body.sidebar-collapsed .nav-label {
+      display: none;
+    }
+
+    body.sidebar-collapsed .brand-avatar {
+      display: block;
+    }
+
+    body.sidebar-collapsed .nav {
+      width: 100%;
+      justify-items: center;
+    }
+
+    body.sidebar-collapsed .nav button {
+      width: 48px;
+      justify-content: center;
+      padding: 0;
+      gap: 0;
+    }
+
+    body.sidebar-collapsed .nav svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    body.sidebar-collapsed .sidebar-toggle svg {
+      transform: rotate(180deg);
     }
 
     .sidebar-note {
@@ -1594,6 +1686,10 @@
         grid-template-columns: 1fr;
       }
 
+      body.sidebar-collapsed .app {
+        grid-template-columns: 1fr;
+      }
+
       .sidebar {
         position: sticky;
         top: 0;
@@ -1601,8 +1697,21 @@
         padding: 14px 16px;
       }
 
+      .sidebar-toggle {
+        display: none;
+      }
+
+      body.sidebar-collapsed .sidebar {
+        padding: 14px 16px;
+        align-items: stretch;
+      }
+
       .brand,
       .sidebar-note {
+        display: none;
+      }
+
+      body.sidebar-collapsed .brand {
         display: none;
       }
 
@@ -1614,6 +1723,16 @@
       .nav button {
         width: auto;
         flex: 0 0 auto;
+      }
+
+      body.sidebar-collapsed .nav button {
+        width: auto;
+        padding: 0 12px;
+        gap: 10px;
+      }
+
+      body.sidebar-collapsed .nav-label {
+        display: inline;
       }
 
       .summary {
@@ -1683,34 +1802,38 @@
     <aside class="sidebar">
       <div class="brand">
         <img class="brand-mark" id="brandLogo" src="assets/logo-white.png" alt="SPORTPRO">
+        <img class="brand-avatar" src="assets/favicon.svg" alt="SPORTPRO">
         <h1>SPORTPRO Office</h1>
         <p>Единая рабочая программа для рекламы, таблиц и дашбордов.</p>
       </div>
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Свернуть боковую панель" title="Свернуть боковую панель">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.4 6 17 7.6 12.6 12 17 16.4 15.4 18l-6-6 6-6Z"/></svg>
+      </button>
 
       <nav class="nav" aria-label="Разделы">
         <button class="active" type="button" data-view="ads" title="Реклама">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v10H4V5Zm2 2v6h12V7H6Zm2 10h8v2H8v-2Zm-2 4h12v2H6v-2Z"/></svg>
-          Реклама
+          <span class="nav-label">Реклама</span>
         </button>
         <button type="button" data-view="contentPlan" title="Контент-план">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM4 8h16V6H4v2Zm3 4h4v4H7v-4Zm6 0h4v2h-4v-2Z"/></svg>
-          Контент-план
+          <span class="nav-label">Контент-план</span>
         </button>
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
-          Продажи
+          <span class="nav-label">Продажи</span>
         </button>
         <button type="button" data-view="guide" title="Гайд">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
-          Гайд
+          <span class="nav-label">Гайд</span>
         </button>
         <button type="button" data-view="access" title="Доступ">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Zm7-5V6h-3V4h3V1h2v3h3v2h-3v3h-2Z"/></svg>
-          Доступ
+          <span class="nav-label">Доступ</span>
         </button>
         <button type="button" data-view="future" title="Будущие таблицы">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v4h14V5H5Zm0 6v8h4v-8H5Zm6 0v8h8v-8h-8Z"/></svg>
-          Шаблоны
+          <span class="nav-label">Шаблоны</span>
         </button>
       </nav>
 
@@ -2827,6 +2950,7 @@
     const themeStorageKey = "workspace-tables.theme";
     const contentPlanStorageKey = "workspace-tables.contentPlan.items";
     const contentPlanTableLayoutKey = "workspace-tables.contentPlan.tableLayout";
+    const sidebarCollapsedKey = "workspace-tables.sidebar.collapsed";
     const contentIdeasStorageKey = "workspace-tables.contentPlan.ideas";
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
@@ -2881,6 +3005,7 @@
     const funnelSortBy = document.querySelector("#funnelSortBy");
     const themeSelect = document.querySelector("#themeSelect");
     const brandLogo = document.querySelector("#brandLogo");
+    const sidebarToggle = document.querySelector("#sidebarToggle");
     const cloudPanel = document.querySelector("#cloudPanel");
     const cloudStatus = document.querySelector("#cloudStatus");
     const cloudUrl = document.querySelector("#cloudUrl");
@@ -3057,6 +3182,7 @@
     let isAutoSyncing = false;
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
+    applySidebarState(localStorage.getItem(sidebarCollapsedKey) === "true");
     applyCloudConfig();
     updateCloudAuthStatus();
     fields.date.valueAsDate = new Date();
@@ -3334,6 +3460,9 @@
       });
     });
     themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
+    sidebarToggle.addEventListener("click", () => {
+      applySidebarState(!document.body.classList.contains("sidebar-collapsed"));
+    });
     document.querySelector("#followersEditBtn").addEventListener("click", () => {
       followersBaseInput.value = adsSettings.followersBase || 0;
       followersEditor.classList.toggle("hidden");
@@ -3717,6 +3846,13 @@
       themeSelect.value = nextTheme;
       brandLogo.src = nextTheme === "light" ? "assets/logo-blue.png" : "assets/logo-white.png";
       localStorage.setItem(themeStorageKey, nextTheme);
+    }
+
+    function applySidebarState(collapsed) {
+      document.body.classList.toggle("sidebar-collapsed", collapsed);
+      localStorage.setItem(sidebarCollapsedKey, collapsed ? "true" : "false");
+      sidebarToggle.setAttribute("aria-label", collapsed ? "Развернуть боковую панель" : "Свернуть боковую панель");
+      sidebarToggle.title = collapsed ? "Развернуть боковую панель" : "Свернуть боковую панель";
     }
 
     function defaultSalesScript() {
