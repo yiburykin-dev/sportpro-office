@@ -816,6 +816,10 @@
       min-width: 920px;
     }
 
+    .content-plan-table {
+      table-layout: fixed;
+    }
+
     th,
     td {
       padding: 11px 12px;
@@ -834,6 +838,46 @@
       position: sticky;
       top: 0;
       z-index: 1;
+    }
+
+    .content-plan-table th {
+      user-select: none;
+    }
+
+    .content-plan-table th[draggable="true"] {
+      cursor: grab;
+    }
+
+    .content-plan-table th.dragging {
+      opacity: .55;
+    }
+
+    .content-plan-table th.drop-left {
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .content-plan-table th.drop-right {
+      box-shadow: inset -3px 0 0 var(--accent);
+    }
+
+    .column-resize-handle {
+      position: absolute;
+      top: 0;
+      right: -4px;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 2;
+    }
+
+    .column-resize-handle::after {
+      content: "";
+      position: absolute;
+      top: 18%;
+      right: 3px;
+      width: 1px;
+      height: 64%;
+      background: var(--line);
     }
 
     td.numeric,
@@ -1477,7 +1521,7 @@
     }
 
     .content-text-cell {
-      max-width: 260px;
+      max-width: none;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.35;
@@ -2306,22 +2350,10 @@
                 </div>
               </div>
               <div class="table-wrap">
-                <table>
+                <table class="content-plan-table" id="contentPlanTable">
+                  <colgroup id="contentColGroup"></colgroup>
                   <thead>
-                    <tr>
-                      <th>Дата</th>
-                      <th>Площадка</th>
-                      <th>Тип</th>
-                      <th>Рубрика</th>
-                      <th>Тема</th>
-                      <th>Текст</th>
-                      <th>Хэштеги</th>
-                      <th>Превью</th>
-                      <th>Статус</th>
-                      <th>Ответственный</th>
-                      <th>Дедлайн</th>
-                      <th class="numeric">Действия</th>
-                    </tr>
+                    <tr id="contentHeaderRow"></tr>
                   </thead>
                   <tbody id="contentRows"></tbody>
                 </table>
@@ -2794,6 +2826,7 @@
     const legacyStorageKey = "ads-tracker-records";
     const themeStorageKey = "workspace-tables.theme";
     const contentPlanStorageKey = "workspace-tables.contentPlan.items";
+    const contentPlanTableLayoutKey = "workspace-tables.contentPlan.tableLayout";
     const contentIdeasStorageKey = "workspace-tables.contentPlan.ideas";
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
@@ -2818,6 +2851,9 @@
     const contentIdeaForm = document.querySelector("#contentIdeaForm");
     const funnelForm = document.querySelector("#funnelForm");
     const rowsEl = document.querySelector("#rows");
+    const contentPlanTable = document.querySelector("#contentPlanTable");
+    const contentColGroup = document.querySelector("#contentColGroup");
+    const contentHeaderRow = document.querySelector("#contentHeaderRow");
     const contentRowsEl = document.querySelector("#contentRows");
     const contentIdeasList = document.querySelector("#contentIdeasList");
     const funnelRowsEl = document.querySelector("#funnelRows");
@@ -3006,6 +3042,8 @@
     let activeContentTypeHighlight = "";
     let draggedContentId = "";
     let draggedContentDate = "";
+    let draggedContentColumn = "";
+    let contentColumnResize = null;
     let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
     let deletedFunnelRecords = loadDeletedRecords(deletedFunnelRecordsKey);
@@ -3277,6 +3315,12 @@
     contentSearch.addEventListener("input", renderContentList);
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
+    contentHeaderRow.addEventListener("dragstart", handleContentColumnDragStart);
+    contentHeaderRow.addEventListener("dragover", handleContentColumnDragOver);
+    contentHeaderRow.addEventListener("dragleave", clearContentColumnDropMarks);
+    contentHeaderRow.addEventListener("drop", handleContentColumnDrop);
+    contentHeaderRow.addEventListener("dragend", handleContentColumnDragEnd);
+    contentHeaderRow.addEventListener("mousedown", handleContentColumnResizeStart);
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
@@ -5078,27 +5122,181 @@
 
     function renderContentList() {
       const visible = getVisibleContentItems();
+      const columns = getContentTableColumns();
+      renderContentTableHeader(columns);
       contentEmptyState.classList.toggle("hidden", visible.length > 0);
       contentRowsEl.innerHTML = visible.map((item) => `
         <tr>
-          <td>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>
-          <td>${escapeHtml(item.platform)}</td>
-          <td>${escapeHtml(item.type)}</td>
-          <td>${escapeHtml(item.rubric)}</td>
-          <td>${escapeHtml(item.topic)}</td>
-          <td class="content-text-cell">${escapeHtml(shortText(item.text || "-", 140))}</td>
-          <td>${escapeHtml(item.hashtags || "-")}</td>
-          <td>${contentPreviewHtml(item.preview)}</td>
-          <td><span class="status-pill">${escapeHtml(item.status)}</span></td>
-          <td>${escapeHtml(item.owner || "-")}</td>
-          <td>${item.prepDeadline ? formatDate(item.prepDeadline) : "-"}</td>
-          <td class="numeric">
-            <button class="btn icon" type="button" title="Перенести в рекламу" data-action="publish-content" data-id="${item.id}">↗</button>
-            <button class="btn icon" type="button" title="Редактировать" data-action="edit-content" data-id="${item.id}">✎</button>
-            <button class="btn icon danger" type="button" title="Удалить" data-action="delete-content" data-id="${item.id}">×</button>
-          </td>
+          ${columns.map((column) => contentTableCellHtml(item, column)).join("")}
         </tr>
       `).join("");
+    }
+
+    function defaultContentTableColumns() {
+      return [
+        { key: "date", label: "Дата", width: 130, min: 100 },
+        { key: "platform", label: "Площадка", width: 120, min: 90 },
+        { key: "type", label: "Тип", width: 120, min: 90 },
+        { key: "rubric", label: "Рубрика", width: 150, min: 110 },
+        { key: "topic", label: "Тема", width: 220, min: 140 },
+        { key: "text", label: "Текст", width: 260, min: 150 },
+        { key: "hashtags", label: "Хэштеги", width: 170, min: 120 },
+        { key: "preview", label: "Превью", width: 90, min: 72 },
+        { key: "status", label: "Статус", width: 150, min: 110 },
+        { key: "owner", label: "Ответственный", width: 150, min: 110 },
+        { key: "prepDeadline", label: "Дедлайн", width: 120, min: 100 },
+        { key: "actions", label: "Действия", width: 130, min: 110, numeric: true },
+      ];
+    }
+
+    function loadContentTableLayout() {
+      const saved = readStorage(contentPlanTableLayoutKey);
+      return saved && !Array.isArray(saved) && typeof saved === "object"
+        ? { order: Array.isArray(saved.order) ? saved.order : [], widths: saved.widths || {} }
+        : { order: [], widths: {} };
+    }
+
+    function saveContentTableLayout(columns) {
+      localStorage.setItem(contentPlanTableLayoutKey, JSON.stringify({
+        order: columns.map((column) => column.key),
+        widths: Object.fromEntries(columns.map((column) => [column.key, column.width])),
+      }));
+    }
+
+    function getContentTableColumns() {
+      const defaults = defaultContentTableColumns();
+      const byKey = new Map(defaults.map((column) => [column.key, column]));
+      const layout = loadContentTableLayout();
+      const orderedKeys = [
+        ...layout.order.filter((key) => byKey.has(key)),
+        ...defaults.map((column) => column.key).filter((key) => !layout.order.includes(key)),
+      ];
+      return orderedKeys.map((key) => {
+        const column = { ...byKey.get(key) };
+        const width = Number(layout.widths[column.key]);
+        if (width) column.width = Math.max(column.min, width);
+        return column;
+      });
+    }
+
+    function renderContentTableHeader(columns) {
+      const totalWidth = columns.reduce((sumWidth, column) => sumWidth + column.width, 0);
+      contentPlanTable.style.minWidth = `${Math.max(totalWidth, 920)}px`;
+      contentColGroup.innerHTML = columns.map((column) => `<col style="width: ${column.width}px;">`).join("");
+      contentHeaderRow.innerHTML = columns.map((column) => `
+        <th class="${column.numeric ? "numeric" : ""}" draggable="true" data-column-key="${escapeHtml(column.key)}" style="width: ${column.width}px;">
+          ${escapeHtml(column.label)}
+          <span class="column-resize-handle" data-resize-column="${escapeHtml(column.key)}" aria-hidden="true"></span>
+        </th>
+      `).join("");
+    }
+
+    function contentTableCellHtml(item, column) {
+      const widthStyle = `style="width: ${column.width}px;"`;
+      if (column.key === "date") return `<td ${widthStyle}>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>`;
+      if (column.key === "platform") return `<td ${widthStyle}>${escapeHtml(item.platform)}</td>`;
+      if (column.key === "type") return `<td ${widthStyle}>${escapeHtml(item.type)}</td>`;
+      if (column.key === "rubric") return `<td ${widthStyle}>${escapeHtml(item.rubric)}</td>`;
+      if (column.key === "topic") return `<td ${widthStyle}>${escapeHtml(item.topic)}</td>`;
+      if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}>${escapeHtml(shortText(item.text || "-", 140))}</td>`;
+      if (column.key === "hashtags") return `<td ${widthStyle}>${escapeHtml(item.hashtags || "-")}</td>`;
+      if (column.key === "preview") return `<td ${widthStyle}>${contentPreviewHtml(item.preview)}</td>`;
+      if (column.key === "status") return `<td ${widthStyle}><span class="status-pill">${escapeHtml(item.status)}</span></td>`;
+      if (column.key === "owner") return `<td ${widthStyle}>${escapeHtml(item.owner || "-")}</td>`;
+      if (column.key === "prepDeadline") return `<td ${widthStyle}>${item.prepDeadline ? formatDate(item.prepDeadline) : "-"}</td>`;
+      return `<td class="numeric" ${widthStyle}>
+        <button class="btn icon" type="button" title="Перенести в рекламу" data-action="publish-content" data-id="${item.id}">↗</button>
+        <button class="btn icon" type="button" title="Редактировать" data-action="edit-content" data-id="${item.id}">✎</button>
+        <button class="btn icon danger" type="button" title="Удалить" data-action="delete-content" data-id="${item.id}">×</button>
+      </td>`;
+    }
+
+    function handleContentColumnDragStart(event) {
+      const header = event.target.closest("[data-column-key]");
+      if (!header || event.target.closest(".column-resize-handle")) return;
+      draggedContentColumn = header.dataset.columnKey;
+      header.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedContentColumn);
+    }
+
+    function handleContentColumnDragOver(event) {
+      const header = event.target.closest("[data-column-key]");
+      if (!header || !draggedContentColumn || header.dataset.columnKey === draggedContentColumn) return;
+      event.preventDefault();
+      const rect = header.getBoundingClientRect();
+      const after = event.clientX > rect.left + rect.width / 2;
+      clearContentColumnDropMarks();
+      header.classList.add(after ? "drop-right" : "drop-left");
+    }
+
+    function handleContentColumnDrop(event) {
+      const header = event.target.closest("[data-column-key]");
+      if (!header || !draggedContentColumn || header.dataset.columnKey === draggedContentColumn) return;
+      event.preventDefault();
+      const rect = header.getBoundingClientRect();
+      const after = event.clientX > rect.left + rect.width / 2;
+      const columns = getContentTableColumns();
+      const fromIndex = columns.findIndex((column) => column.key === draggedContentColumn);
+      let toIndex = columns.findIndex((column) => column.key === header.dataset.columnKey);
+      if (fromIndex < 0 || toIndex < 0) return;
+      const [moved] = columns.splice(fromIndex, 1);
+      if (fromIndex < toIndex) toIndex -= 1;
+      columns.splice(after ? toIndex + 1 : toIndex, 0, moved);
+      saveContentTableLayout(columns);
+      draggedContentColumn = "";
+      clearContentColumnDropMarks();
+      renderContentList();
+    }
+
+    function handleContentColumnDragEnd() {
+      draggedContentColumn = "";
+      clearContentColumnDropMarks();
+      contentHeaderRow.querySelectorAll(".dragging").forEach((item) => item.classList.remove("dragging"));
+    }
+
+    function clearContentColumnDropMarks() {
+      contentHeaderRow.querySelectorAll(".drop-left, .drop-right").forEach((item) => {
+        item.classList.remove("drop-left", "drop-right");
+      });
+    }
+
+    function handleContentColumnResizeStart(event) {
+      const handle = event.target.closest("[data-resize-column]");
+      if (!handle) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const header = handle.closest("[data-column-key]");
+      const columns = getContentTableColumns();
+      const column = columns.find((item) => item.key === handle.dataset.resizeColumn);
+      if (!header || !column) return;
+      contentColumnResize = {
+        key: column.key,
+        startX: event.clientX,
+        startWidth: header.offsetWidth,
+      };
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      window.addEventListener("mousemove", handleContentColumnResizeMove);
+      window.addEventListener("mouseup", handleContentColumnResizeEnd);
+    }
+
+    function handleContentColumnResizeMove(event) {
+      if (!contentColumnResize) return;
+      const columns = getContentTableColumns();
+      const column = columns.find((item) => item.key === contentColumnResize.key);
+      if (!column) return;
+      column.width = Math.max(column.min, contentColumnResize.startWidth + event.clientX - contentColumnResize.startX);
+      saveContentTableLayout(columns);
+      renderContentList();
+    }
+
+    function handleContentColumnResizeEnd() {
+      contentColumnResize = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleContentColumnResizeMove);
+      window.removeEventListener("mouseup", handleContentColumnResizeEnd);
     }
 
     function renderContentIdeas() {
