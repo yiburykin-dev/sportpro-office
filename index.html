@@ -2095,7 +2095,8 @@
             <p>Контент, показатели и выводы по каждому размещению.</p>
           </div>
           <div class="actions">
-            <button class="btn" id="exportBtn" type="button" title="Экспортировать CSV">Экспорт CSV</button>
+            <button class="btn" id="exportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
+            <button class="btn" id="exportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn danger" id="clearBtn" type="button" title="Очистить все записи">Очистить</button>
           </div>
         </div>
@@ -2262,7 +2263,8 @@
             <p>Бизнес-показатели рекламы по дням или отчетным периодам.</p>
           </div>
           <div class="actions">
-            <button class="btn" id="funnelExportBtn" type="button" title="Экспортировать CSV">Экспорт CSV</button>
+            <button class="btn" id="funnelExportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
+            <button class="btn" id="funnelExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn danger" id="funnelClearBtn" type="button" title="Очистить все записи">Очистить</button>
           </div>
         </div>
@@ -2509,6 +2511,8 @@
                   <select id="contentPlatformFilter" aria-label="Фильтр по площадке">
                     <option value="">Все площадки</option>
                   </select>
+                  <button class="btn" id="contentExportExcelBtn" type="button" title="Скачать список для Excel">Excel</button>
+                  <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
                 </div>
               </div>
               <div class="table-wrap">
@@ -2645,6 +2649,8 @@
                 <p class="sales-goal">Карточки лидов из разговоров: контакт, этап, бюджет и следующий шаг.</p>
               </div>
               <div class="actions">
+                <button class="btn" id="salesClientsExportExcelBtn" type="button" title="Скачать клиентов для Excel">Excel</button>
+                <button class="btn" id="salesClientsExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
                 <button class="btn primary" id="clientFromDraftBtn" type="button">Сохранить из анкеты</button>
               </div>
             </div>
@@ -2753,6 +2759,8 @@
             <p class="sales-goal" id="sourcesHeaderUpdatedAt">Последнее обновление: пока нет.</p>
           </div>
           <div class="actions">
+            <button class="btn" id="sourcesExportExcelBtn" type="button" title="Скачать источники для Excel">Excel</button>
+            <button class="btn" id="sourcesExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn primary" id="sourcesRefreshBtn" type="button">Обновить данные</button>
           </div>
         </div>
@@ -3604,6 +3612,10 @@
       resetFunnelForm();
       funnelFields.followers.focus();
     });
+    document.querySelector("#exportBtn").addEventListener("click", () => exportRowsToExcel("reklama-publikacii", adsExportRows()));
+    document.querySelector("#exportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: публикации", adsExportRows()));
+    document.querySelector("#funnelExportBtn").addEventListener("click", () => exportRowsToExcel("reklama-itogi-dnya", funnelExportRows()));
+    document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: итоги дня", funnelExportRows()));
     contentImportDate.addEventListener("change", renderContentImportControls);
     contentImportBtn.addEventListener("click", importSelectedContentToAds);
     contentCloudPullBtn.addEventListener("click", () => pullFromCloud());
@@ -3624,6 +3636,8 @@
     contentSearch.addEventListener("input", renderContentList);
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
+    document.querySelector("#contentExportExcelBtn").addEventListener("click", () => exportRowsToExcel("content-plan-spisok", contentListExportRows()));
+    document.querySelector("#contentExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Контент-план: список", contentListExportRows()));
     contentHeaderRow.addEventListener("dragstart", handleContentColumnDragStart);
     contentHeaderRow.addEventListener("dragover", handleContentColumnDragOver);
     contentHeaderRow.addEventListener("dragleave", clearContentColumnDropMarks);
@@ -3674,61 +3688,17 @@
     document.querySelector("#leadSaveClientBtn").addEventListener("click", saveClientFromDraft);
     document.querySelector("#clientFromDraftBtn").addEventListener("click", saveClientFromDraft);
     document.querySelector("#leadClearBtn").addEventListener("click", clearLeadDraft);
+    document.querySelector("#salesClientsExportExcelBtn").addEventListener("click", () => exportRowsToExcel("prodazhi-klienty", salesClientsExportRows()));
+    document.querySelector("#salesClientsExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Продажи: клиенты", salesClientsExportRows()));
     sourcesSaveUrlBtn.addEventListener("click", saveClientSourcesUrl);
     sourcesRefreshBtn.addEventListener("click", loadClientSourcesFromGoogle);
+    document.querySelector("#sourcesExportExcelBtn").addEventListener("click", () => exportRowsToExcel("istochniki-klientov", clientSourcesExportRows()));
+    document.querySelector("#sourcesExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Источники клиентов", clientSourcesExportRows()));
     document.querySelectorAll("[data-lead-field]").forEach((field) => {
       field.addEventListener("input", saveLeadDraft);
       field.addEventListener("change", saveLeadDraft);
     });
     salesClientsList.addEventListener("click", handleClientAction);
-
-    document.querySelector("#exportBtn").addEventListener("click", () => {
-      const header = ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Вывод"];
-      const lines = [header, ...getVisibleRecords().map((record) => [
-        record.date,
-        record.type,
-        record.topic,
-        record.views,
-        record.saves,
-        record.messages,
-        rate(record),
-        record.conclusion,
-      ])];
-      const csv = lines.map((line) => line.map(csvCell).join(";")).join("\n");
-      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "reklama.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    });
-
-    document.querySelector("#funnelExportBtn").addEventListener("click", () => {
-      const header = ["Дата", "Новые подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"];
-      const lines = [header, ...getVisibleFunnelRecords().map((record) => [
-        record.date,
-        record.followers,
-        record.reach,
-        record.reelsViews,
-        record.messages,
-        record.leads,
-        record.offers,
-        record.deals,
-        record.revenue,
-        record.spend,
-        romi(record),
-        record.conclusion,
-      ])];
-      const csv = lines.map((line) => line.map(csvCell).join(";")).join("\n");
-      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "reklama-funnel.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    });
 
     document.querySelector("#clearBtn").addEventListener("click", () => {
       if (!records.length || !confirm("Очистить все записи в разделе рекламы?")) return;
@@ -6693,6 +6663,157 @@
 
     function formatFullDateTime(value) {
       return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(value);
+    }
+
+    function adsExportRows() {
+      return [
+        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Замеры", "Вывод"],
+        ...getVisibleRecords().map((record) => {
+          const latest = getLatestMeasurement(record);
+          return [
+            formatDate(record.date),
+            record.type,
+            record.topic,
+            record.views,
+            record.saves,
+            record.messages,
+            rate(record),
+            latest ? `${record.measurements.length} / ${formatDate(latest.date)}` : "Нет",
+            record.conclusion,
+          ];
+        }),
+      ];
+    }
+
+    function funnelExportRows() {
+      return [
+        ["Дата", "Новые подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"],
+        ...getVisibleFunnelRecords().map((record) => [
+          formatDate(record.date),
+          record.followers,
+          record.reach,
+          record.reelsViews,
+          record.messages,
+          record.leads,
+          record.offers,
+          record.deals,
+          record.revenue,
+          record.spend,
+          romi(record),
+          record.conclusion,
+        ]),
+      ];
+    }
+
+    function contentListExportRows() {
+      const columns = getContentTableColumns().filter((column) => column.key !== "actions");
+      return [
+        columns.map((column) => column.label),
+        ...getVisibleContentItems().map((item) => columns.map((column) => contentExportValue(item, column.key))),
+      ];
+    }
+
+    function contentExportValue(item, key) {
+      if (key === "date") return `${formatDate(item.date)}${item.time ? `, ${item.time}` : ""}`;
+      if (key === "prepDeadline") return item.prepDeadline ? formatDate(item.prepDeadline) : "";
+      return item[key] || "";
+    }
+
+    function clientSourcesExportRows() {
+      const data = normalizeClientSourcesData(clientSourcesData);
+      return [
+        ["Источник", "Ответы", "Доля %"],
+        ...data.sources.map((source) => [source.name, source.count, source.percent]),
+      ];
+    }
+
+    function salesClientsExportRows() {
+      return [
+        ["Имя", "Контакт", "Источник", "Статус", "Площадь", "Формат", "Бюджет", "Срок запуска", "Помещение", "Следующий шаг", "Дата касания", "Комментарий"],
+        ...salesClients.map((client) => [
+          client.name,
+          client.contact,
+          client.source,
+          client.status,
+          client.area,
+          client.format,
+          client.budget,
+          client.deadline,
+          client.spaceStatus,
+          client.nextStep,
+          client.nextContactDate ? formatDate(client.nextContactDate) : "",
+          client.comment,
+        ]),
+      ];
+    }
+
+    function exportRowsToExcel(filename, rows) {
+      if (!rows || rows.length <= 1) {
+        alert("Нет данных для экспорта.");
+        return;
+      }
+      const table = tableRowsToHtml(rows);
+      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body>${table}</body></html>`;
+      const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
+      downloadBlob(blob, `${sanitizeFilename(filename)}.xls`);
+    }
+
+    function exportRowsToPdf(title, rows) {
+      if (!rows || rows.length <= 1) {
+        alert("Нет данных для экспорта.");
+        return;
+      }
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("Браузер заблокировал открытие окна. Разрешите всплывающие окна и повторите экспорт PDF.");
+        return;
+      }
+      const generatedAt = formatFullDateTime(new Date());
+      printWindow.document.write(`<!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${escapeHtml(title)}</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
+              h1 { font-size: 22px; margin: 0 0 6px; }
+              p { color: #536171; margin: 0 0 18px; }
+              table { width: 100%; border-collapse: collapse; font-size: 11px; }
+              th, td { border: 1px solid #d7dee8; padding: 7px 8px; text-align: left; vertical-align: top; }
+              th { background: #eef3f8; font-weight: 700; }
+              tr:nth-child(even) td { background: #f8fafc; }
+              @page { size: A4 landscape; margin: 12mm; }
+            </style>
+          </head>
+          <body>
+            <h1>${escapeHtml(title)}</h1>
+            <p>Сформировано: ${escapeHtml(generatedAt)}</p>
+            ${tableRowsToHtml(rows)}
+            <script>window.onload = () => { window.print(); };<\/script>
+          </body>
+        </html>`);
+      printWindow.document.close();
+    }
+
+    function tableRowsToHtml(rows) {
+      const [header, ...bodyRows] = rows;
+      return `<table>
+        <thead><tr>${header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
+        <tbody>${bodyRows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>`;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function sanitizeFilename(value) {
+      return String(value || "export").trim().replace(/[\\/:*?"<>|]+/g, "-");
     }
 
     function csvCell(value) {
