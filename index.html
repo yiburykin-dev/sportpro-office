@@ -1823,6 +1823,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           <span class="nav-label">Продажи</span>
         </button>
+        <button type="button" data-view="clientSources" title="Источники клиентов">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 1 0-8 8v2A10 10 0 0 1 12 2Zm1 5v6l5 3-.9 1.6-6.1-3.6V7h2Zm6 10h3v2h-3v3h-2v-3h-3v-2h3v-3h2v3Z"/></svg>
+          <span class="nav-label">Источники</span>
+        </button>
         <button type="button" data-view="guide" title="Гайд">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
           <span class="nav-label">Гайд</span>
@@ -2706,6 +2710,68 @@
         </section>
       </section>
 
+      <section id="clientSourcesView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Источники клиентов</h2>
+            <p>Статистика ответов Google Forms: как клиенты узнали о SPORTPRO.</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="sourcesRefreshBtn" type="button">Обновить данные</button>
+          </div>
+        </div>
+
+        <section class="panel chart-panel">
+          <div class="toolbar">
+            <div>
+              <h3>Подключение Google Forms</h3>
+              <p class="sales-goal">Используется ссылка веб-приложения Apps Script, которое отдает только сводку по источникам.</p>
+            </div>
+            <div class="actions">
+              <input class="search" id="sourcesApiUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+              <button class="btn" id="sourcesSaveUrlBtn" type="button">Сохранить ссылку</button>
+            </div>
+          </div>
+          <div class="cloud-help" id="sourcesStatus">Ссылка готова. Нажмите “Обновить данные”.</div>
+        </section>
+
+        <section class="summary" aria-label="Итоги источников клиентов">
+          <div class="metric"><span>Ответов</span><strong id="sourcesTotal">0</strong></div>
+          <div class="metric"><span>Источников</span><strong id="sourcesCount">0</strong></div>
+          <div class="metric"><span>Топ источник</span><strong id="sourcesTop">-</strong></div>
+          <div class="metric"><span>Доля топа</span><strong id="sourcesTopPercent">0%</strong></div>
+        </section>
+
+        <section class="dashboard-grid">
+          <section class="panel chart-panel">
+            <h3>Распределение источников</h3>
+            <div class="bars" id="sourcesBars"></div>
+            <div class="dashboard-empty hidden" id="sourcesEmpty">Данные еще не загружены.</div>
+          </section>
+
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Ответы по источникам</h3>
+                <p class="sales-goal" id="sourcesUpdatedAt">Обновлений пока нет.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Источник</th>
+                    <th class="numeric">Ответы</th>
+                    <th class="numeric">Доля</th>
+                  </tr>
+                </thead>
+                <tbody id="sourcesRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+
       <section id="guideView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -2951,6 +3017,9 @@
     const contentPlanStorageKey = "workspace-tables.contentPlan.items";
     const contentPlanTableLayoutKey = "workspace-tables.contentPlan.tableLayout";
     const sidebarCollapsedKey = "workspace-tables.sidebar.collapsed";
+    const clientSourcesUrlKey = "workspace-tables.clientSources.url";
+    const clientSourcesDataKey = "workspace-tables.clientSources.data";
+    const defaultClientSourcesUrl = "https://script.google.com/macros/s/AKfycbxQ2a3fJT1tKTiBYigzLC_BgO6eOl-dkuwSDUwh5WDNbHgGxkdeqYjraIHMy39jjA/exec";
     const contentIdeasStorageKey = "workspace-tables.contentPlan.ideas";
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
@@ -3043,6 +3112,7 @@
       ads: document.querySelector("#adsView"),
       contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
+      clientSources: document.querySelector("#clientSourcesView"),
       guide: document.querySelector("#guideView"),
       access: document.querySelector("#accessView"),
       future: document.querySelector("#futureView"),
@@ -3079,6 +3149,18 @@
     const objectionFollowup = document.querySelector("#objectionFollowup");
     const salesClientsList = document.querySelector("#salesClientsList");
     const salesClientsEmpty = document.querySelector("#salesClientsEmpty");
+    const sourcesApiUrl = document.querySelector("#sourcesApiUrl");
+    const sourcesRefreshBtn = document.querySelector("#sourcesRefreshBtn");
+    const sourcesSaveUrlBtn = document.querySelector("#sourcesSaveUrlBtn");
+    const sourcesStatus = document.querySelector("#sourcesStatus");
+    const sourcesTotal = document.querySelector("#sourcesTotal");
+    const sourcesCount = document.querySelector("#sourcesCount");
+    const sourcesTop = document.querySelector("#sourcesTop");
+    const sourcesTopPercent = document.querySelector("#sourcesTopPercent");
+    const sourcesBars = document.querySelector("#sourcesBars");
+    const sourcesRows = document.querySelector("#sourcesRows");
+    const sourcesEmpty = document.querySelector("#sourcesEmpty");
+    const sourcesUpdatedAt = document.querySelector("#sourcesUpdatedAt");
     const memberForm = document.querySelector("#memberForm");
     const memberEmail = document.querySelector("#memberEmail");
     const memberRole = document.querySelector("#memberRole");
@@ -3158,6 +3240,7 @@
     let contentIdeas = loadContentIdeas();
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
+    let clientSourcesData = loadClientSourcesData();
     let adsSettings = loadAdsSettings();
     let workspaceMembers = [];
     let activeSalesStage = salesScript.stages[0].id;
@@ -3195,6 +3278,8 @@
     renderContentPlan();
     renderSales();
     renderSalesClients();
+    applyClientSourcesConfig();
+    renderClientSources();
     renderWorkspaceMembers();
     loadLeadDraft();
     startCloudAutoLoad();
@@ -3491,6 +3576,8 @@
     document.querySelector("#leadSaveClientBtn").addEventListener("click", saveClientFromDraft);
     document.querySelector("#clientFromDraftBtn").addEventListener("click", saveClientFromDraft);
     document.querySelector("#leadClearBtn").addEventListener("click", clearLeadDraft);
+    sourcesSaveUrlBtn.addEventListener("click", saveClientSourcesUrl);
+    sourcesRefreshBtn.addEventListener("click", loadClientSourcesFromGoogle);
     document.querySelectorAll("[data-lead-field]").forEach((field) => {
       field.addEventListener("input", saveLeadDraft);
       field.addEventListener("change", saveLeadDraft);
@@ -3831,6 +3918,7 @@
       renderDashboard();
       renderInputHub();
       renderFollowersSummary();
+      renderClientSources();
       renderFilters();
       renderSummary();
       renderRows();
@@ -4911,6 +4999,108 @@
 
     function contentImportLabel(item) {
       return `${item.time ? `${item.time} - ` : ""}${item.type} - ${item.topic || "Без темы"}`;
+    }
+
+    function applyClientSourcesConfig() {
+      sourcesApiUrl.value = localStorage.getItem(clientSourcesUrlKey) || defaultClientSourcesUrl;
+    }
+
+    function saveClientSourcesUrl() {
+      const url = sourcesApiUrl.value.trim();
+      if (!url) {
+        alert("Вставьте ссылку Apps Script.");
+        return;
+      }
+      localStorage.setItem(clientSourcesUrlKey, url);
+      sourcesStatus.textContent = "Ссылка сохранена.";
+    }
+
+    async function loadClientSourcesFromGoogle() {
+      const url = sourcesApiUrl.value.trim();
+      if (!url) {
+        alert("Вставьте ссылку Apps Script.");
+        return;
+      }
+
+      localStorage.setItem(clientSourcesUrlKey, url);
+      sourcesStatus.textContent = "Загружаем данные из Google Forms...";
+      sourcesRefreshBtn.disabled = true;
+
+      try {
+        const data = await fetchClientSourcesData(url);
+        if (data.error) {
+          throw new Error(`${data.error}${data.headers ? `: ${data.headers.join(", ")}` : ""}`);
+        }
+        clientSourcesData = normalizeClientSourcesData(data);
+        localStorage.setItem(clientSourcesDataKey, JSON.stringify(clientSourcesData));
+        renderClientSources();
+        sourcesStatus.textContent = `Данные обновлены: ${formatDateTime(new Date())}`;
+      } catch (error) {
+        sourcesStatus.textContent = "Не удалось загрузить данные.";
+        alert(`Не удалось загрузить источники клиентов: ${error.message}`);
+      } finally {
+        sourcesRefreshBtn.disabled = false;
+      }
+    }
+
+    async function fetchClientSourcesData(url) {
+      const response = await fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return response.json();
+    }
+
+    function renderClientSources() {
+      const data = normalizeClientSourcesData(clientSourcesData);
+      const sources = data.sources;
+      const top = sources[0] || null;
+      const max = Math.max(...sources.map((item) => item.count), 0);
+
+      sourcesTotal.textContent = formatNumber(data.total);
+      sourcesCount.textContent = formatNumber(sources.length);
+      sourcesTop.textContent = top ? top.name : "-";
+      sourcesTopPercent.textContent = top ? `${formatNumber(top.percent)}%` : "0%";
+      sourcesEmpty.classList.toggle("hidden", sources.length > 0);
+      sourcesUpdatedAt.textContent = data.updatedAt
+        ? `Последнее обновление: ${formatDateTime(new Date(data.updatedAt))}`
+        : "Обновлений пока нет.";
+
+      sourcesBars.innerHTML = sources.slice(0, 12).map((source) => `
+        <div class="bar-row" title="${escapeHtml(source.name)}">
+          <span>${escapeHtml(source.name)}</span>
+          <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (source.count / max) * 100 : 0}%"></div></div>
+          <span class="bar-value">${formatNumber(source.count)} / ${formatNumber(source.percent)}%</span>
+        </div>
+      `).join("");
+
+      sourcesRows.innerHTML = sources.map((source) => `
+        <tr>
+          <td>${escapeHtml(source.name)}</td>
+          <td class="numeric">${formatNumber(source.count)}</td>
+          <td class="numeric">${formatNumber(source.percent)}%</td>
+        </tr>
+      `).join("");
+    }
+
+    function normalizeClientSourcesData(data) {
+      const rawSources = Array.isArray(data?.sources) ? data.sources : [];
+      const sources = rawSources
+        .map((source) => ({
+          name: String(source.name || "").trim() || "Без ответа",
+          count: Number(source.count) || 0,
+          percent: Number(source.percent) || 0,
+        }))
+        .filter((source) => source.count > 0)
+        .sort((a, b) => b.count - a.count);
+      const total = Number(data?.total) || sources.reduce((sumValue, source) => sumValue + source.count, 0);
+      return {
+        total,
+        sources,
+        updatedAt: data?.updatedAt || "",
+      };
+    }
+
+    function loadClientSourcesData() {
+      return normalizeClientSourcesData(readStorage(clientSourcesDataKey) || {});
     }
 
     function getFollowersGrowth() {
