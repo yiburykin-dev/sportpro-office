@@ -1009,28 +1009,63 @@
 
     .placeholder-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(5, minmax(180px, 1fr));
+      gap: 14px;
     }
 
     .placeholder-card {
-      border: 1px dashed #bac8bf;
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 16px;
       background: var(--surface-2);
-      min-height: 120px;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .placeholder-card strong {
       display: block;
       font-size: 16px;
-      margin-bottom: 8px;
     }
 
     .placeholder-card span {
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .module-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .module-status {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .module-fields {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .module-card-action {
+      margin-top: auto;
+      width: 100%;
+      justify-content: center;
+      opacity: .75;
+      cursor: default;
     }
 
     .guide-layout {
@@ -2987,22 +3022,81 @@
         <div class="topbar">
           <div class="title">
             <h2>Шаблоны</h2>
-            <p>Здесь будут появляться следующие рабочие таблицы.</p>
+            <p>Будущие рабочие модули SPORTPRO Office. Сейчас это план: что можно добавить следующим этапом.</p>
           </div>
         </div>
         <div class="placeholder">
+          <p class="sales-goal">Эти карточки пока не открываются и не редактируются. Они показывают, какие разделы можно превратить в полноценные таблицы, формы и дашборды.</p>
           <div class="placeholder-grid">
             <div class="placeholder-card">
-              <strong>Контент-план</strong>
-              <span>Дата, рубрика, тема, статус, площадка, результат.</span>
+              <div class="module-card-head">
+                <strong>Клиенты</strong>
+                <span class="module-status">Запланировано</span>
+              </div>
+              <span>Единая база клиентов и лидов, чтобы видеть историю общения и следующий шаг.</span>
+              <ul class="module-fields">
+                <li>имя и контакт;</li>
+                <li>источник обращения;</li>
+                <li>этап сделки;</li>
+                <li>бюджет и ответственный.</li>
+              </ul>
+              <button class="btn module-card-action" type="button" disabled>Запланировано</button>
             </div>
             <div class="placeholder-card">
-              <strong>Клиенты</strong>
-              <span>Имя, контакт, источник, этап, сумма, следующий шаг.</span>
+              <div class="module-card-head">
+                <strong>Финансы</strong>
+                <span class="module-status">Запланировано</span>
+              </div>
+              <span>Учет доходов, расходов и понятная картина по прибыльности направлений.</span>
+              <ul class="module-fields">
+                <li>дата операции;</li>
+                <li>доход или расход;</li>
+                <li>категория;</li>
+                <li>комментарий и баланс.</li>
+              </ul>
+              <button class="btn module-card-action" type="button" disabled>Запланировано</button>
             </div>
             <div class="placeholder-card">
-              <strong>Финансы</strong>
-              <span>Дата, категория, доход, расход, комментарий, баланс.</span>
+              <div class="module-card-head">
+                <strong>Склад</strong>
+                <span class="module-status">Запланировано</span>
+              </div>
+              <span>Контроль наличия оборудования, резервов, закупок и движения товара.</span>
+              <ul class="module-fields">
+                <li>товар и категория;</li>
+                <li>остаток;</li>
+                <li>резерв;</li>
+                <li>поставка и статус.</li>
+              </ul>
+              <button class="btn module-card-action" type="button" disabled>Запланировано</button>
+            </div>
+            <div class="placeholder-card">
+              <div class="module-card-head">
+                <strong>Задачи</strong>
+                <span class="module-status">Запланировано</span>
+              </div>
+              <span>Рабочие задачи по маркетингу, продажам, контенту и операционным процессам.</span>
+              <ul class="module-fields">
+                <li>задача;</li>
+                <li>ответственный;</li>
+                <li>срок;</li>
+                <li>статус и приоритет.</li>
+              </ul>
+              <button class="btn module-card-action" type="button" disabled>Запланировано</button>
+            </div>
+            <div class="placeholder-card">
+              <div class="module-card-head">
+                <strong>Отчеты</strong>
+                <span class="module-status">Запланировано</span>
+              </div>
+              <span>Сводные отчеты для руководителя по рекламе, продажам, источникам и финансам.</span>
+              <ul class="module-fields">
+                <li>период;</li>
+                <li>ключевые показатели;</li>
+                <li>выводы;</li>
+                <li>экспорт или ссылка.</li>
+              </ul>
+              <button class="btn module-card-action" type="button" disabled>Запланировано</button>
             </div>
           </div>
         </div>
