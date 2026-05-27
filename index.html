@@ -1131,6 +1131,108 @@
       margin-top: 18px;
     }
 
+    .wholesale-client-list,
+    .wholesale-ledger,
+    .payment-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .wholesale-client-card,
+    .ledger-card,
+    .payment-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface-2);
+    }
+
+    .wholesale-client-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .company-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .company-tags span,
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-chip.paid,
+    .status-chip.docs-ok {
+      background: color-mix(in srgb, #16a34a 18%, transparent);
+      color: #15803d;
+    }
+
+    .status-chip.warning {
+      background: color-mix(in srgb, #f59e0b 18%, transparent);
+      color: #b45309;
+    }
+
+    .status-chip.overdue {
+      background: color-mix(in srgb, #ef4444 18%, transparent);
+      color: #b91c1c;
+    }
+
+    .ledger-card {
+      cursor: pointer;
+      transition: border-color .15s ease, transform .15s ease;
+    }
+
+    .ledger-card:hover,
+    .ledger-card.active {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .ledger-card-grid {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) repeat(4, minmax(90px, .7fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ledger-card small,
+    .payment-item small {
+      display: block;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .wholesale-detail {
+      position: sticky;
+      top: 20px;
+    }
+
+    .wholesale-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .wholesale-detail-grid div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface-2);
+    }
+
     .module-card-action {
       margin-top: auto;
       width: 100%;
@@ -1877,8 +1979,11 @@
       .guide-layout,
       .guide-grid,
       .sales-layout,
+      .ledger-card-grid,
+      .wholesale-detail-grid,
       .lead-grid,
       .client-card,
+      .wholesale-client-card,
       .calendar-grid,
       .placeholder-grid {
         grid-template-columns: 1fr;
@@ -1928,6 +2033,10 @@
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           <span class="nav-label">Продажи</span>
+        </button>
+        <button type="button" data-view="wholesale" title="Оптовые расчеты">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v4H3V5Zm2 2h14V7H5Zm-1 5h6v7H4v-7Zm2 2v3h2v-3H6Zm7-2h7v2h-7v-2Zm0 4h7v2h-7v-2Zm0 4h7v2h-7v-2Z"/></svg>
+          <span class="nav-label">Оптовые расчеты</span>
         </button>
         <button type="button" data-view="guide" title="Гайд">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
@@ -2829,6 +2938,219 @@
         </section>
       </section>
 
+      <section id="wholesaleView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Оптовые расчеты</h2>
+            <p>Клиенты, предприятия, накладные, оплаты, транспортные расходы, долги и дедлайны.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="wholesaleBackupJsonBtn" type="button">Резерв JSON</button>
+            <button class="btn" id="wholesaleExportExcelBtn" type="button">Excel</button>
+            <button class="btn" id="wholesaleExportPdfBtn" type="button">PDF</button>
+          </div>
+        </div>
+
+        <section class="summary" aria-label="Итоги оптовых расчетов">
+          <div class="metric"><span>Клиентов</span><strong id="wholesaleTotalClients">0</strong></div>
+          <div class="metric"><span>Сумма накладных</span><strong id="wholesaleTotalInvoice">0</strong></div>
+          <div class="metric"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
+          <div class="metric"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
+          <div class="metric"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
+        </section>
+
+        <div class="module-tabs" role="tablist" aria-label="Оптовые расчеты">
+          <button class="active" type="button" data-wholesale-mode="dashboard">Дашборд</button>
+          <button type="button" data-wholesale-mode="clients">Клиенты</button>
+          <button type="button" data-wholesale-mode="ledger">Накладные</button>
+          <button type="button" data-wholesale-mode="backup">Резерв</button>
+        </div>
+
+        <section id="wholesaleDashboardView">
+          <section class="panel chart-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Аналитика</h3>
+                <p class="sales-goal">Фильтруй по периоду, клиенту или предприятию. Если ничего не выбрано, показаны все данные.</p>
+              </div>
+              <div class="actions">
+                <label>С
+                  <input id="wholesaleDateFrom" type="date">
+                </label>
+                <label>По
+                  <input id="wholesaleDateTo" type="date">
+                </label>
+                <label>Клиент
+                  <select id="wholesaleClientFilter"></select>
+                </label>
+                <label>Предприятие
+                  <select id="wholesaleCompanyFilter"></select>
+                </label>
+              </div>
+            </div>
+          </section>
+          <section class="dashboard-grid">
+            <section class="panel chart-panel">
+              <h3>Крупные долги</h3>
+              <div class="bars" id="wholesaleDebtBars"></div>
+              <div class="dashboard-empty hidden" id="wholesaleDebtEmpty">Открытых долгов нет.</div>
+            </section>
+            <section class="panel chart-panel">
+              <h3>Ближайшие дедлайны</h3>
+              <div class="wholesale-ledger" id="wholesaleDeadlineList"></div>
+              <div class="dashboard-empty hidden" id="wholesaleDeadlineEmpty">Просрочек и ближайших дедлайнов нет.</div>
+            </section>
+          </section>
+        </section>
+
+        <section id="wholesaleClientsView" class="hidden">
+          <section class="workspace">
+            <aside class="panel form-panel">
+              <h3>Клиент и предприятие</h3>
+              <form id="wholesaleClientForm">
+                <input id="wholesaleClientId" type="hidden">
+                <label>Глобальный клиент
+                  <input id="wholesaleClientName" type="text" placeholder="Например: сеть клубов S89" required>
+                </label>
+                <label>Предприятие
+                  <input id="wholesaleCompanyName" type="text" placeholder="Например: ТОО S89 Fitness">
+                </label>
+                <label>Комментарий
+                  <textarea id="wholesaleClientComment" placeholder="Особенности клиента, договоренности, контакты"></textarea>
+                </label>
+                <button class="btn primary" type="submit">Сохранить клиента</button>
+                <button class="btn hidden" id="wholesaleClientCancelBtn" type="button">Отменить</button>
+              </form>
+            </aside>
+            <section class="panel table-panel">
+              <div class="toolbar">
+                <input class="search" id="wholesaleClientSearch" type="search" placeholder="Поиск по клиентам и предприятиям">
+                <div class="actions">
+                  <button class="btn" id="wholesaleDemoS89Btn" type="button">Добавить пример S89</button>
+                </div>
+              </div>
+              <div class="wholesale-client-list" id="wholesaleClientsList"></div>
+              <div class="empty" id="wholesaleClientsEmpty">Клиентов пока нет. Добавьте клиента и его предприятия.</div>
+            </section>
+          </section>
+        </section>
+
+        <section id="wholesaleLedgerView" class="hidden">
+          <section class="workspace">
+            <aside class="panel form-panel">
+              <h3 id="wholesaleInvoiceFormTitle">Новая накладная</h3>
+              <form id="wholesaleInvoiceForm">
+                <input id="wholesaleInvoiceId" type="hidden">
+                <label>Клиент
+                  <select id="wholesaleInvoiceClient" required></select>
+                </label>
+                <label>Предприятие
+                  <select id="wholesaleInvoiceCompany" required></select>
+                </label>
+                <div class="two">
+                  <label>Дата отправки
+                    <input id="wholesaleShipDate" type="date" required>
+                  </label>
+                  <label>№ накладной
+                    <input id="wholesaleInvoiceNumber" type="text" placeholder="CN-216" required>
+                  </label>
+                </div>
+                <label>Статус документов
+                  <select id="wholesaleDocStatus">
+                    <option value="pending">Оригиналы не получены</option>
+                    <option value="signed">Оригиналы получены</option>
+                    <option value="problem">Проблема с документами</option>
+                  </select>
+                </label>
+                <div class="two">
+                  <label>Сумма накладной
+                    <input id="wholesaleInvoiceAmount" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Дедлайн оплаты
+                    <input id="wholesaleInvoiceDeadline" type="date">
+                  </label>
+                </div>
+                <div class="two">
+                  <label>ТР / разное
+                    <input id="wholesaleTransportCost" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Дедлайн ТР
+                    <input id="wholesaleTransportDeadline" type="date">
+                  </label>
+                </div>
+                <label>Комментарий по ТР
+                  <textarea id="wholesaleTransportComment" placeholder="Транспорт, доставка, сборка, документы"></textarea>
+                </label>
+                <label>Комментарий
+                  <textarea id="wholesaleInvoiceComment" placeholder="Общие примечания по накладной"></textarea>
+                </label>
+                <button class="btn primary" id="wholesaleInvoiceSaveBtn" type="button">Сохранить накладную</button>
+                <button class="btn hidden" id="wholesaleInvoiceCancelBtn" type="button">Отменить</button>
+              </form>
+            </aside>
+
+            <section class="panel table-panel">
+              <div class="toolbar">
+                <input class="search" id="wholesaleLedgerSearch" type="search" placeholder="Поиск по накладной, клиенту, комментарию">
+                <div class="filters">
+                  <select id="wholesaleLedgerStatusFilter">
+                    <option value="">Все статусы</option>
+                    <option value="open">Есть долг</option>
+                    <option value="overdue">Просрочено</option>
+                    <option value="paid">Оплачено</option>
+                    <option value="docs">Документы не получены</option>
+                  </select>
+                </div>
+              </div>
+              <div class="wholesale-ledger" id="wholesaleLedgerList"></div>
+              <div class="empty" id="wholesaleLedgerEmpty">Накладных пока нет.</div>
+            </section>
+
+            <aside class="panel wholesale-detail" id="wholesaleInvoiceDetail">
+              <h3>Карточка накладной</h3>
+              <p class="sales-goal" id="wholesaleInvoiceDetailHint">Выберите накладную в списке.</p>
+              <div class="wholesale-detail-grid" id="wholesaleInvoiceDetailGrid"></div>
+              <form id="wholesalePaymentForm" class="hidden">
+                <h3>Добавить платеж</h3>
+                <input id="wholesalePaymentInvoiceId" type="hidden">
+                <label>Тип платежа
+                  <select id="wholesalePaymentType">
+                    <option value="goods">По накладной</option>
+                    <option value="transport">По ТР</option>
+                  </select>
+                </label>
+                <div class="two">
+                  <label>Дата платежа
+                    <input id="wholesalePaymentDate" type="date" required>
+                  </label>
+                  <label>Сумма
+                    <input id="wholesalePaymentAmount" type="number" min="0" step="1" value="0" required>
+                  </label>
+                </div>
+                <label>Комментарий
+                  <textarea id="wholesalePaymentComment" placeholder="Назначение платежа, примечание"></textarea>
+                </label>
+                <button class="btn primary" type="submit">Сохранить платеж</button>
+              </form>
+              <div class="payment-list" id="wholesalePaymentList"></div>
+            </aside>
+          </section>
+        </section>
+
+        <section id="wholesaleBackupView" class="hidden">
+          <section class="panel sales-card">
+            <h3>Резервное копирование</h3>
+            <p class="sales-goal">Для надежности можно выгружать полную копию данных. JSON нужен для восстановления в программе, Excel можно открыть вручную.</p>
+            <div class="actions">
+              <button class="btn primary" id="wholesaleBackupJsonBtn2" type="button">Скачать JSON</button>
+              <button class="btn" id="wholesaleExportExcelBtn2" type="button">Скачать Excel</button>
+              <button class="btn" id="wholesaleExportPdfBtn2" type="button">Скачать PDF</button>
+            </div>
+            <p class="sales-goal">Следующий этап: импорт старой Excel-таблицы и синхронизация этого модуля с Supabase.</p>
+          </section>
+        </section>
+      </section>
+
       <section id="clientSourcesView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -3240,6 +3562,7 @@
     const salesScriptStorageKey = "workspace-tables.sales.script";
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
     const salesClientsStorageKey = "workspace-tables.sales.clients";
+    const wholesaleStorageKey = "workspace-tables.wholesale.data";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
@@ -3254,6 +3577,7 @@
     const contentIdeasCloudTable = "sportpro_content_ideas";
     const salesClientsCloudTable = "sportpro_sales_clients";
     const salesSettingsCloudTable = "sportpro_sales_settings";
+    const wholesaleCloudTable = "sportpro_wholesale_records";
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
     const contentPlanForm = document.querySelector("#contentPlanForm");
@@ -3328,6 +3652,7 @@
       ads: document.querySelector("#adsView"),
       contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
+      wholesale: document.querySelector("#wholesaleView"),
       clientSources: document.querySelector("#clientSourcesView"),
       guide: document.querySelector("#guideView"),
       access: document.querySelector("#accessView"),
@@ -3352,6 +3677,12 @@
       objections: document.querySelector("#salesObjectionsView"),
       questions: document.querySelector("#salesQuestionsView"),
     };
+    const wholesaleModeViews = {
+      dashboard: document.querySelector("#wholesaleDashboardView"),
+      clients: document.querySelector("#wholesaleClientsView"),
+      ledger: document.querySelector("#wholesaleLedgerView"),
+      backup: document.querySelector("#wholesaleBackupView"),
+    };
     const salesSteps = document.querySelector("#salesSteps");
     const salesStageTitle = document.querySelector("#salesStageTitle");
     const salesStageGoal = document.querySelector("#salesStageGoal");
@@ -3365,6 +3696,25 @@
     const objectionFollowup = document.querySelector("#objectionFollowup");
     const salesClientsList = document.querySelector("#salesClientsList");
     const salesClientsEmpty = document.querySelector("#salesClientsEmpty");
+    const wholesaleClientForm = document.querySelector("#wholesaleClientForm");
+    const wholesaleInvoiceForm = document.querySelector("#wholesaleInvoiceForm");
+    const wholesalePaymentForm = document.querySelector("#wholesalePaymentForm");
+    const wholesaleClientsList = document.querySelector("#wholesaleClientsList");
+    const wholesaleClientsEmpty = document.querySelector("#wholesaleClientsEmpty");
+    const wholesaleLedgerList = document.querySelector("#wholesaleLedgerList");
+    const wholesaleLedgerEmpty = document.querySelector("#wholesaleLedgerEmpty");
+    const wholesalePaymentList = document.querySelector("#wholesalePaymentList");
+    const wholesaleClientSearch = document.querySelector("#wholesaleClientSearch");
+    const wholesaleLedgerSearch = document.querySelector("#wholesaleLedgerSearch");
+    const wholesaleLedgerStatusFilter = document.querySelector("#wholesaleLedgerStatusFilter");
+    const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
+    const wholesaleCompanyFilter = document.querySelector("#wholesaleCompanyFilter");
+    const wholesaleDateFrom = document.querySelector("#wholesaleDateFrom");
+    const wholesaleDateTo = document.querySelector("#wholesaleDateTo");
+    const wholesaleInvoiceClient = document.querySelector("#wholesaleInvoiceClient");
+    const wholesaleInvoiceCompany = document.querySelector("#wholesaleInvoiceCompany");
+    const wholesaleInvoiceDetailHint = document.querySelector("#wholesaleInvoiceDetailHint");
+    const wholesaleInvoiceDetailGrid = document.querySelector("#wholesaleInvoiceDetailGrid");
     const sourcesApiUrl = document.querySelector("#sourcesApiUrl");
     const sourcesRefreshBtn = document.querySelector("#sourcesRefreshBtn");
     const sourcesSaveUrlBtn = document.querySelector("#sourcesSaveUrlBtn");
@@ -3460,10 +3810,41 @@
       conclusion: document.querySelector("#funnelConclusion"),
     };
 
+    const wholesaleClientFields = {
+      id: document.querySelector("#wholesaleClientId"),
+      name: document.querySelector("#wholesaleClientName"),
+      companyName: document.querySelector("#wholesaleCompanyName"),
+      comment: document.querySelector("#wholesaleClientComment"),
+    };
+
+    const wholesaleInvoiceFields = {
+      id: document.querySelector("#wholesaleInvoiceId"),
+      clientId: wholesaleInvoiceClient,
+      companyId: wholesaleInvoiceCompany,
+      shipDate: document.querySelector("#wholesaleShipDate"),
+      number: document.querySelector("#wholesaleInvoiceNumber"),
+      docStatus: document.querySelector("#wholesaleDocStatus"),
+      amount: document.querySelector("#wholesaleInvoiceAmount"),
+      paymentDeadline: document.querySelector("#wholesaleInvoiceDeadline"),
+      transportCost: document.querySelector("#wholesaleTransportCost"),
+      transportDeadline: document.querySelector("#wholesaleTransportDeadline"),
+      transportComment: document.querySelector("#wholesaleTransportComment"),
+      comment: document.querySelector("#wholesaleInvoiceComment"),
+    };
+
+    const wholesalePaymentFields = {
+      invoiceId: document.querySelector("#wholesalePaymentInvoiceId"),
+      type: document.querySelector("#wholesalePaymentType"),
+      date: document.querySelector("#wholesalePaymentDate"),
+      amount: document.querySelector("#wholesalePaymentAmount"),
+      comment: document.querySelector("#wholesalePaymentComment"),
+    };
+
     const accessModules = [
       { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, итоги дня" },
       { key: "contentPlan", label: "Контент-план", details: "Календарь, список, идеи, архив" },
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
+      { key: "wholesale", label: "Оптовые расчеты", details: "Клиенты, предприятия, накладные, оплаты" },
       { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
       { key: "guide", label: "Гайд", details: "Шпаргалка и руководство пользователя" },
       { key: "templates", label: "Шаблоны", details: "Будущие модули и план развития" },
@@ -3473,23 +3854,23 @@
     const accessPresets = {
       marketer: {
         label: "Маркетолог",
-        permissions: { ads: "write", contentPlan: "write", sales: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
       },
       sales: {
         label: "Менеджер продаж",
-        permissions: { ads: "read", contentPlan: "read", sales: "write", sources: "read", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", guide: "read", templates: "none", access: "none" },
       },
       manager: {
         label: "Менеджер",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
       },
       viewer: {
         label: "Только просмотр",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
       },
       owner: {
         label: "Владелец",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", sources: "write", guide: "write", templates: "write", access: "write" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", guide: "write", templates: "write", access: "write" },
       },
       custom: {
         label: "Индивидуально",
@@ -3503,6 +3884,7 @@
     let contentIdeas = loadContentIdeas();
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
+    let wholesaleData = loadWholesaleData();
     let clientSourcesData = loadClientSourcesData();
     let clientSourcesLoadStarted = false;
     let adsSettings = loadAdsSettings();
@@ -3512,6 +3894,7 @@
     let activeDashboardMetric = "views";
     let activeCalendarMode = "week";
     let activeContentTypeHighlight = "";
+    let activeWholesaleInvoiceId = "";
     let editingMemberEmail = "";
     let selectedRecordIds = new Set();
     let selectedFunnelRecordIds = new Set();
@@ -3540,6 +3923,8 @@
     contentFields.date.valueAsDate = new Date();
     contentFields.prepDeadline.valueAsDate = new Date();
     funnelFields.date.valueAsDate = new Date();
+    wholesaleInvoiceFields.shipDate.valueAsDate = new Date();
+    wholesalePaymentFields.date.valueAsDate = new Date();
     renderCalendarMonthSelect();
     renderContentRubricOptions();
     renderPermissionPresetOptions();
@@ -3548,6 +3933,7 @@
     renderContentPlan();
     renderSales();
     renderSalesClients();
+    renderWholesale();
     applyClientSourcesConfig();
     renderClientSources();
     renderWorkspaceMembers();
@@ -3605,6 +3991,10 @@
       });
     });
 
+    document.querySelectorAll("[data-wholesale-mode]").forEach((button) => {
+      button.addEventListener("click", () => setWholesaleMode(button.dataset.wholesaleMode));
+    });
+
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const id = fields.id.value || createId();
@@ -3635,6 +4025,30 @@
       resetForm();
       render();
     });
+
+    wholesaleClientForm.addEventListener("submit", saveWholesaleClient);
+    document.querySelector("#wholesaleClientCancelBtn").addEventListener("click", resetWholesaleClientForm);
+    document.querySelector("#wholesaleDemoS89Btn").addEventListener("click", addWholesaleDemoClient);
+    wholesaleClientSearch.addEventListener("input", renderWholesaleClients);
+    wholesaleInvoiceForm.addEventListener("submit", saveWholesaleInvoice);
+    document.querySelector("#wholesaleInvoiceCancelBtn").addEventListener("click", resetWholesaleInvoiceForm);
+    wholesaleInvoiceClient.addEventListener("change", renderWholesaleCompanyOptions);
+    wholesalePaymentForm.addEventListener("submit", saveWholesalePayment);
+    wholesaleLedgerSearch.addEventListener("input", renderWholesaleLedger);
+    wholesaleLedgerStatusFilter.addEventListener("change", renderWholesaleLedger);
+    wholesaleClientFilter.addEventListener("change", () => { renderWholesaleCompanyFilter(); renderWholesale(); });
+    wholesaleCompanyFilter.addEventListener("change", renderWholesale);
+    wholesaleDateFrom.addEventListener("change", renderWholesale);
+    wholesaleDateTo.addEventListener("change", renderWholesale);
+    wholesaleClientsList.addEventListener("click", handleWholesaleClientAction);
+    wholesaleLedgerList.addEventListener("click", handleWholesaleLedgerAction);
+    wholesalePaymentList.addEventListener("click", handleWholesalePaymentAction);
+    document.querySelector("#wholesaleBackupJsonBtn").addEventListener("click", exportWholesaleJson);
+    document.querySelector("#wholesaleBackupJsonBtn2").addEventListener("click", exportWholesaleJson);
+    document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportExcelBtn2").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Оптовые расчеты", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportPdfBtn2").addEventListener("click", () => exportRowsToPdf("Оптовые расчеты", wholesaleExportRows()));
 
     measurementForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -4176,6 +4590,7 @@
       renderFunnelSummary();
       renderFunnelRows();
       renderContentPlan();
+      renderWholesale();
     }
 
     function applyTheme(theme) {
@@ -5115,6 +5530,7 @@
         await cloudRequest(`${cloudEndpoint(contentIdeasCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
+        await cloudRequest(`${cloudEndpoint(wholesaleCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id&limit=1`);
         updateCloudStatus("Подключение работает");
       } catch (error) {
         updateCloudStatus("Подключение не работает");
@@ -5130,6 +5546,7 @@
       await pushRowsToCloud(salesClientsCloudTable, salesClients, deletedSalesClients, normalizeSalesClient);
       await pushRowsToCloud(salesSettingsCloudTable, [salesScriptCloudRecord()], {}, normalizeSalesScript);
       await pushRowsToCloud(salesSettingsCloudTable, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
+      await pushRowsToCloud(wholesaleCloudTable, [wholesaleCloudRecord()], {}, normalizeWholesaleCloudRecord);
     }
 
     async function pushRowsToCloud(table, localRecords, deletedMap, normalizer) {
@@ -5186,6 +5603,7 @@
         const salesClientRows = await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.main&select=id,record,deleted_at,updated_at`);
         const adsSettingsRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.ads-followers&select=id,record,deleted_at,updated_at`);
+        const wholesaleRows = await cloudRequest(`${cloudEndpoint(wholesaleCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.main&select=id,record,deleted_at,updated_at`);
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
         funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
         contentPlanItems = mergeCloudRows(contentPlanRows, contentPlanItems, deletedContentPlan, normalizeContentPlanItem);
@@ -5195,6 +5613,8 @@
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
         const mergedAdsSettings = mergeCloudRows(adsSettingsRows, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
         adsSettings = normalizeAdsSettings(mergedAdsSettings.find((item) => item.id === "ads-followers") || adsSettings);
+        const mergedWholesale = mergeCloudRows(wholesaleRows, [wholesaleCloudRecord()], {}, normalizeWholesaleCloudRecord);
+        wholesaleData = normalizeWholesaleData(mergedWholesale.find((item) => item.id === "main") || wholesaleData);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         saveFunnelRecords();
@@ -5207,6 +5627,7 @@
         saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
         saveSalesScript({ touch: false });
         saveAdsSettings();
+        saveWholesaleData({ touch: false });
         render();
         renderSales();
         renderSalesClients();
@@ -6700,6 +7121,591 @@
       funnelFields.spend.value = 0;
       funnelFormTitle.textContent = "Новый итог дня";
       funnelCancelEditBtn.classList.add("hidden");
+    }
+
+    function setWholesaleMode(mode) {
+      const nextMode = wholesaleModeViews[mode] ? mode : "dashboard";
+      document.querySelectorAll("[data-wholesale-mode]").forEach((item) => item.classList.toggle("active", item.dataset.wholesaleMode === nextMode));
+      Object.entries(wholesaleModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+      renderWholesale();
+    }
+
+    function loadWholesaleData() {
+      const saved = readStorage(wholesaleStorageKey);
+      if (!saved || Array.isArray(saved) || typeof saved !== "object") {
+        return { clients: [], invoices: [] };
+      }
+      return normalizeWholesaleData(saved);
+    }
+
+    function normalizeWholesaleData(data) {
+      return {
+        id: data.id || "main",
+        clients: Array.isArray(data.clients) ? data.clients.map(normalizeWholesaleClient) : [],
+        invoices: Array.isArray(data.invoices) ? data.invoices.map(normalizeWholesaleInvoice) : [],
+        updatedAt: data.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function wholesaleCloudRecord() {
+      return normalizeWholesaleCloudRecord({
+        ...wholesaleData,
+        id: "main",
+      });
+    }
+
+    function normalizeWholesaleCloudRecord(record) {
+      const normalized = normalizeWholesaleData(record || {});
+      return {
+        id: record?.id || "main",
+        clients: normalized.clients,
+        invoices: normalized.invoices,
+        updatedAt: record?.updatedAt || normalized.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeWholesaleClient(client) {
+      return {
+        id: client.id || createId(),
+        name: client.name || "",
+        comment: client.comment || "",
+        companies: Array.isArray(client.companies)
+          ? client.companies.map((company) => ({ id: company.id || createId(), name: company.name || "" })).filter((company) => company.name)
+          : [],
+        updatedAt: client.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeWholesaleInvoice(invoice) {
+      return {
+        id: invoice.id || createId(),
+        clientId: invoice.clientId || "",
+        companyId: invoice.companyId || "",
+        shipDate: invoice.shipDate || "",
+        number: invoice.number || "",
+        docStatus: invoice.docStatus || "pending",
+        amount: Number(invoice.amount) || 0,
+        paymentDeadline: invoice.paymentDeadline || "",
+        transportCost: Number(invoice.transportCost) || 0,
+        transportDeadline: invoice.transportDeadline || "",
+        transportComment: invoice.transportComment || "",
+        comment: invoice.comment || "",
+        payments: Array.isArray(invoice.payments) ? invoice.payments.map(normalizeWholesalePayment) : [],
+        updatedAt: invoice.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeWholesalePayment(payment) {
+      return {
+        id: payment.id || createId(),
+        type: payment.type === "transport" ? "transport" : "goods",
+        date: payment.date || "",
+        amount: Number(payment.amount) || 0,
+        comment: payment.comment || "",
+      };
+    }
+
+    function saveWholesaleData(options = {}) {
+      wholesaleData = normalizeWholesaleData(wholesaleData);
+      if (options.touch !== false) {
+        wholesaleData.updatedAt = new Date().toISOString();
+      }
+      localStorage.setItem(wholesaleStorageKey, JSON.stringify(wholesaleData));
+      queueCloudSync("Оптовые расчеты");
+    }
+
+    function renderWholesale() {
+      wholesaleData = normalizeWholesaleData(wholesaleData);
+      renderWholesaleOptions();
+      renderWholesaleSummary();
+      renderWholesaleDashboard();
+      renderWholesaleClients();
+      renderWholesaleLedger();
+      renderWholesaleDetail();
+    }
+
+    function renderWholesaleOptions() {
+      const invoiceClientCurrent = wholesaleInvoiceFields.clientId.dataset.current || wholesaleInvoiceClient.value;
+      const invoiceCompanyCurrent = wholesaleInvoiceFields.companyId.dataset.current || wholesaleInvoiceCompany.value;
+      const filterClientCurrent = wholesaleClientFilter.dataset.current || wholesaleClientFilter.value;
+      const clientOptions = wholesaleData.clients.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`).join("");
+      wholesaleInvoiceClient.innerHTML = `<option value="">Выберите клиента</option>${clientOptions}`;
+      wholesaleInvoiceClient.value = wholesaleData.clients.some((client) => client.id === invoiceClientCurrent) ? invoiceClientCurrent : "";
+      delete wholesaleInvoiceFields.clientId.dataset.current;
+      renderWholesaleCompanyOptions(invoiceCompanyCurrent);
+      wholesaleClientFilter.innerHTML = `<option value="">Все клиенты</option>${clientOptions}`;
+      wholesaleClientFilter.value = wholesaleData.clients.some((client) => client.id === filterClientCurrent) ? filterClientCurrent : "";
+      delete wholesaleClientFilter.dataset.current;
+      renderWholesaleCompanyFilter();
+    }
+
+    function renderWholesaleCompanyOptions(preferredValue = "") {
+      const client = getWholesaleClient(wholesaleInvoiceClient.value);
+      const options = client?.companies.map((company) => `<option value="${escapeHtml(company.id)}">${escapeHtml(company.name)}</option>`).join("") || "";
+      const current = preferredValue || wholesaleInvoiceFields.companyId.dataset.current || wholesaleInvoiceCompany.value;
+      wholesaleInvoiceCompany.innerHTML = `<option value="">Выберите предприятие</option>${options}`;
+      wholesaleInvoiceCompany.value = client?.companies.some((company) => company.id === current) ? current : "";
+      delete wholesaleInvoiceFields.companyId.dataset.current;
+    }
+
+    function renderWholesaleCompanyFilter() {
+      const clientId = wholesaleClientFilter.value;
+      const companies = clientId
+        ? getWholesaleClient(clientId)?.companies || []
+        : wholesaleData.clients.flatMap((client) => client.companies.map((company) => ({ ...company, clientName: client.name })));
+      const current = wholesaleCompanyFilter.value;
+      wholesaleCompanyFilter.innerHTML = `<option value="">Все предприятия</option>` + companies.map((company) => (
+        `<option value="${escapeHtml(company.id)}">${escapeHtml(company.clientName ? `${company.clientName} / ${company.name}` : company.name)}</option>`
+      )).join("");
+      wholesaleCompanyFilter.value = companies.some((company) => company.id === current) ? current : "";
+    }
+
+    function renderWholesaleSummary() {
+      const invoices = getWholesaleFilteredInvoices();
+      document.querySelector("#wholesaleTotalClients").textContent = formatNumber(new Set(invoices.map((invoice) => invoice.clientId)).size || wholesaleData.clients.length);
+      document.querySelector("#wholesaleTotalInvoice").textContent = formatMoney(sum(invoices, "amount"));
+      document.querySelector("#wholesaleTotalDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleGoodsDebt(invoice), 0));
+      document.querySelector("#wholesaleTotalTransportDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0));
+      document.querySelector("#wholesaleOverdueDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleOverdueAmount(invoice), 0));
+    }
+
+    function renderWholesaleDashboard() {
+      const invoices = getWholesaleFilteredInvoices();
+      const rows = invoices
+        .map((invoice) => ({ label: `${wholesaleClientName(invoice.clientId)} / ${invoice.number || "без №"}`, value: wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice) }))
+        .filter((row) => row.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+      const max = Math.max(...rows.map((row) => row.value), 0);
+      document.querySelector("#wholesaleDebtBars").classList.toggle("hidden", rows.length === 0);
+      document.querySelector("#wholesaleDebtEmpty").classList.toggle("hidden", rows.length > 0);
+      document.querySelector("#wholesaleDebtBars").innerHTML = rows.map((row) => `
+        <div class="bar-row" title="${escapeHtml(row.label)}">
+          <span>${escapeHtml(shortText(row.label, 28))}</span>
+          <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (row.value / max) * 100 : 0}%"></div></div>
+          <span class="bar-value">${formatMoney(row.value)}</span>
+        </div>
+      `).join("");
+
+      const deadlines = invoices
+        .flatMap((invoice) => wholesaleDeadlineRows(invoice))
+        .filter((row) => row.amount > 0)
+        .sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"))
+        .slice(0, 8);
+      document.querySelector("#wholesaleDeadlineList").innerHTML = deadlines.map((row) => `
+        <div class="payment-item">
+          <strong>${escapeHtml(row.title)}</strong>
+          <small>${escapeHtml(row.date ? formatDate(row.date) : "Без дедлайна")} · ${formatMoney(row.amount)} · ${escapeHtml(row.status)}</small>
+        </div>
+      `).join("");
+      document.querySelector("#wholesaleDeadlineEmpty").classList.toggle("hidden", deadlines.length > 0);
+    }
+
+    function renderWholesaleClients() {
+      const query = wholesaleClientSearch.value.trim().toLowerCase();
+      const clients = wholesaleData.clients.filter((client) => {
+        const text = `${client.name} ${client.comment} ${client.companies.map((company) => company.name).join(" ")}`.toLowerCase();
+        return !query || text.includes(query);
+      });
+      wholesaleClientsEmpty.classList.toggle("hidden", clients.length > 0);
+      wholesaleClientsList.innerHTML = clients.map((client) => {
+        const invoices = wholesaleData.invoices.filter((invoice) => invoice.clientId === client.id);
+        const debt = invoices.reduce((total, invoice) => total + wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice), 0);
+        return `
+          <article class="wholesale-client-card" data-client-id="${escapeHtml(client.id)}">
+            <div>
+              <strong>${escapeHtml(client.name)}</strong>
+              <small>${escapeHtml(client.comment || "Комментарий не указан")}</small>
+              <div class="company-tags">${client.companies.map((company) => `<span>${escapeHtml(company.name)}</span>`).join("") || "<span>Предприятий пока нет</span>"}</div>
+            </div>
+            <div class="actions">
+              <span class="status-chip ${debt > 0 ? "warning" : "paid"}">${formatMoney(debt)}</span>
+              <button class="btn" type="button" data-wholesale-client-action="edit" data-id="${escapeHtml(client.id)}">Открыть</button>
+              <button class="btn danger" type="button" data-wholesale-client-action="delete" data-id="${escapeHtml(client.id)}">Удалить</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderWholesaleLedger() {
+      const invoices = getWholesaleLedgerInvoices();
+      wholesaleLedgerEmpty.classList.toggle("hidden", invoices.length > 0);
+      wholesaleLedgerList.innerHTML = invoices.map((invoice) => {
+        const debt = wholesaleGoodsDebt(invoice);
+        const transportDebt = wholesaleTransportDebt(invoice);
+        const overdue = wholesaleOverdueAmount(invoice) > 0;
+        return `
+          <article class="ledger-card ${activeWholesaleInvoiceId === invoice.id ? "active" : ""}" data-invoice-id="${escapeHtml(invoice.id)}">
+            <div class="ledger-card-grid">
+              <div>
+                <strong>${escapeHtml(invoice.number || "Без номера")}</strong>
+                <small>${formatDate(invoice.shipDate)} · ${escapeHtml(wholesaleClientName(invoice.clientId))}</small>
+                <small>${escapeHtml(wholesaleCompanyName(invoice.clientId, invoice.companyId))}</small>
+              </div>
+              <div><strong>${formatMoney(invoice.amount)}</strong><small>Сумма</small></div>
+              <div><strong>${formatMoney(wholesaleGoodsPaid(invoice))}</strong><small>Оплачено</small></div>
+              <div><strong>${formatMoney(debt)}</strong><small>Долг</small></div>
+              <div><strong>${formatMoney(transportDebt)}</strong><small>Долг ТР</small></div>
+            </div>
+            <div class="actions" style="margin-top: 10px;">
+              <span class="status-chip ${docStatusClass(invoice.docStatus)}">${escapeHtml(docStatusLabel(invoice.docStatus))}</span>
+              <span class="status-chip ${overdue ? "overdue" : debt + transportDebt > 0 ? "warning" : "paid"}">${escapeHtml(wholesalePaymentStatus(invoice))}</span>
+              <button class="btn" type="button" data-wholesale-ledger-action="select" data-id="${escapeHtml(invoice.id)}">Платежи</button>
+              <button class="btn" type="button" data-wholesale-ledger-action="edit" data-id="${escapeHtml(invoice.id)}">Редактировать</button>
+              <button class="btn danger" type="button" data-wholesale-ledger-action="delete" data-id="${escapeHtml(invoice.id)}">Удалить</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderWholesaleDetail() {
+      const invoice = wholesaleData.invoices.find((item) => item.id === activeWholesaleInvoiceId);
+      if (!invoice) {
+        wholesaleInvoiceDetailHint.textContent = "Выберите накладную в списке.";
+        wholesaleInvoiceDetailGrid.innerHTML = "";
+        wholesalePaymentForm.classList.add("hidden");
+        wholesalePaymentList.innerHTML = "";
+        return;
+      }
+      wholesaleInvoiceDetailHint.textContent = `${wholesaleClientName(invoice.clientId)} · ${invoice.number || "без №"}`;
+      wholesaleInvoiceDetailGrid.innerHTML = `
+        <div><strong>${formatMoney(wholesaleGoodsDebt(invoice))}</strong><span>Долг по товару</span></div>
+        <div><strong>${formatMoney(wholesaleTransportDebt(invoice))}</strong><span>Долг по ТР</span></div>
+        <div><strong>${invoice.paymentDeadline ? formatDate(invoice.paymentDeadline) : "—"}</strong><span>Дедлайн оплаты</span></div>
+        <div><strong>${invoice.transportDeadline ? formatDate(invoice.transportDeadline) : "—"}</strong><span>Дедлайн ТР</span></div>
+      `;
+      wholesalePaymentForm.classList.remove("hidden");
+      wholesalePaymentFields.invoiceId.value = invoice.id;
+      wholesalePaymentList.innerHTML = invoice.payments.map((payment) => `
+        <div class="payment-item">
+          <strong>${payment.type === "transport" ? "ТР" : "Накладная"} · ${formatMoney(payment.amount)}</strong>
+          <small>${formatDate(payment.date)}${payment.comment ? ` · ${escapeHtml(payment.comment)}` : ""}</small>
+          <button class="btn icon danger" type="button" data-wholesale-payment-action="delete" data-invoice-id="${escapeHtml(invoice.id)}" data-payment-id="${escapeHtml(payment.id)}">×</button>
+        </div>
+      `).join("") || `<div class="empty">Платежей пока нет.</div>`;
+    }
+
+    function saveWholesaleClient(event) {
+      event.preventDefault();
+      const id = wholesaleClientFields.id.value || createId();
+      const existing = wholesaleData.clients.find((client) => client.id === id);
+      const companyName = wholesaleClientFields.companyName.value.trim();
+      const companies = existing?.companies ? [...existing.companies] : [];
+      if (companyName && !companies.some((company) => company.name.toLowerCase() === companyName.toLowerCase())) {
+        companies.push({ id: createId(), name: companyName });
+      }
+      const client = normalizeWholesaleClient({
+        id,
+        name: wholesaleClientFields.name.value.trim(),
+        comment: wholesaleClientFields.comment.value.trim(),
+        companies,
+        updatedAt: new Date().toISOString(),
+      });
+      wholesaleData.clients = existing
+        ? wholesaleData.clients.map((item) => item.id === id ? client : item)
+        : [...wholesaleData.clients, client];
+      saveWholesaleData();
+      resetWholesaleClientForm();
+      renderWholesale();
+    }
+
+    function resetWholesaleClientForm() {
+      wholesaleClientForm.reset();
+      wholesaleClientFields.id.value = "";
+      document.querySelector("#wholesaleClientCancelBtn").classList.add("hidden");
+    }
+
+    function handleWholesaleClientAction(event) {
+      const button = event.target.closest("[data-wholesale-client-action]");
+      if (!button) return;
+      const client = getWholesaleClient(button.dataset.id);
+      if (!client) return;
+      if (button.dataset.wholesaleClientAction === "edit") {
+        wholesaleClientFields.id.value = client.id;
+        wholesaleClientFields.name.value = client.name;
+        wholesaleClientFields.comment.value = client.comment || "";
+        wholesaleClientFields.companyName.value = "";
+        document.querySelector("#wholesaleClientCancelBtn").classList.remove("hidden");
+        wholesaleClientFields.companyName.focus();
+      }
+      if (button.dataset.wholesaleClientAction === "delete" && confirm(`Удалить клиента ${client.name}? Накладные этого клиента тоже будут удалены.`)) {
+        wholesaleData.clients = wholesaleData.clients.filter((item) => item.id !== client.id);
+        wholesaleData.invoices = wholesaleData.invoices.filter((invoice) => invoice.clientId !== client.id);
+        saveWholesaleData();
+        renderWholesale();
+      }
+    }
+
+    function addWholesaleDemoClient() {
+      const existing = wholesaleData.clients.find((client) => client.name.toLowerCase() === "s89");
+      if (existing) {
+        wholesaleClientFields.id.value = existing.id;
+        wholesaleClientFields.name.value = existing.name;
+        wholesaleClientFields.comment.value = existing.comment || "";
+        setWholesaleMode("clients");
+        return;
+      }
+      wholesaleData.clients.push(normalizeWholesaleClient({
+        name: "S89",
+        comment: "Сеть клубов. Итоги считаются по всем предприятиям вместе.",
+        companies: [
+          { name: "ТОО Green Hill Estate" },
+          { name: "ТОО S89 Fitness" },
+          { name: "ИП Даденова" },
+        ],
+      }));
+      saveWholesaleData();
+      renderWholesale();
+    }
+
+    function saveWholesaleInvoice(event) {
+      event.preventDefault();
+      const id = wholesaleInvoiceFields.id.value || createId();
+      const existing = wholesaleData.invoices.find((invoice) => invoice.id === id);
+      const invoice = normalizeWholesaleInvoice({
+        id,
+        clientId: wholesaleInvoiceFields.clientId.value,
+        companyId: wholesaleInvoiceFields.companyId.value,
+        shipDate: wholesaleInvoiceFields.shipDate.value,
+        number: wholesaleInvoiceFields.number.value.trim(),
+        docStatus: wholesaleInvoiceFields.docStatus.value,
+        amount: wholesaleInvoiceFields.amount.value,
+        paymentDeadline: wholesaleInvoiceFields.paymentDeadline.value,
+        transportCost: wholesaleInvoiceFields.transportCost.value,
+        transportDeadline: wholesaleInvoiceFields.transportDeadline.value,
+        transportComment: wholesaleInvoiceFields.transportComment.value.trim(),
+        comment: wholesaleInvoiceFields.comment.value.trim(),
+        payments: existing?.payments || [],
+        updatedAt: new Date().toISOString(),
+      });
+      wholesaleData.invoices = existing
+        ? wholesaleData.invoices.map((item) => item.id === id ? invoice : item)
+        : [...wholesaleData.invoices, invoice];
+      activeWholesaleInvoiceId = invoice.id;
+      saveWholesaleData();
+      resetWholesaleInvoiceForm();
+      renderWholesale();
+    }
+
+    function saveWholesaleInvoiceFromButton() {
+      if (!wholesaleInvoiceFields.clientId.value || !wholesaleInvoiceFields.companyId.value || !wholesaleInvoiceFields.shipDate.value || !wholesaleInvoiceFields.number.value.trim()) {
+        alert("Заполните клиента, предприятие, дату отправки и номер накладной.");
+        return;
+      }
+      saveWholesaleInvoice({ preventDefault() {} });
+    }
+
+    window.saveWholesaleInvoiceFromButton = saveWholesaleInvoiceFromButton;
+    document.querySelector("#wholesaleInvoiceSaveBtn").addEventListener("click", saveWholesaleInvoiceFromButton);
+
+    function resetWholesaleInvoiceForm() {
+      wholesaleInvoiceForm.reset();
+      wholesaleInvoiceFields.id.value = "";
+      wholesaleInvoiceFields.shipDate.valueAsDate = new Date();
+      wholesaleInvoiceFields.amount.value = 0;
+      wholesaleInvoiceFields.transportCost.value = 0;
+      document.querySelector("#wholesaleInvoiceFormTitle").textContent = "Новая накладная";
+      document.querySelector("#wholesaleInvoiceCancelBtn").classList.add("hidden");
+    }
+
+    function handleWholesaleLedgerAction(event) {
+      const button = event.target.closest("[data-wholesale-ledger-action]");
+      const card = event.target.closest("[data-invoice-id]");
+      const id = button?.dataset.id || card?.dataset.invoiceId;
+      const invoice = wholesaleData.invoices.find((item) => item.id === id);
+      if (!invoice) return;
+      if (!button || button.dataset.wholesaleLedgerAction === "select") {
+        activeWholesaleInvoiceId = invoice.id;
+        renderWholesaleLedger();
+        renderWholesaleDetail();
+        return;
+      }
+      if (button.dataset.wholesaleLedgerAction === "edit") {
+        wholesaleInvoiceFields.id.value = invoice.id;
+        wholesaleInvoiceFields.clientId.dataset.current = invoice.clientId;
+        wholesaleInvoiceFields.companyId.dataset.current = invoice.companyId;
+        renderWholesaleOptions();
+        wholesaleInvoiceFields.shipDate.value = invoice.shipDate;
+        wholesaleInvoiceFields.number.value = invoice.number;
+        wholesaleInvoiceFields.docStatus.value = invoice.docStatus;
+        wholesaleInvoiceFields.amount.value = invoice.amount;
+        wholesaleInvoiceFields.paymentDeadline.value = invoice.paymentDeadline;
+        wholesaleInvoiceFields.transportCost.value = invoice.transportCost;
+        wholesaleInvoiceFields.transportDeadline.value = invoice.transportDeadline;
+        wholesaleInvoiceFields.transportComment.value = invoice.transportComment;
+        wholesaleInvoiceFields.comment.value = invoice.comment;
+        document.querySelector("#wholesaleInvoiceFormTitle").textContent = "Редактирование накладной";
+        document.querySelector("#wholesaleInvoiceCancelBtn").classList.remove("hidden");
+      }
+      if (button.dataset.wholesaleLedgerAction === "delete" && confirm("Удалить накладную?")) {
+        wholesaleData.invoices = wholesaleData.invoices.filter((item) => item.id !== invoice.id);
+        if (activeWholesaleInvoiceId === invoice.id) activeWholesaleInvoiceId = "";
+        saveWholesaleData();
+        renderWholesale();
+      }
+    }
+
+    function saveWholesalePayment(event) {
+      event.preventDefault();
+      const invoice = wholesaleData.invoices.find((item) => item.id === wholesalePaymentFields.invoiceId.value);
+      if (!invoice) return;
+      invoice.payments.push(normalizeWholesalePayment({
+        type: wholesalePaymentFields.type.value,
+        date: wholesalePaymentFields.date.value,
+        amount: wholesalePaymentFields.amount.value,
+        comment: wholesalePaymentFields.comment.value.trim(),
+      }));
+      invoice.updatedAt = new Date().toISOString();
+      saveWholesaleData();
+      wholesalePaymentFields.amount.value = 0;
+      wholesalePaymentFields.comment.value = "";
+      wholesalePaymentFields.date.valueAsDate = new Date();
+      renderWholesale();
+    }
+
+    function handleWholesalePaymentAction(event) {
+      const button = event.target.closest("[data-wholesale-payment-action='delete']");
+      if (!button) return;
+      const invoice = wholesaleData.invoices.find((item) => item.id === button.dataset.invoiceId);
+      if (!invoice) return;
+      invoice.payments = invoice.payments.filter((payment) => payment.id !== button.dataset.paymentId);
+      invoice.updatedAt = new Date().toISOString();
+      saveWholesaleData();
+      renderWholesale();
+    }
+
+    function getWholesaleFilteredInvoices() {
+      const from = wholesaleDateFrom.value;
+      const to = wholesaleDateTo.value;
+      const clientId = wholesaleClientFilter.value;
+      const companyId = wholesaleCompanyFilter.value;
+      return wholesaleData.invoices.filter((invoice) => {
+        if (from && invoice.shipDate < from) return false;
+        if (to && invoice.shipDate > to) return false;
+        if (clientId && invoice.clientId !== clientId) return false;
+        if (companyId && invoice.companyId !== companyId) return false;
+        return true;
+      });
+    }
+
+    function getWholesaleLedgerInvoices() {
+      const query = wholesaleLedgerSearch.value.trim().toLowerCase();
+      const status = wholesaleLedgerStatusFilter.value;
+      return getWholesaleFilteredInvoices().filter((invoice) => {
+        const text = `${invoice.number} ${wholesaleClientName(invoice.clientId)} ${wholesaleCompanyName(invoice.clientId, invoice.companyId)} ${invoice.comment} ${invoice.transportComment}`.toLowerCase();
+        if (query && !text.includes(query)) return false;
+        if (status === "open" && wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice) <= 0) return false;
+        if (status === "overdue" && wholesaleOverdueAmount(invoice) <= 0) return false;
+        if (status === "paid" && wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice) > 0) return false;
+        if (status === "docs" && invoice.docStatus === "signed") return false;
+        return true;
+      }).sort((a, b) => (b.shipDate || "").localeCompare(a.shipDate || ""));
+    }
+
+    function getWholesaleClient(id) {
+      return wholesaleData.clients.find((client) => client.id === id);
+    }
+
+    function wholesaleClientName(id) {
+      return getWholesaleClient(id)?.name || "Без клиента";
+    }
+
+    function wholesaleCompanyName(clientId, companyId) {
+      return getWholesaleClient(clientId)?.companies.find((company) => company.id === companyId)?.name || "Без предприятия";
+    }
+
+    function wholesaleGoodsPaid(invoice) {
+      return invoice.payments.filter((payment) => payment.type === "goods").reduce((total, payment) => total + payment.amount, 0);
+    }
+
+    function wholesaleTransportPaid(invoice) {
+      return invoice.payments.filter((payment) => payment.type === "transport").reduce((total, payment) => total + payment.amount, 0);
+    }
+
+    function wholesaleGoodsDebt(invoice) {
+      return Math.max(0, invoice.amount - wholesaleGoodsPaid(invoice));
+    }
+
+    function wholesaleTransportDebt(invoice) {
+      return Math.max(0, invoice.transportCost - wholesaleTransportPaid(invoice));
+    }
+
+    function isOverdue(date, amount) {
+      return Boolean(date && amount > 0 && date < formatIsoDate(new Date()));
+    }
+
+    function wholesaleOverdueAmount(invoice) {
+      return (isOverdue(invoice.paymentDeadline, wholesaleGoodsDebt(invoice)) ? wholesaleGoodsDebt(invoice) : 0)
+        + (isOverdue(invoice.transportDeadline, wholesaleTransportDebt(invoice)) ? wholesaleTransportDebt(invoice) : 0);
+    }
+
+    function wholesaleDeadlineRows(invoice) {
+      return [
+        {
+          title: `${wholesaleClientName(invoice.clientId)} / ${invoice.number || "без №"} / товар`,
+          date: invoice.paymentDeadline,
+          amount: wholesaleGoodsDebt(invoice),
+          status: isOverdue(invoice.paymentDeadline, wholesaleGoodsDebt(invoice)) ? "Просрочено" : "Ожидается",
+        },
+        {
+          title: `${wholesaleClientName(invoice.clientId)} / ${invoice.number || "без №"} / ТР`,
+          date: invoice.transportDeadline,
+          amount: wholesaleTransportDebt(invoice),
+          status: isOverdue(invoice.transportDeadline, wholesaleTransportDebt(invoice)) ? "Просрочено" : "Ожидается",
+        },
+      ];
+    }
+
+    function wholesalePaymentStatus(invoice) {
+      const debt = wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice);
+      if (!debt) return "Оплачено";
+      if (wholesaleOverdueAmount(invoice) > 0) return "Просрочено";
+      if (wholesaleGoodsPaid(invoice) + wholesaleTransportPaid(invoice) > 0) return "Частично";
+      return "Не оплачено";
+    }
+
+    function docStatusLabel(status) {
+      if (status === "signed") return "Оригиналы получены";
+      if (status === "problem") return "Проблема с документами";
+      return "Оригиналы не получены";
+    }
+
+    function docStatusClass(status) {
+      if (status === "signed") return "docs-ok";
+      if (status === "problem") return "overdue";
+      return "warning";
+    }
+
+    function wholesaleExportRows() {
+      const rows = [[
+        "Клиент", "Предприятие", "Дата отправки", "№ накладной", "Статус документов", "Сумма накладной",
+        "Оплачено", "Долг", "Дедлайн оплаты", "ТР / разное", "Оплачено ТР", "Долг ТР", "Дедлайн ТР", "Комментарий ТР", "Комментарий"
+      ]];
+      getWholesaleLedgerInvoices().forEach((invoice) => rows.push([
+        wholesaleClientName(invoice.clientId),
+        wholesaleCompanyName(invoice.clientId, invoice.companyId),
+        formatDate(invoice.shipDate),
+        invoice.number,
+        docStatusLabel(invoice.docStatus),
+        invoice.amount,
+        wholesaleGoodsPaid(invoice),
+        wholesaleGoodsDebt(invoice),
+        invoice.paymentDeadline ? formatDate(invoice.paymentDeadline) : "",
+        invoice.transportCost,
+        wholesaleTransportPaid(invoice),
+        wholesaleTransportDebt(invoice),
+        invoice.transportDeadline ? formatDate(invoice.transportDeadline) : "",
+        invoice.transportComment,
+        invoice.comment,
+      ]));
+      return rows;
+    }
+
+    function exportWholesaleJson() {
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data: wholesaleData }, null, 2)], { type: "application/json;charset=utf-8" });
+      downloadBlob(blob, `sportpro-wholesale-backup-${formatIsoDate(new Date())}.json`);
     }
 
     function loadRecords() {
