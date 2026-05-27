@@ -1823,13 +1823,13 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           <span class="nav-label">Продажи</span>
         </button>
-        <button type="button" data-view="clientSources" title="Источники клиентов">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 1 0-8 8v2A10 10 0 0 1 12 2Zm1 5v6l5 3-.9 1.6-6.1-3.6V7h2Zm6 10h3v2h-3v3h-2v-3h-3v-2h3v-3h2v3Z"/></svg>
-          <span class="nav-label">Источники</span>
-        </button>
         <button type="button" data-view="guide" title="Гайд">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
           <span class="nav-label">Гайд</span>
+        </button>
+        <button type="button" data-view="clientSources" title="Источники клиентов">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 1 0-8 8v2A10 10 0 0 1 12 2Zm1 5v6l5 3-.9 1.6-6.1-3.6V7h2Zm6 10h3v2h-3v3h-2v-3h-3v-2h3v-3h2v3Z"/></svg>
+          <span class="nav-label">Источники</span>
         </button>
         <button type="button" data-view="access" title="Доступ">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Zm7-5V6h-3V4h3V1h2v3h3v2h-3v3h-2Z"/></svg>
@@ -2714,7 +2714,8 @@
         <div class="topbar">
           <div class="title">
             <h2>Источники клиентов</h2>
-            <p>Статистика ответов Google Forms: как клиенты узнали о SPORTPRO.</p>
+            <p>Статистика ответов Google Forms: как клиенты узнали о SPORTCITY.</p>
+            <p class="sales-goal" id="sourcesHeaderUpdatedAt">Последнее обновление: пока нет.</p>
           </div>
           <div class="actions">
             <button class="btn primary" id="sourcesRefreshBtn" type="button">Обновить данные</button>
@@ -3160,6 +3161,7 @@
     const sourcesBars = document.querySelector("#sourcesBars");
     const sourcesRows = document.querySelector("#sourcesRows");
     const sourcesEmpty = document.querySelector("#sourcesEmpty");
+    const sourcesHeaderUpdatedAt = document.querySelector("#sourcesHeaderUpdatedAt");
     const sourcesUpdatedAt = document.querySelector("#sourcesUpdatedAt");
     const memberForm = document.querySelector("#memberForm");
     const memberEmail = document.querySelector("#memberEmail");
@@ -3241,6 +3243,7 @@
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let clientSourcesData = loadClientSourcesData();
+    let clientSourcesLoadStarted = false;
     let adsSettings = loadAdsSettings();
     let workspaceMembers = [];
     let activeSalesStage = salesScript.stages[0].id;
@@ -3289,6 +3292,7 @@
         const view = button.dataset.view;
         document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
         Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== view));
+        if (view === "clientSources") ensureClientSourcesLoaded();
       });
     });
 
@@ -5015,13 +5019,20 @@
       sourcesStatus.textContent = "Ссылка сохранена.";
     }
 
-    async function loadClientSourcesFromGoogle() {
+    function ensureClientSourcesLoaded() {
+      const hasSavedSources = normalizeClientSourcesData(clientSourcesData).sources.length > 0;
+      if (hasSavedSources || clientSourcesLoadStarted) return;
+      loadClientSourcesFromGoogle({ silent: true });
+    }
+
+    async function loadClientSourcesFromGoogle(options = {}) {
       const url = sourcesApiUrl.value.trim();
       if (!url) {
-        alert("Вставьте ссылку Apps Script.");
+        if (!options.silent) alert("Вставьте ссылку Apps Script.");
         return;
       }
 
+      clientSourcesLoadStarted = true;
       localStorage.setItem(clientSourcesUrlKey, url);
       sourcesStatus.textContent = "Загружаем данные из Google Forms...";
       sourcesRefreshBtn.disabled = true;
@@ -5032,12 +5043,13 @@
           throw new Error(`${data.error}${data.headers ? `: ${data.headers.join(", ")}` : ""}`);
         }
         clientSourcesData = normalizeClientSourcesData(data);
+        if (!clientSourcesData.updatedAt) clientSourcesData.updatedAt = new Date().toISOString();
         localStorage.setItem(clientSourcesDataKey, JSON.stringify(clientSourcesData));
         renderClientSources();
         sourcesStatus.textContent = `Данные обновлены: ${formatDateTime(new Date())}`;
       } catch (error) {
-        sourcesStatus.textContent = "Не удалось загрузить данные.";
-        alert(`Не удалось загрузить источники клиентов: ${error.message}`);
+        sourcesStatus.textContent = "Не удалось загрузить данные. Проверьте ссылку Apps Script и нажмите “Обновить данные”.";
+        if (!options.silent) alert(`Не удалось загрузить источники клиентов: ${error.message}`);
       } finally {
         sourcesRefreshBtn.disabled = false;
       }
@@ -5060,9 +5072,11 @@
       sourcesTop.textContent = top ? top.name : "-";
       sourcesTopPercent.textContent = top ? `${formatNumber(top.percent)}%` : "0%";
       sourcesEmpty.classList.toggle("hidden", sources.length > 0);
-      sourcesUpdatedAt.textContent = data.updatedAt
-        ? `Последнее обновление: ${formatDateTime(new Date(data.updatedAt))}`
+      const updatedLabel = data.updatedAt
+        ? `Последнее обновление: ${formatFullDateTime(new Date(data.updatedAt))}`
         : "Обновлений пока нет.";
+      sourcesHeaderUpdatedAt.textContent = updatedLabel;
+      sourcesUpdatedAt.textContent = updatedLabel;
 
       sourcesBars.innerHTML = sources.slice(0, 12).map((source) => `
         <div class="bar-row" title="${escapeHtml(source.name)}">
@@ -6581,6 +6595,10 @@
 
     function formatDateTime(value) {
       return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(value);
+    }
+
+    function formatFullDateTime(value) {
+      return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(value);
     }
 
     function csvCell(value) {
