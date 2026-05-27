@@ -894,6 +894,37 @@
       flex-wrap: wrap;
     }
 
+    .table-export-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      flex-wrap: wrap;
+    }
+
+    .table-export-actions span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .select-cell {
+      width: 44px;
+      min-width: 44px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .row-check {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
     .search {
       min-width: min(360px, 100%);
     }
@@ -1058,6 +1089,46 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .access-permissions {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .permission-card {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) minmax(130px, .55fr);
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .permission-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .permission-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .permission-summary {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      max-width: 360px;
+    }
+
+    .access-editor {
+      margin-top: 18px;
     }
 
     .module-card-action {
@@ -2097,7 +2168,7 @@
           <div class="actions">
             <button class="btn" id="exportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
             <button class="btn" id="exportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
-            <button class="btn danger" id="clearBtn" type="button" title="Очистить все записи">Очистить</button>
+            <button class="btn danger hidden" id="clearBtn" type="button" title="Очистить все записи">Очистить</button>
           </div>
         </div>
 
@@ -2236,6 +2307,7 @@
               <table>
                 <thead>
                   <tr>
+                    <th class="select-cell">✓</th>
                     <th>Дата</th>
                     <th>Тип</th>
                     <th>Тема</th>
@@ -2265,7 +2337,7 @@
           <div class="actions">
             <button class="btn" id="funnelExportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
             <button class="btn" id="funnelExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
-            <button class="btn danger" id="funnelClearBtn" type="button" title="Очистить все записи">Очистить</button>
+            <button class="btn danger hidden" id="funnelClearBtn" type="button" title="Очистить все записи">Очистить</button>
           </div>
         </div>
 
@@ -2346,6 +2418,7 @@
               <table>
                 <thead>
                   <tr>
+                    <th class="select-cell">✓</th>
                     <th>Дата</th>
                     <th class="numeric">Новые подписчики</th>
                     <th class="numeric">Охват</th>
@@ -2511,6 +2584,11 @@
                   <select id="contentPlatformFilter" aria-label="Фильтр по площадке">
                     <option value="">Все площадки</option>
                   </select>
+                </div>
+              </div>
+              <div class="table-export-actions">
+                <span>Экспорт списка</span>
+                <div class="actions">
                   <button class="btn" id="contentExportExcelBtn" type="button" title="Скачать список для Excel">Excel</button>
                   <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
                 </div>
@@ -2996,6 +3074,10 @@
                   <option value="owner">Владелец</option>
                 </select>
               </label>
+              <label>Шаблон прав
+                <select id="memberPreset"></select>
+              </label>
+              <div class="access-permissions" id="memberPermissionsGrid"></div>
               <button class="btn primary" type="submit">Добавить доступ</button>
             </form>
             <div class="cloud-help" id="memberStatus">Для управления доступом нужно войти в облако как владелец.</div>
@@ -3014,6 +3096,7 @@
                   <tr>
                     <th>Email</th>
                     <th>Роль</th>
+                    <th>Права</th>
                     <th>Добавлен</th>
                     <th>Действия</th>
                   </tr>
@@ -3023,6 +3106,36 @@
             </div>
             <div class="empty" id="membersEmpty">Пользователи пока не загружены.</div>
           </section>
+        </section>
+
+        <section class="panel access-editor hidden" id="memberPermissionEditor">
+          <div class="toolbar">
+            <div>
+              <h3>Настройка прав</h3>
+              <p class="sales-goal" id="editMemberTitle">Выберите пользователя из списка.</p>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="editMemberSaveBtn" type="button">Сохранить права</button>
+              <button class="btn" id="editMemberCancelBtn" type="button">Закрыть</button>
+            </div>
+          </div>
+          <div class="workspace" style="padding: 14px;">
+            <aside class="form-panel">
+              <label>Роль
+                <select id="editMemberRole">
+                  <option value="member">Менеджер</option>
+                  <option value="owner">Владелец</option>
+                </select>
+              </label>
+              <label>Шаблон прав
+                <select id="editMemberPreset"></select>
+              </label>
+              <p class="sales-goal">Шаблон можно выбрать для быстрого старта, а затем вручную поменять отдельные разделы.</p>
+            </aside>
+            <section>
+              <div class="access-permissions" id="editMemberPermissionsGrid"></div>
+            </section>
+          </div>
         </section>
       </section>
 
@@ -3268,6 +3381,15 @@
     const memberForm = document.querySelector("#memberForm");
     const memberEmail = document.querySelector("#memberEmail");
     const memberRole = document.querySelector("#memberRole");
+    const memberPreset = document.querySelector("#memberPreset");
+    const memberPermissionsGrid = document.querySelector("#memberPermissionsGrid");
+    const memberPermissionEditor = document.querySelector("#memberPermissionEditor");
+    const editMemberTitle = document.querySelector("#editMemberTitle");
+    const editMemberRole = document.querySelector("#editMemberRole");
+    const editMemberPreset = document.querySelector("#editMemberPreset");
+    const editMemberPermissionsGrid = document.querySelector("#editMemberPermissionsGrid");
+    const editMemberSaveBtn = document.querySelector("#editMemberSaveBtn");
+    const editMemberCancelBtn = document.querySelector("#editMemberCancelBtn");
     const memberStatus = document.querySelector("#memberStatus");
     const membersRows = document.querySelector("#membersRows");
     const membersEmpty = document.querySelector("#membersEmpty");
@@ -3338,6 +3460,43 @@
       conclusion: document.querySelector("#funnelConclusion"),
     };
 
+    const accessModules = [
+      { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, итоги дня" },
+      { key: "contentPlan", label: "Контент-план", details: "Календарь, список, идеи, архив" },
+      { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
+      { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
+      { key: "guide", label: "Гайд", details: "Шпаргалка и руководство пользователя" },
+      { key: "templates", label: "Шаблоны", details: "Будущие модули и план развития" },
+      { key: "access", label: "Доступ", details: "Пользователи, роли, права" },
+    ];
+
+    const accessPresets = {
+      marketer: {
+        label: "Маркетолог",
+        permissions: { ads: "write", contentPlan: "write", sales: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+      },
+      sales: {
+        label: "Менеджер продаж",
+        permissions: { ads: "read", contentPlan: "read", sales: "write", sources: "read", guide: "read", templates: "none", access: "none" },
+      },
+      manager: {
+        label: "Менеджер",
+        permissions: { ads: "write", contentPlan: "write", sales: "write", sources: "read", guide: "read", templates: "read", access: "none" },
+      },
+      viewer: {
+        label: "Только просмотр",
+        permissions: { ads: "read", contentPlan: "read", sales: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+      },
+      owner: {
+        label: "Владелец",
+        permissions: { ads: "write", contentPlan: "write", sales: "write", sources: "write", guide: "write", templates: "write", access: "write" },
+      },
+      custom: {
+        label: "Индивидуально",
+        permissions: {},
+      },
+    };
+
     let records = loadRecords();
     let funnelRecords = loadFunnelRecords();
     let contentPlanItems = loadContentPlanItems();
@@ -3353,6 +3512,10 @@
     let activeDashboardMetric = "views";
     let activeCalendarMode = "week";
     let activeContentTypeHighlight = "";
+    let editingMemberEmail = "";
+    let selectedRecordIds = new Set();
+    let selectedFunnelRecordIds = new Set();
+    let selectedContentPlanIds = new Set();
     let draggedContentId = "";
     let draggedContentDate = "";
     let draggedContentColumn = "";
@@ -3379,6 +3542,8 @@
     funnelFields.date.valueAsDate = new Date();
     renderCalendarMonthSelect();
     renderContentRubricOptions();
+    renderPermissionPresetOptions();
+    renderPermissionGrid(memberPermissionsGrid, permissionsFromPreset("manager"));
     render();
     renderContentPlan();
     renderSales();
@@ -3644,6 +3809,9 @@
     contentHeaderRow.addEventListener("drop", handleContentColumnDrop);
     contentHeaderRow.addEventListener("dragend", handleContentColumnDragEnd);
     contentHeaderRow.addEventListener("mousedown", handleContentColumnResizeStart);
+    rowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedRecordIds));
+    funnelRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedFunnelRecordIds));
+    contentRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedContentPlanIds));
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
@@ -3677,6 +3845,18 @@
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
     document.querySelector("#membersRefreshBtn").addEventListener("click", () => loadWorkspaceMembers());
     memberForm.addEventListener("submit", addWorkspaceMember);
+    memberRole.addEventListener("change", () => {
+      if (memberRole.value === "owner") memberPreset.value = "owner";
+      renderPermissionGrid(memberPermissionsGrid, permissionsFromPreset(memberPreset.value));
+    });
+    memberPreset.addEventListener("change", () => renderPermissionGrid(memberPermissionsGrid, permissionsFromPreset(memberPreset.value)));
+    editMemberRole.addEventListener("change", () => {
+      if (editMemberRole.value === "owner") editMemberPreset.value = "owner";
+      renderPermissionGrid(editMemberPermissionsGrid, permissionsFromPreset(editMemberPreset.value));
+    });
+    editMemberPreset.addEventListener("change", () => renderPermissionGrid(editMemberPermissionsGrid, permissionsFromPreset(editMemberPreset.value)));
+    editMemberSaveBtn.addEventListener("click", saveEditedMemberPermissions);
+    editMemberCancelBtn.addEventListener("click", closeMemberPermissionEditor);
     membersRows.addEventListener("change", handleWorkspaceMemberChange);
     membersRows.addEventListener("click", handleWorkspaceMemberAction);
     document.querySelector("#salesCopyBtn").addEventListener("click", () => copyText(salesStageText.value));
@@ -3755,6 +3935,7 @@
       if (button.dataset.action === "delete" && confirm("Удалить запись?")) {
         deletedRecords[id] = new Date().toISOString();
         records = records.filter((item) => item.id !== id);
+        selectedRecordIds.delete(id);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         render();
@@ -3780,6 +3961,7 @@
       if (button.dataset.action === "delete-content" && confirm("Удалить публикацию из контент-плана?")) {
         deletedContentPlan[id] = new Date().toISOString();
         contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
+        selectedContentPlanIds.delete(id);
         saveContentPlanItems();
         saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
         renderContentPlan();
@@ -3970,6 +4152,7 @@
       if (button.dataset.action === "delete" && confirm("Удалить запись воронки?")) {
         deletedFunnelRecords[id] = new Date().toISOString();
         funnelRecords = funnelRecords.filter((item) => item.id !== id);
+        selectedFunnelRecordIds.delete(id);
         saveFunnelRecords();
         saveDeletedRecords(deletedFunnelRecordsKey, deletedFunnelRecords);
         render();
@@ -4615,8 +4798,76 @@
       return cloudSession.accessToken;
     }
 
+    function renderPermissionPresetOptions() {
+      const html = Object.entries(accessPresets)
+        .map(([key, preset]) => `<option value="${key}">${escapeHtml(preset.label)}</option>`)
+        .join("");
+      memberPreset.innerHTML = html;
+      editMemberPreset.innerHTML = html;
+      memberPreset.value = "manager";
+      editMemberPreset.value = "custom";
+    }
+
+    function permissionsFromPreset(presetKey) {
+      return normalizePermissions(accessPresets[presetKey]?.permissions || accessPresets.manager.permissions);
+    }
+
+    function normalizePermissions(permissions = {}, role = "member") {
+      const fallback = role === "owner" ? accessPresets.owner.permissions : accessPresets.manager.permissions;
+      return Object.fromEntries(accessModules.map((module) => {
+        const value = permissions?.[module.key] || fallback[module.key] || "none";
+        return [module.key, ["none", "read", "write"].includes(value) ? value : "none"];
+      }));
+    }
+
+    function renderPermissionGrid(container, permissions = {}) {
+      const normalized = normalizePermissions(permissions);
+      container.innerHTML = accessModules.map((module) => `
+        <div class="permission-card">
+          <div>
+            <strong>${escapeHtml(module.label)}</strong>
+            <span>${escapeHtml(module.details)}</span>
+          </div>
+          <select data-permission-module="${escapeHtml(module.key)}" aria-label="Права: ${escapeHtml(module.label)}">
+            <option value="none"${normalized[module.key] === "none" ? " selected" : ""}>Нет доступа</option>
+            <option value="read"${normalized[module.key] === "read" ? " selected" : ""}>Просмотр</option>
+            <option value="write"${normalized[module.key] === "write" ? " selected" : ""}>Правка</option>
+          </select>
+        </div>
+      `).join("");
+    }
+
+    function collectPermissions(container) {
+      const permissions = {};
+      container.querySelectorAll("[data-permission-module]").forEach((select) => {
+        permissions[select.dataset.permissionModule] = select.value;
+      });
+      return normalizePermissions(permissions);
+    }
+
+    function permissionLabel(value) {
+      if (value === "write") return "правка";
+      if (value === "read") return "просмотр";
+      return "нет";
+    }
+
+    function permissionSummary(permissions, role) {
+      const normalized = normalizePermissions(permissions, role);
+      return accessModules
+        .map((module) => `${module.label}: ${permissionLabel(normalized[module.key])}`)
+        .join("; ");
+    }
+
+    function normalizeWorkspaceMember(member) {
+      return {
+        ...member,
+        permissions: normalizePermissions(member.permissions, member.role),
+      };
+    }
+
     function renderWorkspaceMembers() {
       membersRows.innerHTML = "";
+      workspaceMembers = workspaceMembers.map(normalizeWorkspaceMember);
       workspaceMembers.forEach((member) => {
         const tr = document.createElement("tr");
         const email = escapeHtml(member.email || "");
@@ -4629,8 +4880,10 @@
               <option value="owner"${isOwner ? " selected" : ""}>Владелец</option>
             </select>
           </td>
+          <td><div class="permission-summary">${escapeHtml(permissionSummary(member.permissions, member.role))}</div></td>
           <td>${member.created_at ? formatDate(member.created_at.slice(0, 10)) : "—"}</td>
           <td>
+            <button class="btn" type="button" data-member-action="permissions" data-member-email="${email}">Настроить права</button>
             <button class="btn" type="button" data-member-action="delete" data-member-email="${email}">Удалить</button>
           </td>
         `;
@@ -4675,16 +4928,16 @@
 
       const email = memberEmail.value.trim();
       const role = memberRole.value;
+      const permissions = role === "owner" ? permissionsFromPreset("owner") : collectPermissions(memberPermissionsGrid);
       if (!email) return;
 
       try {
         memberStatus.textContent = "Добавляем пользователя...";
-        await cloudRpc("sportpro_add_workspace_member", {
-          workspace_id_input: cloudConfig.workspace,
-          email_input: email,
-          role_input: role,
-        });
+        await saveWorkspaceMemberAccess(email, role, permissions);
         memberEmail.value = "";
+        memberRole.value = "member";
+        memberPreset.value = "manager";
+        renderPermissionGrid(memberPermissionsGrid, permissionsFromPreset("manager"));
         await loadWorkspaceMembers({ silent: true });
         memberStatus.textContent = "Пользователь добавлен в рабочее пространство.";
       } catch (error) {
@@ -4696,31 +4949,89 @@
     async function handleWorkspaceMemberChange(event) {
       const select = event.target.closest("[data-member-action='role']");
       if (!select) return;
-      await updateWorkspaceMemberRole(select.dataset.memberEmail, select.value);
+      const member = workspaceMembers.find((item) => item.email === select.dataset.memberEmail);
+      await updateWorkspaceMemberRole(select.dataset.memberEmail, select.value, member?.permissions);
     }
 
     async function handleWorkspaceMemberAction(event) {
-      const button = event.target.closest("button[data-member-action='delete']");
+      const button = event.target.closest("button[data-member-action]");
       if (!button) return;
-      await removeWorkspaceMember(button.dataset.memberEmail);
+      if (button.dataset.memberAction === "permissions") {
+        openMemberPermissionEditor(button.dataset.memberEmail);
+        return;
+      }
+      if (button.dataset.memberAction === "delete") {
+        await removeWorkspaceMember(button.dataset.memberEmail);
+      }
     }
 
-    async function updateWorkspaceMemberRole(email, role) {
+    async function updateWorkspaceMemberRole(email, role, currentPermissions = {}) {
       if (!email || !isCloudReady()) return;
+      const permissions = role === "owner" ? permissionsFromPreset("owner") : normalizePermissions(currentPermissions, role);
 
       try {
         memberStatus.textContent = "Обновляем роль...";
-        await cloudRpc("sportpro_add_workspace_member", {
-          workspace_id_input: cloudConfig.workspace,
-          email_input: email,
-          role_input: role,
-        });
+        await saveWorkspaceMemberAccess(email, role, permissions);
         await loadWorkspaceMembers({ silent: true });
         memberStatus.textContent = "Роль пользователя обновлена.";
       } catch (error) {
         memberStatus.textContent = "Не удалось обновить роль.";
         alert(`Не удалось обновить роль: ${error.message}`);
         await loadWorkspaceMembers({ silent: true });
+      }
+    }
+
+    function openMemberPermissionEditor(email) {
+      const member = workspaceMembers.find((item) => item.email === email);
+      if (!member) return;
+      editingMemberEmail = email;
+      editMemberTitle.textContent = email;
+      editMemberRole.value = member.role || "member";
+      editMemberPreset.value = "custom";
+      renderPermissionGrid(editMemberPermissionsGrid, normalizePermissions(member.permissions, member.role));
+      memberPermissionEditor.classList.remove("hidden");
+      memberPermissionEditor.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function closeMemberPermissionEditor() {
+      editingMemberEmail = "";
+      memberPermissionEditor.classList.add("hidden");
+    }
+
+    async function saveEditedMemberPermissions() {
+      if (!editingMemberEmail || !isCloudReady()) return;
+      const role = editMemberRole.value;
+      const permissions = role === "owner" ? permissionsFromPreset("owner") : collectPermissions(editMemberPermissionsGrid);
+
+      try {
+        memberStatus.textContent = "Сохраняем права...";
+        await saveWorkspaceMemberAccess(editingMemberEmail, role, permissions);
+        await loadWorkspaceMembers({ silent: true });
+        closeMemberPermissionEditor();
+        memberStatus.textContent = "Права пользователя обновлены.";
+      } catch (error) {
+        memberStatus.textContent = "Не удалось сохранить права.";
+        alert(`Не удалось сохранить права: ${error.message}`);
+      }
+    }
+
+    async function saveWorkspaceMemberAccess(email, role, permissions) {
+      try {
+        await cloudRpc("sportpro_add_workspace_member", {
+          workspace_id_input: cloudConfig.workspace,
+          email_input: email,
+          role_input: role,
+          permissions_input: permissions,
+        });
+      } catch (error) {
+        const canFallback = /function|schema cache|permissions_input|PGRST/i.test(error.message || "");
+        if (!canFallback) throw error;
+        await cloudRpc("sportpro_add_workspace_member", {
+          workspace_id_input: cloudConfig.workspace,
+          email_input: email,
+          role_input: role,
+        });
+        throw new Error("Роль сохранена, но права еще не сохраняются в Supabase. Выполните обновленный supabase-setup.sql и повторите сохранение прав.");
       }
     }
 
@@ -5242,6 +5553,7 @@
           : "Нет";
         return `
           <tr>
+            <td class="select-cell"><input class="row-check" type="checkbox" title="Выбрать запись" data-select-id="${record.id}" ${selectedRecordIds.has(record.id) ? "checked" : ""}></td>
             <td>${formatDate(record.date)}</td>
             <td><span class="type-pill">${escapeHtml(record.type)}</span></td>
             <td>${escapeHtml(record.topic)}</td>
@@ -5266,6 +5578,7 @@
       funnelEmptyState.classList.toggle("hidden", visible.length > 0);
       funnelRowsEl.innerHTML = visible.map((record) => `
         <tr>
+          <td class="select-cell"><input class="row-check" type="checkbox" title="Выбрать запись" data-select-id="${record.id}" ${selectedFunnelRecordIds.has(record.id) ? "checked" : ""}></td>
           <td>${formatDate(record.date)}</td>
           <td class="numeric">${formatNumber(record.followers)}</td>
           <td class="numeric">${formatNumber(record.reach)}</td>
@@ -5538,6 +5851,7 @@
 
     function defaultContentTableColumns() {
       return [
+        { key: "select", label: "✓", width: 44, min: 44, select: true, fixed: true },
         { key: "date", label: "Дата", width: 130, min: 100 },
         { key: "platform", label: "Площадка", width: 120, min: 90 },
         { key: "type", label: "Тип", width: 120, min: 90 },
@@ -5572,8 +5886,9 @@
       const byKey = new Map(defaults.map((column) => [column.key, column]));
       const layout = loadContentTableLayout();
       const orderedKeys = [
-        ...layout.order.filter((key) => byKey.has(key)),
-        ...defaults.map((column) => column.key).filter((key) => !layout.order.includes(key)),
+        "select",
+        ...layout.order.filter((key) => byKey.has(key) && key !== "select"),
+        ...defaults.map((column) => column.key).filter((key) => key !== "select" && !layout.order.includes(key)),
       ];
       return orderedKeys.map((key) => {
         const column = { ...byKey.get(key) };
@@ -5588,15 +5903,16 @@
       contentPlanTable.style.minWidth = `${Math.max(totalWidth, 920)}px`;
       contentColGroup.innerHTML = columns.map((column) => `<col style="width: ${column.width}px;">`).join("");
       contentHeaderRow.innerHTML = columns.map((column) => `
-        <th class="${column.numeric ? "numeric" : ""}" draggable="true" data-column-key="${escapeHtml(column.key)}" style="width: ${column.width}px;">
+        <th class="${column.numeric ? "numeric" : ""} ${column.select ? "select-cell" : ""}" draggable="${column.fixed ? "false" : "true"}" data-column-key="${escapeHtml(column.key)}" style="width: ${column.width}px;">
           ${escapeHtml(column.label)}
-          <span class="column-resize-handle" data-resize-column="${escapeHtml(column.key)}" aria-hidden="true"></span>
+          ${column.fixed ? "" : `<span class="column-resize-handle" data-resize-column="${escapeHtml(column.key)}" aria-hidden="true"></span>`}
         </th>
       `).join("");
     }
 
     function contentTableCellHtml(item, column) {
       const widthStyle = `style="width: ${column.width}px;"`;
+      if (column.key === "select") return `<td class="select-cell" ${widthStyle}><input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${item.id}" ${selectedContentPlanIds.has(item.id) ? "checked" : ""}></td>`;
       if (column.key === "date") return `<td ${widthStyle}>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>`;
       if (column.key === "platform") return `<td ${widthStyle}>${escapeHtml(item.platform)}</td>`;
       if (column.key === "type") return `<td ${widthStyle}>${escapeHtml(item.type)}</td>`;
@@ -6665,10 +6981,26 @@
       return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(value);
     }
 
+    function handleRowSelection(event, selectedSet) {
+      const checkbox = event.target.closest("[data-select-id]");
+      if (!checkbox) return;
+      if (checkbox.checked) {
+        selectedSet.add(checkbox.dataset.selectId);
+      } else {
+        selectedSet.delete(checkbox.dataset.selectId);
+      }
+    }
+
+    function getSelectedOrVisible(items, selectedSet) {
+      const selectedVisible = items.filter((item) => selectedSet.has(item.id));
+      return selectedVisible.length ? selectedVisible : items;
+    }
+
     function adsExportRows() {
+      const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
         ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Замеры", "Вывод"],
-        ...getVisibleRecords().map((record) => {
+        ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
             formatDate(record.date),
@@ -6686,9 +7018,10 @@
     }
 
     function funnelExportRows() {
+      const items = getSelectedOrVisible(getVisibleFunnelRecords(), selectedFunnelRecordIds);
       return [
         ["Дата", "Новые подписчики", "Охват", "Просмотры Reels", "Сообщения", "Лиды", "КП", "Сделки", "Выручка", "Расходы", "ROMI %", "Вывод"],
-        ...getVisibleFunnelRecords().map((record) => [
+        ...items.map((record) => [
           formatDate(record.date),
           record.followers,
           record.reach,
@@ -6706,10 +7039,11 @@
     }
 
     function contentListExportRows() {
-      const columns = getContentTableColumns().filter((column) => column.key !== "actions");
+      const columns = getContentTableColumns().filter((column) => !["actions", "select"].includes(column.key));
+      const items = getSelectedOrVisible(getVisibleContentItems(), selectedContentPlanIds);
       return [
         columns.map((column) => column.label),
-        ...getVisibleContentItems().map((item) => columns.map((column) => contentExportValue(item, column.key))),
+        ...items.map((item) => columns.map((column) => contentExportValue(item, column.key))),
       ];
     }
 
@@ -6752,8 +7086,19 @@
         alert("Нет данных для экспорта.");
         return;
       }
-      const table = tableRowsToHtml(rows);
-      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body>${table}</body></html>`;
+      const table = tableRowsToHtml(rows, { inline: true });
+      const html = `<!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              table { border-collapse: collapse; }
+              th, td { border: 1px solid #8a98a8; vertical-align: top; mso-number-format:"\\@"; }
+              th { background: #eef3f8; font-weight: 700; }
+            </style>
+          </head>
+          <body>${table}</body>
+        </html>`;
       const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
       downloadBlob(blob, `${sanitizeFilename(filename)}.xls`);
     }
@@ -6795,11 +7140,14 @@
       printWindow.document.close();
     }
 
-    function tableRowsToHtml(rows) {
+    function tableRowsToHtml(rows, options = {}) {
       const [header, ...bodyRows] = rows;
-      return `<table>
-        <thead><tr>${header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
-        <tbody>${bodyRows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+      const cellStyle = options.inline ? ' style="border: 1px solid #8a98a8; padding: 7px 8px; vertical-align: top; mso-number-format:&quot;\\@&quot;"' : "";
+      const headerStyle = options.inline ? ' style="border: 1px solid #8a98a8; padding: 7px 8px; vertical-align: top; background: #eef3f8; font-weight: 700; mso-number-format:&quot;\\@&quot;"' : "";
+      const tableStyle = options.inline ? ' style="border-collapse: collapse;"' : "";
+      return `<table${tableStyle}>
+        <thead><tr>${header.map((cell) => `<th${headerStyle}>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
+        <tbody>${bodyRows.map((row) => `<tr>${row.map((cell) => `<td${cellStyle}>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
       </table>`;
     }
 
