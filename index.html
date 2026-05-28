@@ -3251,9 +3251,9 @@
         </div>
 
         <section class="summary" aria-label="Итоги оптовых расчетов">
-          <div class="metric"><span>Клиентов</span><strong id="wholesaleTotalClients">0</strong></div>
-          <div class="metric"><span>Сумма накладных</span><strong id="wholesaleTotalInvoice">0</strong></div>
+          <div class="metric"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
           <div class="metric"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
+          <div class="metric"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
           <div class="metric"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
           <div class="metric"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
         </section>
@@ -7785,12 +7785,20 @@
       const invoices = getWholesaleFilteredInvoices();
       const goodsStats = wholesaleAggregateGoodsStats(invoices);
       const transportDebt = invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0);
-      document.querySelector("#wholesaleTotalClients").textContent = formatNumber(new Set(invoices.map((invoice) => invoice.clientId)).size || wholesaleData.clients.length);
-      document.querySelector("#wholesaleTotalInvoice").textContent = formatMoney(sum(invoices, "amount"));
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const monthEnd = formatIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      const currentMonthPaid = invoices.reduce((total, invoice) => total + (invoice.payments || []).reduce((paymentTotal, payment) => {
+        return payment.date >= monthStart && payment.date <= monthEnd ? paymentTotal + (Number(payment.amount) || 0) : paymentTotal;
+      }, 0), 0);
+      document.querySelector("#wholesaleCurrentMonthPaid").textContent = formatMoney(currentMonthPaid);
       document.querySelector("#wholesaleTotalDebt").textContent = formatMoney(goodsStats.debt);
+      document.querySelector("#wholesaleTotalOverpayment").textContent = formatMoney(goodsStats.overpayment);
       document.querySelector("#wholesaleTotalTransportDebt").textContent = formatMoney(transportDebt);
       document.querySelector("#wholesaleOverdueDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleOverdueAmount(invoice), 0));
+      setWholesaleMetricState("#wholesaleCurrentMonthPaid", currentMonthPaid, "overpay");
       setWholesaleMetricState("#wholesaleTotalDebt", goodsStats.debt, "debt");
+      setWholesaleMetricState("#wholesaleTotalOverpayment", goodsStats.overpayment, "overpay");
       setWholesaleMetricState("#wholesaleTotalTransportDebt", transportDebt, "debt");
       setWholesaleMetricState("#wholesaleOverdueDebt", invoices.reduce((total, invoice) => total + wholesaleOverdueAmount(invoice), 0), "debt");
     }
