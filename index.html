@@ -3182,6 +3182,7 @@
             <p>Клиенты, предприятия, накладные, оплаты, транспортные расходы, долги и дедлайны.</p>
           </div>
           <div class="actions">
+            <button class="btn primary" id="wholesaleCloudSyncBtn" type="button">Синхронизировать</button>
             <button class="btn" id="wholesaleBackupJsonBtn" type="button">Резерв JSON</button>
             <button class="btn" id="wholesaleExportExcelBtn" type="button">Excel</button>
             <button class="btn" id="wholesaleExportPdfBtn" type="button">PDF</button>
@@ -4358,10 +4359,10 @@
     wholesaleDateTo.addEventListener("change", renderWholesale);
     wholesalePaymentChartScale.addEventListener("change", renderWholesale);
     wholesaleLedgerList.addEventListener("click", handleWholesaleLedgerAction);
-    wholesaleLedgerList.addEventListener("click", handleWholesalePaymentAction);
     wholesaleClientsList.addEventListener("click", handleWholesaleClientAction);
     document.querySelector("#wholesaleBackupJsonBtn").addEventListener("click", exportWholesaleJson);
     document.querySelector("#wholesaleBackupJsonBtn2").addEventListener("click", exportWholesaleJson);
+    document.querySelector("#wholesaleCloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#wholesaleImportJsonBtn").addEventListener("click", () => document.querySelector("#wholesaleImportJsonInput").click());
     document.querySelector("#wholesaleImportJsonInput").addEventListener("change", importWholesaleJson);
     document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
@@ -7931,7 +7932,6 @@
                   <div class="payment-item">
                     <strong>${payment.type === "transport" ? "ТР" : "Накладная"} · ${formatMoney(payment.amount)}</strong>
                     <small>${formatDate(payment.date)}${payment.comment ? ` · ${escapeHtml(payment.comment)}` : ""}</small>
-                    <button class="btn icon danger" type="button" data-wholesale-payment-action="delete" data-invoice-id="${escapeHtml(invoice.id)}" data-payment-id="${escapeHtml(payment.id)}">×</button>
                   </div>
                 `).join("") || `<div class="empty">Платежей пока нет.</div>`}
               </div>
@@ -7950,7 +7950,7 @@
                   <input id="wholesalePaymentDate" type="date" required value="${formatIsoDate(new Date())}">
                 </label>
                 <label>Сумма
-                  <input id="wholesalePaymentAmount" type="number" min="0" step="1" value="0" required>
+                  <input id="wholesalePaymentAmount" type="number" min="1" step="1" placeholder="Сумма платежа" required>
                 </label>
               </div>
               <label>Комментарий
@@ -8321,23 +8321,22 @@
       if (!form) return;
       const invoice = wholesaleData.invoices.find((item) => item.id === form.querySelector("#wholesalePaymentInvoiceId")?.value);
       if (!invoice) return;
+      const paymentDate = form.querySelector("#wholesalePaymentDate")?.value;
+      const paymentAmount = Number(form.querySelector("#wholesalePaymentAmount")?.value) || 0;
+      if (!paymentDate) {
+        alert("Укажите дату платежа.");
+        return;
+      }
+      if (paymentAmount <= 0) {
+        alert("Укажите сумму платежа больше нуля.");
+        return;
+      }
       invoice.payments.push(normalizeWholesalePayment({
         type: form.querySelector("#wholesalePaymentType")?.value,
-        date: form.querySelector("#wholesalePaymentDate")?.value,
-        amount: form.querySelector("#wholesalePaymentAmount")?.value,
+        date: paymentDate,
+        amount: paymentAmount,
         comment: form.querySelector("#wholesalePaymentComment")?.value.trim(),
       }));
-      invoice.updatedAt = new Date().toISOString();
-      saveWholesaleData();
-      renderWholesale();
-    }
-
-    function handleWholesalePaymentAction(event) {
-      const button = event.target.closest("[data-wholesale-payment-action='delete']");
-      if (!button) return;
-      const invoice = wholesaleData.invoices.find((item) => item.id === button.dataset.invoiceId);
-      if (!invoice) return;
-      invoice.payments = invoice.payments.filter((payment) => payment.id !== button.dataset.paymentId);
       invoice.updatedAt = new Date().toISOString();
       saveWholesaleData();
       renderWholesale();
