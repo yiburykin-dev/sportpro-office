@@ -371,6 +371,35 @@
       flex-wrap: wrap;
     }
 
+    .ledger-company-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .ledger-company-chips button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ledger-company-chips button.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    .ledger-company-chips button span {
+      color: inherit;
+      opacity: .75;
+      font-weight: 800;
+    }
+
     .module-tabs {
       display: inline-flex;
       gap: 4px;
@@ -3229,6 +3258,7 @@
                   <button class="btn primary" id="wholesaleNewInvoiceBtn" type="button">Новая накладная</button>
                 </div>
               </div>
+                <div class="ledger-company-chips" id="wholesaleLedgerCompanyChips"></div>
               <div class="wholesale-ledger" id="wholesaleLedgerList"></div>
               <div class="empty" id="wholesaleLedgerEmpty">Накладных пока нет.</div>
             </section>
@@ -3809,6 +3839,7 @@
     const wholesaleLedgerClientFilter = document.querySelector("#wholesaleLedgerClientFilter");
     const wholesaleLedgerCompanyFilter = document.querySelector("#wholesaleLedgerCompanyFilter");
     const wholesaleLedgerStatusFilter = document.querySelector("#wholesaleLedgerStatusFilter");
+    const wholesaleLedgerCompanyChips = document.querySelector("#wholesaleLedgerCompanyChips");
     const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
     const wholesaleCompanyFilter = document.querySelector("#wholesaleCompanyFilter");
     const wholesaleCompanyEditor = document.querySelector("#wholesaleCompanyEditor");
@@ -4146,6 +4177,7 @@
     wholesaleLedgerClientFilter.addEventListener("change", () => { renderWholesaleLedgerCompanyFilter(); renderWholesaleLedger(); });
     wholesaleLedgerCompanyFilter.addEventListener("change", renderWholesaleLedger);
     wholesaleLedgerStatusFilter.addEventListener("change", renderWholesaleLedger);
+    wholesaleLedgerCompanyChips.addEventListener("click", handleWholesaleLedgerCompanyChip);
     wholesaleCompanyEditor.addEventListener("click", handleWholesaleCompanyAction);
     wholesaleClientFilter.addEventListener("change", () => { renderWholesaleCompanyFilter(); renderWholesale(); });
     wholesaleCompanyFilter.addEventListener("change", renderWholesale);
@@ -7399,6 +7431,50 @@
       wholesaleLedgerCompanyFilter.value = companies.some((company) => company.id === current) ? current : "";
     }
 
+    function renderWholesaleLedgerCompanyChips() {
+      const clientId = wholesaleLedgerClientFilter.value;
+      if (!clientId) {
+        wholesaleLedgerCompanyChips.classList.add("hidden");
+        wholesaleLedgerCompanyChips.innerHTML = "";
+        return;
+      }
+
+      const selectedCompanyId = wholesaleLedgerCompanyFilter.value;
+      const invoices = getWholesaleLedgerInvoices({ ignoreCompany: true });
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const key = invoice.companyId || "none";
+        if (!groups.has(key)) {
+          groups.set(key, {
+            id: invoice.companyId || "",
+            label: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+            count: 0,
+            debt: 0,
+          });
+        }
+        const group = groups.get(key);
+        group.count += 1;
+        group.debt += wholesaleGoodsDebt(invoice) + wholesaleTransportDebt(invoice);
+      });
+
+      const rows = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, "ru"));
+      if (!rows.length) {
+        wholesaleLedgerCompanyChips.classList.add("hidden");
+        wholesaleLedgerCompanyChips.innerHTML = "";
+        return;
+      }
+
+      wholesaleLedgerCompanyChips.classList.remove("hidden");
+      wholesaleLedgerCompanyChips.innerHTML = `
+        <button class="${selectedCompanyId ? "" : "active"}" type="button" data-wholesale-company-chip="">Все предприятия <span>${invoices.length}</span></button>
+        ${rows.map((row) => `
+          <button class="${selectedCompanyId === row.id ? "active" : ""}" type="button" data-wholesale-company-chip="${escapeHtml(row.id)}">
+            ${escapeHtml(row.label)} <span>${row.count}</span>
+          </button>
+        `).join("")}
+      `;
+    }
+
     function renderWholesaleSummary() {
       const invoices = getWholesaleFilteredInvoices();
       document.querySelector("#wholesaleTotalClients").textContent = formatNumber(new Set(invoices.map((invoice) => invoice.clientId)).size || wholesaleData.clients.length);
@@ -7475,6 +7551,7 @@
     }
 
     function renderWholesaleLedger() {
+      renderWholesaleLedgerCompanyChips();
       const invoices = getWholesaleLedgerInvoices();
       wholesaleLedgerEmpty.classList.toggle("hidden", invoices.length > 0);
       const groups = groupWholesaleInvoicesByCompany(invoices);
@@ -7871,6 +7948,14 @@
       invoice.updatedAt = new Date().toISOString();
       saveWholesaleData();
       renderWholesale();
+    }
+
+    function handleWholesaleLedgerCompanyChip(event) {
+      const button = event.target.closest("[data-wholesale-company-chip]");
+      if (!button) return;
+      wholesaleLedgerCompanyFilter.value = button.dataset.wholesaleCompanyChip || "";
+      activeWholesaleInvoiceId = "";
+      renderWholesaleLedger();
     }
 
     function getWholesaleFilteredInvoices() {
