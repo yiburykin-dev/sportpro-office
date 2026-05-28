@@ -3141,12 +3141,14 @@
           <section class="panel sales-card">
             <h3>Резервное копирование</h3>
             <p class="sales-goal">Для надежности можно выгружать полную копию данных. JSON нужен для восстановления в программе, Excel можно открыть вручную.</p>
+            <input class="hidden" id="wholesaleImportJsonInput" type="file" accept="application/json,.json">
             <div class="actions">
               <button class="btn primary" id="wholesaleBackupJsonBtn2" type="button">Скачать JSON</button>
+              <button class="btn" id="wholesaleImportJsonBtn" type="button">Импорт JSON</button>
               <button class="btn" id="wholesaleExportExcelBtn2" type="button">Скачать Excel</button>
               <button class="btn" id="wholesaleExportPdfBtn2" type="button">Скачать PDF</button>
             </div>
-            <p class="sales-goal">Следующий этап: импорт старой Excel-таблицы и синхронизация этого модуля с Supabase.</p>
+            <p class="sales-goal">Для старой Excel-таблицы подготовлен JSON-резерв: его можно загрузить через кнопку “Импорт JSON”, затем синхронизировать с облаком.</p>
           </section>
         </section>
       </section>
@@ -4045,6 +4047,8 @@
     wholesalePaymentList.addEventListener("click", handleWholesalePaymentAction);
     document.querySelector("#wholesaleBackupJsonBtn").addEventListener("click", exportWholesaleJson);
     document.querySelector("#wholesaleBackupJsonBtn2").addEventListener("click", exportWholesaleJson);
+    document.querySelector("#wholesaleImportJsonBtn").addEventListener("click", () => document.querySelector("#wholesaleImportJsonInput").click());
+    document.querySelector("#wholesaleImportJsonInput").addEventListener("change", importWholesaleJson);
     document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
     document.querySelector("#wholesaleExportExcelBtn2").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
     document.querySelector("#wholesaleExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Оптовые расчеты", wholesaleExportRows()));
@@ -7706,6 +7710,47 @@
     function exportWholesaleJson() {
       const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data: wholesaleData }, null, 2)], { type: "application/json;charset=utf-8" });
       downloadBlob(blob, `sportpro-wholesale-backup-${formatIsoDate(new Date())}.json`);
+    }
+
+    function importWholesaleJson(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || "{}"));
+          const incoming = parsed.data || parsed;
+          const nextData = normalizeWholesaleData(incoming);
+          if (!nextData.clients.length && !nextData.invoices.length) {
+            alert("В выбранном JSON не найдены данные оптовых расчетов.");
+            return;
+          }
+          const mode = wholesaleData.clients.length || wholesaleData.invoices.length
+            ? confirm("Заменить текущие оптовые расчеты импортируемыми данными? Нажмите Отмена, чтобы добавить их к текущим.")
+            : true;
+          if (mode) {
+            wholesaleData = nextData;
+          } else {
+            const clientsById = new Map(wholesaleData.clients.map((client) => [client.id, client]));
+            nextData.clients.forEach((client) => clientsById.set(client.id, client));
+            const invoicesById = new Map(wholesaleData.invoices.map((invoice) => [invoice.id, invoice]));
+            nextData.invoices.forEach((invoice) => invoicesById.set(invoice.id, invoice));
+            wholesaleData = normalizeWholesaleData({
+              clients: [...clientsById.values()],
+              invoices: [...invoicesById.values()],
+              updatedAt: new Date().toISOString(),
+            });
+          }
+          saveWholesaleData();
+          renderWholesale();
+          alert(`Импортировано: клиентов ${nextData.clients.length}, накладных ${nextData.invoices.length}.`);
+        } catch (error) {
+          alert(`Не удалось импортировать JSON: ${error.message}`);
+        } finally {
+          event.target.value = "";
+        }
+      };
+      reader.readAsText(file, "utf-8");
     }
 
     function loadRecords() {
