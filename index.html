@@ -7255,7 +7255,7 @@
       return {
         id: data.id || "main",
         clients: Array.isArray(data.clients) ? data.clients.map(normalizeWholesaleClient) : [],
-        invoices: Array.isArray(data.invoices) ? data.invoices.map(normalizeWholesaleInvoice) : [],
+        invoices: Array.isArray(data.invoices) ? data.invoices.map(normalizeWholesaleInvoice).filter(isWholesaleValidInvoice) : [],
         updatedAt: data.updatedAt || new Date().toISOString(),
       };
     }
@@ -7311,6 +7311,10 @@
         payments: Array.isArray(invoice.payments) ? invoice.payments.map(normalizeWholesalePayment) : [],
         updatedAt: invoice.updatedAt || new Date().toISOString(),
       };
+    }
+
+    function isWholesaleValidInvoice(invoice) {
+      return Boolean(String(invoice.number || "").trim());
     }
 
     function normalizeWholesalePayment(payment) {
