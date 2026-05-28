@@ -1410,6 +1410,41 @@
       font-size: 12px;
     }
 
+    .ledger-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .ledger-note strong {
+      color: var(--ink);
+    }
+
+    .ledger-inline-note {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .ledger-inline-note strong,
+    .ledger-inline-note span {
+      display: block;
+    }
+
+    .ledger-inline-note span {
+      margin-top: 6px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
     .ledger-group {
       display: grid;
       gap: 8px;
@@ -8000,6 +8035,9 @@
         const paymentDeadlineChip = invoice.paymentDeadline
           ? `<span class="status-chip ${isOverdue(invoice.paymentDeadline, debt) ? "overdue" : "warning"}">Дедлайн оплаты: ${formatDate(invoice.paymentDeadline)}</span>`
           : "";
+        const transportCommentPreview = invoice.transportComment
+          ? `<div class="ledger-note" title="${escapeHtml(invoice.transportComment)}"><strong>ТР:</strong> ${escapeHtml(shortText(invoice.transportComment, 180))}</div>`
+          : "";
         return `
           <article class="ledger-card compact ${activeWholesaleInvoiceId === invoice.id ? "active" : ""}" data-invoice-id="${escapeHtml(invoice.id)}">
             <div class="ledger-card-grid">
@@ -8013,6 +8051,7 @@
               <div class="${balanceClass || debtClass}"><strong>${formatMoney(balanceValue)}</strong><small>${balanceLabel}</small></div>
               <div class="${transportDebtClass}"><strong>${formatMoney(transportDebt)}</strong><small>Долг ТР</small></div>
             </div>
+            ${transportCommentPreview}
             <div class="actions" style="margin-top: 10px;">
               <span class="status-chip ${docStatusClass(invoice.docStatus)}">${escapeHtml(docStatusLabel(invoice.docStatus))}</span>
               <span class="status-chip ${overpayment ? "overpaid" : overdue ? "overdue" : debt + transportDebt > 0 ? "warning" : "paid"}">${escapeHtml(wholesalePaymentStatus(invoice))}</span>
@@ -8042,6 +8081,12 @@
                 <div><strong>${invoice.paymentDeadline ? formatDate(invoice.paymentDeadline) : "—"}</strong><span>Дедлайн оплаты</span></div>
                 <div><strong>${invoice.transportDeadline ? formatDate(invoice.transportDeadline) : "—"}</strong><span>Дедлайн ТР</span></div>
               </div>
+              ${invoice.transportComment ? `
+                <div class="ledger-inline-note">
+                  <strong>Комментарий по ТР</strong>
+                  <span>${escapeHtml(invoice.transportComment)}</span>
+                </div>
+              ` : ""}
               <div class="payment-list">
                 ${invoice.payments.map((payment) => `
                   <div class="payment-item">
