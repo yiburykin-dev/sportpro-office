@@ -784,6 +784,15 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .payment-bars > div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .payment-bars small {
+      margin-left: 162px;
+    }
+
     .timeline {
       height: 260px;
       display: flex;
@@ -3221,6 +3230,24 @@
           </section>
           <section class="dashboard-grid">
             <section class="panel chart-panel">
+              <div class="toolbar">
+                <div>
+                  <h3>Диаграмма платежей</h3>
+                  <p class="sales-goal">Все платежи по накладным и транспортным расходам за выбранный период.</p>
+                </div>
+                <label>Период
+                  <select id="wholesalePaymentChartScale">
+                    <option value="day">День</option>
+                    <option value="week">Неделя</option>
+                    <option value="month" selected>Месяц</option>
+                    <option value="year">Год</option>
+                  </select>
+                </label>
+              </div>
+              <div class="bars payment-bars" id="wholesalePaymentBars"></div>
+              <div class="dashboard-empty hidden" id="wholesalePaymentEmpty">Платежей за выбранный период нет.</div>
+            </section>
+            <section class="panel chart-panel">
               <h3>Крупные долги</h3>
               <div class="bars" id="wholesaleDebtBars"></div>
               <div class="dashboard-empty hidden" id="wholesaleDebtEmpty">Открытых долгов нет.</div>
@@ -3974,6 +4001,7 @@
     const wholesaleCompanyEditor = document.querySelector("#wholesaleCompanyEditor");
     const wholesaleDateFrom = document.querySelector("#wholesaleDateFrom");
     const wholesaleDateTo = document.querySelector("#wholesaleDateTo");
+    const wholesalePaymentChartScale = document.querySelector("#wholesalePaymentChartScale");
     const wholesaleInvoiceClient = document.querySelector("#wholesaleInvoiceClient");
     const wholesaleInvoiceCompany = document.querySelector("#wholesaleInvoiceCompany");
     const sourcesApiUrl = document.querySelector("#sourcesApiUrl");
@@ -4327,6 +4355,7 @@
     wholesaleCompanyFilter.addEventListener("change", renderWholesale);
     wholesaleDateFrom.addEventListener("change", renderWholesale);
     wholesaleDateTo.addEventListener("change", renderWholesale);
+    wholesalePaymentChartScale.addEventListener("change", renderWholesale);
     wholesaleLedgerList.addEventListener("click", handleWholesaleLedgerAction);
     wholesaleLedgerList.addEventListener("click", handleWholesalePaymentAction);
     wholesaleClientsList.addEventListener("click", handleWholesaleClientAction);
@@ -5902,8 +5931,7 @@
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
         const mergedAdsSettings = mergeCloudRows(adsSettingsRows, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
         adsSettings = normalizeAdsSettings(mergedAdsSettings.find((item) => item.id === "ads-followers") || adsSettings);
-        const mergedWholesale = mergeCloudRows(wholesaleRows, [wholesaleCloudRecord()], {}, normalizeWholesaleCloudRecord);
-        wholesaleData = normalizeWholesaleData(mergedWholesale.find((item) => item.id === "main") || wholesaleData);
+        wholesaleData = mergeWholesaleCloudRows(wholesaleRows);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
         saveFunnelRecords();
@@ -5955,6 +5983,44 @@
       });
 
       return [...byId.values()];
+    }
+
+    function mergeWholesaleCloudRows(cloudRows = []) {
+      let merged = normalizeWholesaleData(wholesaleData);
+      cloudRows.forEach((row) => {
+        if (row.deleted_at || !row.record) return;
+        const cloudUpdated = row.updated_at || row.record.updatedAt || "";
+        const cloudData = normalizeWholesaleCloudRecord({ ...row.record, id: row.id, updatedAt: cloudUpdated });
+        merged = mergeWholesaleDataSets(merged, cloudData);
+      });
+      return normalizeWholesaleData(merged);
+    }
+
+    function mergeWholesaleDataSets(localData, cloudData) {
+      const local = normalizeWholesaleData(localData);
+      const cloud = normalizeWholesaleData(cloudData);
+      const clientsById = new Map(local.clients.map((client) => [client.id, client]));
+      cloud.clients.forEach((client) => {
+        const existing = clientsById.get(client.id);
+        if (!existing || (client.updatedAt || "") >= (existing.updatedAt || "")) {
+          clientsById.set(client.id, client);
+        }
+      });
+
+      const invoicesById = new Map(local.invoices.map((invoice) => [invoice.id, invoice]));
+      cloud.invoices.forEach((invoice) => {
+        const existing = invoicesById.get(invoice.id);
+        if (!existing || (invoice.updatedAt || "") >= (existing.updatedAt || "")) {
+          invoicesById.set(invoice.id, invoice);
+        }
+      });
+
+      return normalizeWholesaleData({
+        id: "main",
+        clients: [...clientsById.values()],
+        invoices: [...invoicesById.values()],
+        updatedAt: [local.updatedAt || "", cloud.updatedAt || "", new Date().toISOString()].sort().at(-1),
+      });
     }
 
     async function cloudRequest(url, options = {}) {
@@ -7640,6 +7706,7 @@
 
     function renderWholesaleDashboard() {
       const invoices = getWholesaleFilteredInvoices();
+      renderWholesalePaymentChart();
       const rows = groupWholesaleInvoicesByCompany(invoices)
         .map((group) => ({
           label: group.label,
@@ -7671,6 +7738,47 @@
         </div>
       `).join("");
       document.querySelector("#wholesaleDeadlineEmpty").classList.toggle("hidden", deadlines.length > 0);
+    }
+
+    function renderWholesalePaymentChart() {
+      const from = wholesaleDateFrom.value;
+      const to = wholesaleDateTo.value;
+      const scale = wholesalePaymentChartScale.value || "month";
+      const payments = getWholesalePaymentChartInvoices()
+        .flatMap((invoice) => (invoice.payments || []).map((payment) => ({
+          ...payment,
+          invoice,
+          amount: Number(payment.amount) || 0,
+        })))
+        .filter((payment) => payment.date && payment.amount > 0)
+        .filter((payment) => (!from || payment.date >= from) && (!to || payment.date <= to));
+
+      const grouped = payments.reduce((groups, payment) => {
+        const bucket = timelineBucket(payment.date, scale);
+        groups[bucket.key] = groups[bucket.key] || { label: bucket.label, goods: 0, transport: 0, total: 0 };
+        const target = payment.type === "transport" ? "transport" : "goods";
+        groups[bucket.key][target] += payment.amount;
+        groups[bucket.key].total += payment.amount;
+        return groups;
+      }, {});
+      const rows = Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, row]) => row);
+      const max = Math.max(...rows.map((row) => row.total), 0);
+      const target = document.querySelector("#wholesalePaymentBars");
+      const empty = document.querySelector("#wholesalePaymentEmpty");
+      target.classList.toggle("hidden", rows.length === 0);
+      empty.classList.toggle("hidden", rows.length > 0);
+      target.innerHTML = rows.map((row) => `
+        <div>
+          <div class="bar-row" title="${escapeHtml(row.label)}">
+            <span>${escapeHtml(shortText(row.label, 28))}</span>
+            <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (row.total / max) * 100 : 0}%"></div></div>
+            <span class="bar-value">${formatMoney(row.total)}</span>
+          </div>
+          <small class="sales-goal">Накладные: ${formatMoney(row.goods)} · ТР: ${formatMoney(row.transport)}</small>
+        </div>
+      `).join("");
     }
 
     function renderWholesaleClients() {
@@ -8235,6 +8343,16 @@
       return wholesaleData.invoices.filter((invoice) => {
         if (from && invoice.shipDate < from) return false;
         if (to && invoice.shipDate > to) return false;
+        if (clientId && invoice.clientId !== clientId) return false;
+        if (companyId && invoice.companyId !== companyId) return false;
+        return true;
+      });
+    }
+
+    function getWholesalePaymentChartInvoices() {
+      const clientId = wholesaleClientFilter.value;
+      const companyId = wholesaleCompanyFilter.value;
+      return wholesaleData.invoices.filter((invoice) => {
         if (clientId && invoice.clientId !== clientId) return false;
         if (companyId && invoice.companyId !== companyId) return false;
         return true;
