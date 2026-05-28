@@ -3849,6 +3849,7 @@
     const salesLeadDraftKey = "workspace-tables.sales.leadDraft";
     const salesClientsStorageKey = "workspace-tables.sales.clients";
     const wholesaleStorageKey = "workspace-tables.wholesale.data";
+    const wholesaleSafetySnapshotsKey = "workspace-tables.wholesale.safetySnapshots";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
@@ -5931,6 +5932,7 @@
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
         const mergedAdsSettings = mergeCloudRows(adsSettingsRows, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
         adsSettings = normalizeAdsSettings(mergedAdsSettings.find((item) => item.id === "ads-followers") || adsSettings);
+        createWholesaleSafetySnapshot("before-cloud-pull");
         wholesaleData = mergeWholesaleCloudRows(wholesaleRows);
         saveRecords();
         saveDeletedRecords(deletedRecordsKey, deletedRecords);
@@ -6015,11 +6017,12 @@
         }
       });
 
+      const updatedCandidates = [local.updatedAt || "", cloud.updatedAt || "", new Date().toISOString()].sort();
       return normalizeWholesaleData({
         id: "main",
         clients: [...clientsById.values()],
         invoices: [...invoicesById.values()],
-        updatedAt: [local.updatedAt || "", cloud.updatedAt || "", new Date().toISOString()].sort().at(-1),
+        updatedAt: updatedCandidates[updatedCandidates.length - 1],
       });
     }
 
@@ -7583,6 +7586,19 @@
       queueCloudSync("Оптовые расчеты");
     }
 
+    function createWholesaleSafetySnapshot(reason = "auto") {
+      const current = normalizeWholesaleData(wholesaleData);
+      if (!current.clients.length && !current.invoices.length) return;
+      const snapshots = readStorage(wholesaleSafetySnapshotsKey);
+      snapshots.unshift({
+        id: createId(),
+        reason,
+        createdAt: new Date().toISOString(),
+        data: current,
+      });
+      localStorage.setItem(wholesaleSafetySnapshotsKey, JSON.stringify(snapshots.slice(0, 12)));
+    }
+
     function renderWholesale() {
       wholesaleData = normalizeWholesaleData(wholesaleData);
       renderWholesaleOptions();
@@ -8560,25 +8576,11 @@
             alert("В выбранном JSON не найдены данные оптовых расчетов.");
             return;
           }
-          const mode = wholesaleData.clients.length || wholesaleData.invoices.length
-            ? confirm("Заменить текущие оптовые расчеты импортируемыми данными? Нажмите Отмена, чтобы добавить их к текущим.")
-            : true;
-          if (mode) {
-            wholesaleData = nextData;
-          } else {
-            const clientsById = new Map(wholesaleData.clients.map((client) => [client.id, client]));
-            nextData.clients.forEach((client) => clientsById.set(client.id, client));
-            const invoicesById = new Map(wholesaleData.invoices.map((invoice) => [invoice.id, invoice]));
-            nextData.invoices.forEach((invoice) => invoicesById.set(invoice.id, invoice));
-            wholesaleData = normalizeWholesaleData({
-              clients: [...clientsById.values()],
-              invoices: [...invoicesById.values()],
-              updatedAt: new Date().toISOString(),
-            });
-          }
+          createWholesaleSafetySnapshot("before-json-import");
+          wholesaleData = mergeWholesaleDataSets(wholesaleData, nextData);
           saveWholesaleData();
           renderWholesale();
-          alert(`Импортировано: клиентов ${nextData.clients.length}, накладных ${nextData.invoices.length}.`);
+          alert(`Импорт объединен с текущими данными: клиентов ${nextData.clients.length}, накладных ${nextData.invoices.length}.`);
         } catch (error) {
           alert(`Не удалось импортировать JSON: ${error.message}`);
         } finally {
@@ -8587,7 +8589,6 @@
       };
       reader.readAsText(file, "utf-8");
     }
-
     function loadRecords() {
       const existing = readStorage(storageKey);
       if (existing.length) return existing.map(normalizeRecord);
