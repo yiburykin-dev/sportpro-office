@@ -7997,6 +7997,9 @@
         const transportDebtClass = transportDebt > 0 ? "money-debt" : "";
         const balanceLabel = overpayment ? "Переплата" : "Долг";
         const balanceValue = overpayment || debt;
+        const paymentDeadlineChip = invoice.paymentDeadline
+          ? `<span class="status-chip ${isOverdue(invoice.paymentDeadline, debt) ? "overdue" : "warning"}">Дедлайн оплаты: ${formatDate(invoice.paymentDeadline)}</span>`
+          : "";
         return `
           <article class="ledger-card compact ${activeWholesaleInvoiceId === invoice.id ? "active" : ""}" data-invoice-id="${escapeHtml(invoice.id)}">
             <div class="ledger-card-grid">
@@ -8013,6 +8016,7 @@
             <div class="actions" style="margin-top: 10px;">
               <span class="status-chip ${docStatusClass(invoice.docStatus)}">${escapeHtml(docStatusLabel(invoice.docStatus))}</span>
               <span class="status-chip ${overpayment ? "overpaid" : overdue ? "overdue" : debt + transportDebt > 0 ? "warning" : "paid"}">${escapeHtml(wholesalePaymentStatus(invoice))}</span>
+              ${paymentDeadlineChip}
               <button class="btn" type="button" data-wholesale-ledger-action="select" data-id="${escapeHtml(invoice.id)}">${activeWholesaleInvoiceId === invoice.id ? "Скрыть платежи" : "Платежи"}</button>
               <button class="btn" type="button" data-wholesale-ledger-action="edit" data-id="${escapeHtml(invoice.id)}">Редактировать</button>
             </div>
