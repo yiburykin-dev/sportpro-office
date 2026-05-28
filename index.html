@@ -718,6 +718,10 @@
       align-items: start;
     }
 
+    .wholesale-dashboard-grid {
+      grid-template-columns: minmax(320px, .75fr) minmax(0, 1.25fr);
+    }
+
     .dashboard-stack {
       display: grid;
       gap: 18px;
@@ -791,6 +795,24 @@
 
     .payment-bars small {
       margin-left: 162px;
+    }
+
+    .wholesale-payment-filter {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .wholesale-payment-filter label {
+      min-width: 170px;
+    }
+
+    .payment-breakdown {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
     }
 
     .timeline {
@@ -3229,34 +3251,43 @@
               </div>
             </div>
           </section>
-          <section class="dashboard-grid">
+          <section class="dashboard-grid wholesale-dashboard-grid">
+            <section class="dashboard-stack">
+              <section class="panel chart-panel">
+                <h3>Задолженности</h3>
+                <div class="bars" id="wholesaleDebtBars"></div>
+                <div class="dashboard-empty hidden" id="wholesaleDebtEmpty">Открытых долгов нет.</div>
+              </section>
+              <section class="panel chart-panel">
+                <h3>Ближайшие дедлайны</h3>
+                <div class="wholesale-ledger" id="wholesaleDeadlineList"></div>
+                <div class="dashboard-empty hidden" id="wholesaleDeadlineEmpty">Просрочек и ближайших дедлайнов нет.</div>
+              </section>
+            </section>
             <section class="panel chart-panel">
               <div class="toolbar">
                 <div>
                   <h3>Диаграмма платежей</h3>
                   <p class="sales-goal">Все платежи по накладным и транспортным расходам за выбранный период.</p>
                 </div>
-                <label>Период
-                  <select id="wholesalePaymentChartScale">
-                    <option value="day">День</option>
-                    <option value="week">Неделя</option>
-                    <option value="month" selected>Месяц</option>
-                    <option value="year">Год</option>
-                  </select>
-                </label>
+                <div class="wholesale-payment-filter">
+                  <label>Период
+                    <select id="wholesalePaymentChartPeriod">
+                      <option value="currentWeek">Текущая неделя</option>
+                      <option value="lastWeek">Прошлая неделя</option>
+                      <option value="month" selected>Месяц</option>
+                      <option value="year">Год</option>
+                      <option value="all">За все время</option>
+                    </select>
+                  </label>
+                  <label id="wholesalePaymentChartMonthWrap">Месяц
+                    <input id="wholesalePaymentChartMonth" type="month">
+                  </label>
+                </div>
               </div>
               <div class="bars payment-bars" id="wholesalePaymentBars"></div>
+              <div class="payment-breakdown" id="wholesalePaymentBreakdown"></div>
               <div class="dashboard-empty hidden" id="wholesalePaymentEmpty">Платежей за выбранный период нет.</div>
-            </section>
-            <section class="panel chart-panel">
-              <h3>Крупные долги</h3>
-              <div class="bars" id="wholesaleDebtBars"></div>
-              <div class="dashboard-empty hidden" id="wholesaleDebtEmpty">Открытых долгов нет.</div>
-            </section>
-            <section class="panel chart-panel">
-              <h3>Ближайшие дедлайны</h3>
-              <div class="wholesale-ledger" id="wholesaleDeadlineList"></div>
-              <div class="dashboard-empty hidden" id="wholesaleDeadlineEmpty">Просрочек и ближайших дедлайнов нет.</div>
             </section>
           </section>
         </section>
@@ -4003,7 +4034,9 @@
     const wholesaleCompanyEditor = document.querySelector("#wholesaleCompanyEditor");
     const wholesaleDateFrom = document.querySelector("#wholesaleDateFrom");
     const wholesaleDateTo = document.querySelector("#wholesaleDateTo");
-    const wholesalePaymentChartScale = document.querySelector("#wholesalePaymentChartScale");
+    const wholesalePaymentChartPeriod = document.querySelector("#wholesalePaymentChartPeriod");
+    const wholesalePaymentChartMonth = document.querySelector("#wholesalePaymentChartMonth");
+    const wholesalePaymentChartMonthWrap = document.querySelector("#wholesalePaymentChartMonthWrap");
     const wholesaleInvoiceClient = document.querySelector("#wholesaleInvoiceClient");
     const wholesaleInvoiceCompany = document.querySelector("#wholesaleInvoiceCompany");
     const sourcesApiUrl = document.querySelector("#sourcesApiUrl");
@@ -4353,11 +4386,13 @@
     wholesaleLedgerStatusFilter.addEventListener("change", renderWholesaleLedger);
     wholesaleLedgerCompanyChips.addEventListener("click", handleWholesaleLedgerCompanyChip);
     wholesaleCompanyEditor.addEventListener("click", handleWholesaleCompanyAction);
+    wholesalePaymentChartMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     wholesaleClientFilter.addEventListener("change", () => { renderWholesaleCompanyFilter(); renderWholesale(); });
     wholesaleCompanyFilter.addEventListener("change", renderWholesale);
     wholesaleDateFrom.addEventListener("change", renderWholesale);
     wholesaleDateTo.addEventListener("change", renderWholesale);
-    wholesalePaymentChartScale.addEventListener("change", renderWholesale);
+    wholesalePaymentChartPeriod.addEventListener("change", renderWholesale);
+    wholesalePaymentChartMonth.addEventListener("change", renderWholesale);
     wholesaleLedgerList.addEventListener("click", handleWholesaleLedgerAction);
     wholesaleClientsList.addEventListener("click", handleWholesaleClientAction);
     document.querySelector("#wholesaleBackupJsonBtn").addEventListener("click", exportWholesaleJson);
@@ -7758,9 +7793,8 @@
     }
 
     function renderWholesalePaymentChart() {
-      const from = wholesaleDateFrom.value;
-      const to = wholesaleDateTo.value;
-      const scale = wholesalePaymentChartScale.value || "month";
+      const period = getWholesalePaymentPeriodConfig();
+      wholesalePaymentChartMonthWrap.classList.toggle("hidden", period.mode !== "month");
       const payments = getWholesalePaymentChartInvoices()
         .flatMap((invoice) => (invoice.payments || []).map((payment) => ({
           ...payment,
@@ -7768,10 +7802,10 @@
           amount: Number(payment.amount) || 0,
         })))
         .filter((payment) => payment.date && payment.amount > 0)
-        .filter((payment) => (!from || payment.date >= from) && (!to || payment.date <= to));
+        .filter((payment) => (!period.from || payment.date >= period.from) && (!period.to || payment.date <= period.to));
 
       const grouped = payments.reduce((groups, payment) => {
-        const bucket = timelineBucket(payment.date, scale);
+        const bucket = timelineBucket(payment.date, period.scale);
         groups[bucket.key] = groups[bucket.key] || { label: bucket.label, goods: 0, transport: 0, total: 0 };
         const target = payment.type === "transport" ? "transport" : "goods";
         groups[bucket.key][target] += payment.amount;
@@ -7784,8 +7818,10 @@
       const max = Math.max(...rows.map((row) => row.total), 0);
       const target = document.querySelector("#wholesalePaymentBars");
       const empty = document.querySelector("#wholesalePaymentEmpty");
+      const breakdown = document.querySelector("#wholesalePaymentBreakdown");
       target.classList.toggle("hidden", rows.length === 0);
       empty.classList.toggle("hidden", rows.length > 0);
+      breakdown.classList.toggle("hidden", payments.length === 0);
       target.innerHTML = rows.map((row) => `
         <div>
           <div class="bar-row" title="${escapeHtml(row.label)}">
@@ -7796,6 +7832,81 @@
           <small class="sales-goal">Накладные: ${formatMoney(row.goods)} · ТР: ${formatMoney(row.transport)}</small>
         </div>
       `).join("");
+      const paymentRows = payments
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+        .map((payment) => {
+          const invoice = payment.invoice;
+          const payer = `${wholesaleClientName(invoice.clientId)}${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId) ? ` · ${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId)}` : ""}`;
+          return `
+            <div class="payment-item">
+              <strong>${escapeHtml(shortText(payer, 58))}</strong>
+              <small>${formatDate(payment.date)} · ${payment.type === "transport" ? "ТР" : "Накладная"} · № ${escapeHtml(invoice.number || "без номера")} · ${formatMoney(payment.amount)}</small>
+            </div>
+          `;
+        });
+      const total = payments.reduce((value, payment) => value + payment.amount, 0);
+      breakdown.innerHTML = payments.length ? `
+        <div class="payment-item">
+          <strong>Платежи периода: ${formatMoney(total)}</strong>
+          <small>${escapeHtml(period.label)} · записей: ${formatNumber(payments.length)}</small>
+        </div>
+        ${paymentRows.join("")}
+      ` : "";
+    }
+
+    function getWholesalePaymentPeriodConfig() {
+      const mode = wholesalePaymentChartPeriod.value || "currentWeek";
+      const today = new Date();
+      const year = today.getFullYear();
+      const currentMonth = `${year}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+      if (!wholesalePaymentChartMonth.value) wholesalePaymentChartMonth.value = currentMonth;
+
+      if (mode === "currentWeek" || mode === "lastWeek") {
+        const start = startOfWeek(today);
+        if (mode === "lastWeek") start.setDate(start.getDate() - 7);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        return {
+          mode,
+          from: formatIsoDate(start),
+          to: formatIsoDate(end),
+          scale: "day",
+          label: `${mode === "currentWeek" ? "Текущая неделя" : "Прошлая неделя"}: ${formatDate(formatIsoDate(start))} - ${formatDate(formatIsoDate(end))}`,
+        };
+      }
+
+      if (mode === "month") {
+        const value = wholesalePaymentChartMonth.value || currentMonth;
+        const [monthYear, monthIndex] = value.split("-").map(Number);
+        const start = new Date(monthYear, monthIndex - 1, 1);
+        const end = new Date(monthYear, monthIndex, 0);
+        return {
+          mode,
+          from: formatIsoDate(start),
+          to: formatIsoDate(end),
+          scale: "day",
+          label: new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(start),
+        };
+      }
+
+      if (mode === "year") {
+        return {
+          mode,
+          from: `${year}-01-01`,
+          to: `${year}-12-31`,
+          scale: "month",
+          label: `Текущий год: ${year}`,
+        };
+      }
+
+      return {
+        mode,
+        from: "",
+        to: "",
+        scale: "year",
+        label: "За все время",
+      };
     }
 
     function renderWholesaleClients() {
