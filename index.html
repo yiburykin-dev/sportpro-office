@@ -400,6 +400,11 @@
       font-weight: 800;
     }
 
+    .ledger-summary {
+      grid-template-columns: repeat(5, minmax(145px, 1fr));
+      margin: 12px 0;
+    }
+
     .module-tabs {
       display: inline-flex;
       gap: 4px;
@@ -3259,6 +3264,13 @@
                 </div>
               </div>
                 <div class="ledger-company-chips" id="wholesaleLedgerCompanyChips"></div>
+              <section class="summary ledger-summary" aria-label="Итоги выбранных накладных">
+                <div class="metric"><span>Накладных</span><strong id="wholesaleLedgerTotalCount">0</strong></div>
+                <div class="metric"><span>Сумма накладных</span><strong id="wholesaleLedgerTotalAmount">0</strong></div>
+                <div class="metric"><span>Оплачено</span><strong id="wholesaleLedgerTotalPaid">0</strong></div>
+                <div class="metric"><span>Долг по накладным</span><strong id="wholesaleLedgerTotalDebt">0</strong></div>
+                <div class="metric"><span>Долг ТР</span><strong id="wholesaleLedgerTotalTransportDebt">0</strong></div>
+              </section>
               <div class="wholesale-ledger" id="wholesaleLedgerList"></div>
               <div class="empty" id="wholesaleLedgerEmpty">Накладных пока нет.</div>
             </section>
@@ -7553,6 +7565,7 @@
     function renderWholesaleLedger() {
       renderWholesaleLedgerCompanyChips();
       const invoices = getWholesaleLedgerInvoices();
+      renderWholesaleLedgerSummary(invoices);
       wholesaleLedgerEmpty.classList.toggle("hidden", invoices.length > 0);
       const groups = groupWholesaleInvoicesByCompany(invoices);
       wholesaleLedgerList.innerHTML = groups.map((group) => {
@@ -7567,6 +7580,14 @@
           </section>
         `;
       }).join("");
+    }
+
+    function renderWholesaleLedgerSummary(invoices) {
+      document.querySelector("#wholesaleLedgerTotalCount").textContent = formatNumber(invoices.length);
+      document.querySelector("#wholesaleLedgerTotalAmount").textContent = formatMoney(sum(invoices, "amount"));
+      document.querySelector("#wholesaleLedgerTotalPaid").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleGoodsPaid(invoice), 0));
+      document.querySelector("#wholesaleLedgerTotalDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleGoodsDebt(invoice), 0));
+      document.querySelector("#wholesaleLedgerTotalTransportDebt").textContent = formatMoney(invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0));
     }
 
     function wholesaleLedgerCardHtml(invoice) {
