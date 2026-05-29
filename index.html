@@ -708,6 +708,53 @@
       line-height: 1;
     }
 
+    .metric-drilldown {
+      margin: -6px 0 18px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .metric-drilldown-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .metric-drilldown-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .metric-drilldown-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .metric-drilldown-table th,
+    .metric-drilldown-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .metric-drilldown-table th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .metric-drilldown-table td:last-child,
+    .metric-drilldown-table th:last-child {
+      text-align: right;
+      font-weight: 800;
+    }
+
     .workspace {
       display: grid;
       grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
@@ -2332,9 +2379,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           <span class="nav-label">Продажи</span>
         </button>
-        <button type="button" data-view="wholesale" title="Оптовые расчеты">
+        <button type="button" data-view="wholesale" title="Поставки и оплаты">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v4H3V5Zm2 2h14V7H5Zm-1 5h6v7H4v-7Zm2 2v3h2v-3H6Zm7-2h7v2h-7v-2Zm0 4h7v2h-7v-2Zm0 4h7v2h-7v-2Z"/></svg>
-          <span class="nav-label">Оптовые расчеты</span>
+          <span class="nav-label">Поставки и оплаты</span>
         </button>
         <button type="button" data-view="guide" title="Гайд">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 0-3-3V3Zm3 13h9V6a1 1 0 0 0-1-1H7v11.2c.3-.1.7-.2 1-.2Zm1-8h6v2H9V8Zm0 4h6v2H9v-2ZM4 5H2v15a2 2 0 0 0 2 2h15v-2H4V5Z"/></svg>
@@ -3239,7 +3286,7 @@
       <section id="wholesaleView" class="hidden">
         <div class="topbar">
           <div class="title">
-            <h2>Оптовые расчеты</h2>
+            <h2>Поставки и оплаты</h2>
             <p>Клиенты, предприятия, накладные, оплаты, транспортные расходы, долги и дедлайны.</p>
           </div>
           <div class="actions">
@@ -3250,15 +3297,16 @@
           </div>
         </div>
 
-        <section class="summary" aria-label="Итоги оптовых расчетов">
-          <div class="metric"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
-          <div class="metric"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
+        <section class="summary" id="wholesaleSummary" aria-label="Итоги поставок и оплат">
+          <div class="metric" data-dashboard-metric data-wholesale-metric="monthPaid"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
+          <div class="metric" data-dashboard-metric data-wholesale-metric="goodsDebt"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
           <div class="metric"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
           <div class="metric"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
           <div class="metric"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
         </section>
+        <section class="panel metric-drilldown hidden" id="wholesaleMetricDetails"></section>
 
-        <div class="module-tabs" role="tablist" aria-label="Оптовые расчеты">
+        <div class="module-tabs" role="tablist" aria-label="Поставки и оплаты">
           <button class="active" type="button" data-wholesale-mode="ledger">Накладные</button>
           <button type="button" data-wholesale-mode="dashboard">Дашборд</button>
           <button type="button" data-wholesale-mode="clients">Клиенты</button>
@@ -3478,14 +3526,6 @@
                 </div>
               </div>
                 <div class="ledger-company-chips" id="wholesaleLedgerCompanyChips"></div>
-              <section class="summary ledger-summary" aria-label="Итоги выбранных накладных">
-                <div class="metric"><span>Накладных</span><strong id="wholesaleLedgerTotalCount">0</strong></div>
-                <div class="metric"><span>Сумма накладных</span><strong id="wholesaleLedgerTotalAmount">0</strong></div>
-                <div class="metric"><span>Оплачено</span><strong id="wholesaleLedgerTotalPaid">0</strong></div>
-                <div class="metric"><span>Долг по накладным</span><strong id="wholesaleLedgerTotalDebt">0</strong></div>
-                <div class="metric"><span>Переплата</span><strong id="wholesaleLedgerTotalOverpayment">0</strong></div>
-                <div class="metric"><span>Долг ТР</span><strong id="wholesaleLedgerTotalTransportDebt">0</strong></div>
-              </section>
               <div class="wholesale-ledger" id="wholesaleLedgerList"></div>
               <div class="empty" id="wholesaleLedgerEmpty">Накладных пока нет.</div>
             </section>
@@ -4068,6 +4108,8 @@
     const wholesaleLedgerCompanyFilter = document.querySelector("#wholesaleLedgerCompanyFilter");
     const wholesaleLedgerStatusFilter = document.querySelector("#wholesaleLedgerStatusFilter");
     const wholesaleLedgerCompanyChips = document.querySelector("#wholesaleLedgerCompanyChips");
+    const wholesaleSummary = document.querySelector("#wholesaleSummary");
+    const wholesaleMetricDetails = document.querySelector("#wholesaleMetricDetails");
     const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
     const wholesaleCompanyFilter = document.querySelector("#wholesaleCompanyFilter");
     const wholesaleCompanyEditor = document.querySelector("#wholesaleCompanyEditor");
@@ -4215,12 +4257,13 @@
       amount: document.querySelector("#wholesalePaymentAmount"),
       comment: document.querySelector("#wholesalePaymentComment"),
     };
+    let activeWholesaleMetric = "";
 
     const accessModules = [
       { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, итоги дня" },
       { key: "contentPlan", label: "Контент-план", details: "Календарь, список, идеи, архив" },
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
-      { key: "wholesale", label: "Оптовые расчеты", details: "Клиенты, предприятия, накладные, оплаты" },
+      { key: "wholesale", label: "Поставки и оплаты", details: "Клиенты, предприятия, накладные, оплаты" },
       { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
       { key: "guide", label: "Гайд", details: "Шпаргалка и руководство пользователя" },
       { key: "templates", label: "Шаблоны", details: "Будущие модули и план развития" },
@@ -4425,6 +4468,7 @@
     wholesaleLedgerStatusFilter.addEventListener("change", renderWholesaleLedger);
     wholesaleLedgerCompanyChips.addEventListener("click", handleWholesaleLedgerCompanyChip);
     wholesaleCompanyEditor.addEventListener("click", handleWholesaleCompanyAction);
+    wholesaleSummary.addEventListener("click", handleWholesaleSummaryClick);
     wholesalePaymentChartMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     wholesaleClientFilter.addEventListener("change", () => { renderWholesaleCompanyFilter(); renderWholesale(); });
     wholesaleCompanyFilter.addEventListener("change", renderWholesale);
@@ -4439,10 +4483,10 @@
     document.querySelector("#wholesaleCloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#wholesaleImportJsonBtn").addEventListener("click", () => document.querySelector("#wholesaleImportJsonInput").click());
     document.querySelector("#wholesaleImportJsonInput").addEventListener("change", importWholesaleJson);
-    document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
-    document.querySelector("#wholesaleExportExcelBtn2").addEventListener("click", () => exportRowsToExcel("optovye-raschety", wholesaleExportRows()));
-    document.querySelector("#wholesaleExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Оптовые расчеты", wholesaleExportRows()));
-    document.querySelector("#wholesaleExportPdfBtn2").addEventListener("click", () => exportRowsToPdf("Оптовые расчеты", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("postavki-i-oplaty", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportExcelBtn2").addEventListener("click", () => exportRowsToExcel("postavki-i-oplaty", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Поставки и оплаты", wholesaleExportRows()));
+    document.querySelector("#wholesaleExportPdfBtn2").addEventListener("click", () => exportRowsToPdf("Поставки и оплаты", wholesaleExportRows()));
 
     measurementForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -7658,7 +7702,7 @@
         wholesaleData.updatedAt = new Date().toISOString();
       }
       localStorage.setItem(wholesaleStorageKey, JSON.stringify(wholesaleData));
-      queueCloudSync("Оптовые расчеты");
+      queueCloudSync("Поставки и оплаты");
     }
 
     function createWholesaleSafetySnapshot(reason = "auto") {
@@ -7801,6 +7845,131 @@
       setWholesaleMetricState("#wholesaleTotalOverpayment", goodsStats.overpayment, "overpay");
       setWholesaleMetricState("#wholesaleTotalTransportDebt", transportDebt, "debt");
       setWholesaleMetricState("#wholesaleOverdueDebt", invoices.reduce((total, invoice) => total + wholesaleOverdueAmount(invoice), 0), "debt");
+      renderWholesaleMetricDetails(invoices);
+    }
+
+    function handleWholesaleSummaryClick(event) {
+      const metric = event.target.closest("[data-wholesale-metric]");
+      if (!metric) return;
+      activeWholesaleMetric = activeWholesaleMetric === metric.dataset.wholesaleMetric ? "" : metric.dataset.wholesaleMetric;
+      renderWholesaleSummary();
+    }
+
+    function renderWholesaleMetricDetails(invoices) {
+      document.querySelectorAll("[data-wholesale-metric]").forEach((item) => {
+        item.classList.toggle("active", item.dataset.wholesaleMetric === activeWholesaleMetric);
+      });
+      if (!activeWholesaleMetric) {
+        wholesaleMetricDetails.classList.add("hidden");
+        wholesaleMetricDetails.innerHTML = "";
+        return;
+      }
+
+      const config = activeWholesaleMetric === "monthPaid"
+        ? wholesaleMonthPaidDetails(invoices)
+        : wholesaleGoodsDebtDetails(invoices);
+      wholesaleMetricDetails.classList.remove("hidden");
+      wholesaleMetricDetails.innerHTML = `
+        <div class="metric-drilldown-header">
+          <div>
+            <h3>${escapeHtml(config.title)}</h3>
+            <small class="sales-goal">${escapeHtml(config.subtitle)}</small>
+          </div>
+          <strong>${formatMoney(config.total)}</strong>
+        </div>
+        ${config.rows.length ? `
+          <table class="metric-drilldown-table">
+            <thead><tr>${config.columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr></thead>
+            <tbody>${config.rows.join("")}</tbody>
+          </table>
+        ` : `<div class="empty">${escapeHtml(config.empty)}</div>`}
+      `;
+    }
+
+    function wholesaleMonthPaidDetails(invoices) {
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const monthEnd = formatIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        (invoice.payments || []).forEach((payment) => {
+          const amount = Number(payment.amount) || 0;
+          if (!payment.date || payment.date < monthStart || payment.date > monthEnd || amount <= 0) return;
+          const key = invoice.companyId || invoice.clientId || invoice.id;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              client: wholesaleClientName(invoice.clientId),
+              company: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+              invoices: new Set(),
+              count: 0,
+              lastDate: payment.date,
+              total: 0,
+            });
+          }
+          const group = groups.get(key);
+          group.invoices.add(invoice.number || "без номера");
+          group.count += 1;
+          group.total += amount;
+          if (payment.date > group.lastDate) group.lastDate = payment.date;
+        });
+      });
+      const rows = [...groups.values()].sort((a, b) => b.total - a.total);
+      return {
+        title: "Оплачено в текущем месяце",
+        subtitle: `${formatDate(monthStart)} - ${formatDate(monthEnd)}`,
+        total: rows.reduce((total, row) => total + row.total, 0),
+        columns: ["Клиент / предприятие", "Платежей", "Накладные", "Последняя оплата", "Сумма"],
+        rows: rows.map((row) => `
+          <tr>
+            <td><strong>${escapeHtml(row.client)}</strong><small>${escapeHtml(row.company)}</small></td>
+            <td>${formatNumber(row.count)}</td>
+            <td>${escapeHtml([...row.invoices].join(", "))}</td>
+            <td>${formatDate(row.lastDate)}</td>
+            <td>${formatMoney(row.total)}</td>
+          </tr>
+        `),
+        empty: "В текущем месяце оплат пока нет.",
+      };
+    }
+
+    function wholesaleGoodsDebtDetails(invoices) {
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const key = invoice.companyId || invoice.clientId || invoice.id;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            client: wholesaleClientName(invoice.clientId),
+            company: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+            count: 0,
+            amount: 0,
+            paid: 0,
+          });
+        }
+        const group = groups.get(key);
+        group.count += 1;
+        group.amount += Number(invoice.amount) || 0;
+        group.paid += wholesaleGoodsPaid(invoice);
+      });
+      const rows = [...groups.values()]
+        .map((row) => ({ ...row, debt: Math.max(0, row.amount - row.paid) }))
+        .filter((row) => row.debt > 0)
+        .sort((a, b) => b.debt - a.debt);
+      return {
+        title: "Долг по товару",
+        subtitle: "Клиенты и предприятия, из которых складывается сумма долга.",
+        total: rows.reduce((total, row) => total + row.debt, 0),
+        columns: ["Клиент / предприятие", "Накладных", "Сумма накладных", "Оплачено", "Долг"],
+        rows: rows.map((row) => `
+          <tr>
+            <td><strong>${escapeHtml(row.client)}</strong><small>${escapeHtml(row.company)}</small></td>
+            <td>${formatNumber(row.count)}</td>
+            <td>${formatMoney(row.amount)}</td>
+            <td>${formatMoney(row.paid)}</td>
+            <td>${formatMoney(row.debt)}</td>
+          </tr>
+        `),
+        empty: "Долга по товару нет.",
+      };
     }
 
     function renderWholesaleDashboard() {
@@ -7993,7 +8162,6 @@
     function renderWholesaleLedger() {
       renderWholesaleLedgerCompanyChips();
       const invoices = getWholesaleLedgerInvoices();
-      renderWholesaleLedgerSummary(invoices);
       wholesaleLedgerEmpty.classList.toggle("hidden", invoices.length > 0);
       const groups = groupWholesaleInvoicesByCompany(invoices);
       wholesaleLedgerList.innerHTML = groups.map((group) => {
@@ -8011,20 +8179,6 @@
           </section>
         `;
       }).join("");
-    }
-
-    function renderWholesaleLedgerSummary(invoices) {
-      const goodsStats = wholesaleAggregateGoodsStats(invoices);
-      document.querySelector("#wholesaleLedgerTotalCount").textContent = formatNumber(invoices.length);
-      document.querySelector("#wholesaleLedgerTotalAmount").textContent = formatMoney(goodsStats.amount);
-      document.querySelector("#wholesaleLedgerTotalPaid").textContent = formatMoney(goodsStats.paid);
-      document.querySelector("#wholesaleLedgerTotalDebt").textContent = formatMoney(goodsStats.debt);
-      document.querySelector("#wholesaleLedgerTotalOverpayment").textContent = formatMoney(goodsStats.overpayment);
-      const transportDebt = invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0);
-      document.querySelector("#wholesaleLedgerTotalTransportDebt").textContent = formatMoney(transportDebt);
-      setWholesaleMetricState("#wholesaleLedgerTotalDebt", goodsStats.debt, "debt");
-      setWholesaleMetricState("#wholesaleLedgerTotalOverpayment", goodsStats.overpayment, "overpay");
-      setWholesaleMetricState("#wholesaleLedgerTotalTransportDebt", transportDebt, "debt");
     }
 
     function setWholesaleMetricState(selector, value, type) {
