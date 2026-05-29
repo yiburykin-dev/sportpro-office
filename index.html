@@ -902,6 +902,15 @@
       margin: 0;
     }
 
+    .wholesale-scope-action span {
+      display: none;
+    }
+
+    .wholesale-scope-action select {
+      min-height: 38px;
+      height: 38px;
+    }
+
     .payment-breakdown {
       display: grid;
       gap: 8px;
@@ -3336,7 +3345,7 @@
             <p>Клиенты, предприятия, накладные, оплаты, транспортные расходы, долги и дедлайны.</p>
           </div>
           <div class="actions">
-            <label class="wholesale-scope-action">Рабочая таблица
+            <label class="wholesale-scope-action"><span>Рабочая таблица</span>
               <select id="wholesaleScopeSelect"></select>
             </label>
             <button class="btn primary" id="wholesaleCloudSyncBtn" type="button">Синхронизировать</button>
