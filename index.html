@@ -471,6 +471,37 @@
       max-width: 220px;
     }
 
+    .ledger-filter-totals {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: stretch;
+    }
+
+    .ledger-filter-total {
+      display: grid;
+      gap: 2px;
+      min-width: 170px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .ledger-filter-total span {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .ledger-filter-total strong {
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
     #wholesaleLedgerView #wholesaleNewInvoiceBtn {
       display: none;
     }
@@ -858,6 +889,22 @@
 
     .wholesale-payment-filter label {
       min-width: 170px;
+    }
+
+    .wholesale-scope-panel {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .wholesale-scope-panel h3 {
+      margin: 0 0 4px;
+    }
+
+    .wholesale-scope-panel label {
+      min-width: 280px;
     }
 
     .payment-breakdown {
@@ -3297,12 +3344,22 @@
           </div>
         </div>
 
+        <section class="panel wholesale-scope-panel" id="wholesaleScopePanel">
+          <div>
+            <h3>Рабочая таблица</h3>
+            <p class="sales-goal">Клиенты общие, а накладные и оплаты можно вести отдельно по каждому менеджеру.</p>
+          </div>
+          <label>Показать
+            <select id="wholesaleScopeSelect"></select>
+          </label>
+        </section>
+
         <section class="summary" id="wholesaleSummary" aria-label="Итоги поставок и оплат">
           <div class="metric" data-dashboard-metric data-wholesale-metric="monthPaid"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
           <div class="metric" data-dashboard-metric data-wholesale-metric="goodsDebt"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
-          <div class="metric"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
-          <div class="metric"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
-          <div class="metric"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
+          <div class="metric" data-dashboard-metric data-wholesale-metric="overpayment"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
+          <div class="metric" data-dashboard-metric data-wholesale-metric="transportDebt"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
+          <div class="metric" data-dashboard-metric data-wholesale-metric="overdue"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
         </section>
         <section class="panel metric-drilldown hidden" id="wholesaleMetricDetails"></section>
 
@@ -3522,6 +3579,16 @@
                     <option value="paid">Оплачено</option>
                     <option value="docs">Документы не получены</option>
                   </select>
+                  <div class="ledger-filter-totals hidden" id="wholesaleLedgerFilterTotals">
+                    <div class="ledger-filter-total">
+                      <span>Сумма накладных</span>
+                      <strong id="wholesaleLedgerFilterAmount">0</strong>
+                    </div>
+                    <div class="ledger-filter-total">
+                      <span>Общая задолженность</span>
+                      <strong id="wholesaleLedgerFilterDebt">0</strong>
+                    </div>
+                  </div>
                   <button class="btn primary" id="wholesaleNewInvoiceBtn" type="button">Новая накладная</button>
                 </div>
               </div>
@@ -4110,6 +4177,9 @@
     const wholesaleLedgerCompanyChips = document.querySelector("#wholesaleLedgerCompanyChips");
     const wholesaleSummary = document.querySelector("#wholesaleSummary");
     const wholesaleMetricDetails = document.querySelector("#wholesaleMetricDetails");
+    const wholesaleLedgerFilterTotals = document.querySelector("#wholesaleLedgerFilterTotals");
+    const wholesaleScopeSelect = document.querySelector("#wholesaleScopeSelect");
+    const wholesaleScopePanel = document.querySelector("#wholesaleScopePanel");
     const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
     const wholesaleCompanyFilter = document.querySelector("#wholesaleCompanyFilter");
     const wholesaleCompanyEditor = document.querySelector("#wholesaleCompanyEditor");
@@ -4283,6 +4353,14 @@
         label: "Менеджер",
         permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
       },
+      wholesaleHead: {
+        label: "Руководитель оптового отдела",
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", guide: "read", templates: "read", access: "write" },
+      },
+      wholesaleManager: {
+        label: "Менеджер оптового отдела",
+        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", guide: "read", templates: "none", access: "none" },
+      },
       viewer: {
         label: "Только просмотр",
         permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
@@ -4314,6 +4392,7 @@
     let activeCalendarMode = "week";
     let activeContentTypeHighlight = "";
     let activeWholesaleInvoiceId = "";
+    let activeWholesaleScope = localStorage.getItem("workspace-tables.wholesale.scope") || "mine";
     let editingMemberEmail = "";
     let selectedRecordIds = new Set();
     let selectedFunnelRecordIds = new Set();
@@ -4469,6 +4548,13 @@
     wholesaleLedgerCompanyChips.addEventListener("click", handleWholesaleLedgerCompanyChip);
     wholesaleCompanyEditor.addEventListener("click", handleWholesaleCompanyAction);
     wholesaleSummary.addEventListener("click", handleWholesaleSummaryClick);
+    wholesaleScopeSelect.addEventListener("change", () => {
+      activeWholesaleScope = wholesaleScopeSelect.value || "mine";
+      localStorage.setItem("workspace-tables.wholesale.scope", activeWholesaleScope);
+      activeWholesaleInvoiceId = "";
+      activeWholesaleMetric = "";
+      renderWholesale();
+    });
     wholesalePaymentChartMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     wholesaleClientFilter.addEventListener("change", () => { renderWholesaleCompanyFilter(); renderWholesale(); });
     wholesaleCompanyFilter.addEventListener("change", renderWholesale);
@@ -5761,10 +5847,12 @@
           workspace_id_input: cloudConfig.workspace,
         }) || [];
         renderWorkspaceMembers();
+        renderWholesale();
         memberStatus.textContent = workspaceMembers.length ? "Список пользователей загружен." : "Пользователи не найдены.";
       } catch (error) {
         workspaceMembers = [];
         renderWorkspaceMembers();
+        renderWholesale();
         memberStatus.textContent = "Список доступен только владельцу рабочего пространства.";
         if (!options.silent) alert(`Не удалось загрузить пользователей: ${error.message}`);
       }
@@ -7666,6 +7754,7 @@
     function normalizeWholesaleInvoice(invoice) {
       return {
         id: invoice.id || createId(),
+        ownerEmail: normalizeEmail(invoice.ownerEmail || invoice.ledgerOwner || wholesaleDefaultOwnerEmail()),
         clientId: invoice.clientId || "",
         companyId: invoice.companyId || "",
         shipDate: invoice.shipDate || "",
@@ -7680,6 +7769,14 @@
         payments: Array.isArray(invoice.payments) ? invoice.payments.map(normalizeWholesalePayment) : [],
         updatedAt: invoice.updatedAt || new Date().toISOString(),
       };
+    }
+
+    function normalizeEmail(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function wholesaleDefaultOwnerEmail() {
+      return "info@sportpro.kz";
     }
 
     function isWholesaleValidInvoice(invoice) {
@@ -7720,12 +7817,83 @@
 
     function renderWholesale() {
       wholesaleData = normalizeWholesaleData(wholesaleData);
+      renderWholesaleScopeOptions();
       renderWholesaleOptions();
       renderWholesaleSummary();
       renderWholesaleDashboard();
       renderWholesaleClients();
       renderWholesaleLedger();
       renderWholesaleDetail();
+    }
+
+    function currentCloudEmail() {
+      return normalizeEmail(cloudSession?.email || cloudEmail?.value || wholesaleDefaultOwnerEmail());
+    }
+
+    function currentWorkspaceMember() {
+      const email = currentCloudEmail();
+      return workspaceMembers.find((member) => normalizeEmail(member.email) === email);
+    }
+
+    function canViewAllWholesaleTables() {
+      if (!isCloudReady()) return true;
+      const member = currentWorkspaceMember();
+      if (!member && currentCloudEmail() === wholesaleDefaultOwnerEmail()) return true;
+      return Boolean(member?.role === "owner" || member?.permissions?.access === "write");
+    }
+
+    function wholesaleOwnerOptions() {
+      const owners = new Map();
+      const addOwner = (email, label = "") => {
+        const normalized = normalizeEmail(email);
+        if (!normalized) return;
+        owners.set(normalized, label || normalized);
+      };
+      addOwner(wholesaleDefaultOwnerEmail(), "Руководитель");
+      addOwner(currentCloudEmail(), currentCloudEmail() === wholesaleDefaultOwnerEmail() ? "Руководитель" : currentCloudEmail());
+      workspaceMembers.forEach((member) => addOwner(member.email, member.email));
+      wholesaleData.invoices.forEach((invoice) => addOwner(invoice.ownerEmail, invoice.ownerEmail));
+      return [...owners.entries()].map(([email, label]) => ({ email, label }));
+    }
+
+    function renderWholesaleScopeOptions() {
+      if (!wholesaleScopeSelect) return;
+      const canViewAll = canViewAllWholesaleTables();
+      const currentEmail = currentCloudEmail();
+      const owners = wholesaleOwnerOptions();
+      const validScopes = new Set(["mine"]);
+      let html = `<option value="mine">Моя таблица${currentEmail ? ` (${escapeHtml(currentEmail)})` : ""}</option>`;
+      if (canViewAll) {
+        validScopes.add("all");
+        html += `<option value="all">Все таблицы вместе</option>`;
+        html += owners.map((owner) => {
+          const value = `user:${owner.email}`;
+          validScopes.add(value);
+          const name = owner.email === currentEmail ? "Моя таблица" : owner.label;
+          return `<option value="${escapeHtml(value)}">${escapeHtml(name)} · ${escapeHtml(owner.email)}</option>`;
+        }).join("");
+      }
+      if (!validScopes.has(activeWholesaleScope)) activeWholesaleScope = "mine";
+      wholesaleScopeSelect.innerHTML = html;
+      wholesaleScopeSelect.value = activeWholesaleScope;
+      wholesaleScopePanel?.classList.toggle("hidden", !canViewAll && !currentEmail);
+    }
+
+    function selectedWholesaleOwnerEmail() {
+      if (canViewAllWholesaleTables() && activeWholesaleScope.startsWith("user:")) {
+        return normalizeEmail(activeWholesaleScope.replace(/^user:/, ""));
+      }
+      return currentCloudEmail() || wholesaleDefaultOwnerEmail();
+    }
+
+    function wholesaleInvoiceMatchesScope(invoice) {
+      const ownerEmail = normalizeEmail(invoice.ownerEmail || wholesaleDefaultOwnerEmail());
+      if (canViewAllWholesaleTables() && activeWholesaleScope === "all") return true;
+      return ownerEmail === selectedWholesaleOwnerEmail();
+    }
+
+    function getWholesaleScopedInvoices(invoices = wholesaleData.invoices) {
+      return invoices.filter(wholesaleInvoiceMatchesScope);
     }
 
     function renderWholesaleOptions() {
@@ -7865,9 +8033,20 @@
         return;
       }
 
-      const config = activeWholesaleMetric === "monthPaid"
-        ? wholesaleMonthPaidDetails(invoices)
-        : wholesaleGoodsDebtDetails(invoices);
+      const detailBuilders = {
+        monthPaid: wholesaleMonthPaidDetails,
+        goodsDebt: wholesaleGoodsDebtDetails,
+        overpayment: wholesaleOverpaymentDetails,
+        transportDebt: wholesaleTransportDebtDetails,
+        overdue: wholesaleOverdueDetails,
+      };
+      const buildDetails = detailBuilders[activeWholesaleMetric];
+      if (!buildDetails) {
+        wholesaleMetricDetails.classList.add("hidden");
+        wholesaleMetricDetails.innerHTML = "";
+        return;
+      }
+      const config = buildDetails(invoices);
       wholesaleMetricDetails.classList.remove("hidden");
       wholesaleMetricDetails.innerHTML = `
         <div class="metric-drilldown-header">
@@ -7972,6 +8151,129 @@
       };
     }
 
+    function wholesaleOverpaymentDetails(invoices) {
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const key = invoice.companyId || invoice.clientId || invoice.id;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            client: wholesaleClientName(invoice.clientId),
+            company: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+            count: 0,
+            amount: 0,
+            paid: 0,
+          });
+        }
+        const group = groups.get(key);
+        group.count += 1;
+        group.amount += Number(invoice.amount) || 0;
+        group.paid += wholesaleGoodsPaid(invoice);
+      });
+      const rows = [...groups.values()]
+        .map((row) => ({ ...row, overpayment: Math.max(0, row.paid - row.amount) }))
+        .filter((row) => row.overpayment > 0)
+        .sort((a, b) => b.overpayment - a.overpayment);
+      return {
+        title: "Переплата",
+        subtitle: "Предприятия, где оплат по товару больше, чем сумма выставленных накладных.",
+        total: rows.reduce((total, row) => total + row.overpayment, 0),
+        columns: ["Клиент / предприятие", "Накладных", "Сумма накладных", "Оплачено", "Переплата"],
+        rows: rows.map((row) => `
+          <tr>
+            <td><strong>${escapeHtml(row.client)}</strong><small>${escapeHtml(row.company)}</small></td>
+            <td>${formatNumber(row.count)}</td>
+            <td>${formatMoney(row.amount)}</td>
+            <td>${formatMoney(row.paid)}</td>
+            <td>${formatMoney(row.overpayment)}</td>
+          </tr>
+        `),
+        empty: "Переплаты нет.",
+      };
+    }
+
+    function wholesaleTransportDebtDetails(invoices) {
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const debt = wholesaleTransportDebt(invoice);
+        if (debt <= 0) return;
+        const key = invoice.companyId || invoice.clientId || invoice.id;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            client: wholesaleClientName(invoice.clientId),
+            company: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+            invoices: new Set(),
+            cost: 0,
+            paid: 0,
+            debt: 0,
+          });
+        }
+        const group = groups.get(key);
+        group.invoices.add(invoice.number || "без номера");
+        group.cost += Number(invoice.transportCost) || 0;
+        group.paid += wholesaleTransportPaid(invoice);
+        group.debt += debt;
+      });
+      const rows = [...groups.values()].sort((a, b) => b.debt - a.debt);
+      return {
+        title: "Долг по ТР",
+        subtitle: "Транспортные расходы, по которым еще не закрыта оплата.",
+        total: rows.reduce((total, row) => total + row.debt, 0),
+        columns: ["Клиент / предприятие", "Накладные", "ТР / разное", "Оплачено ТР", "Долг ТР"],
+        rows: rows.map((row) => `
+          <tr>
+            <td><strong>${escapeHtml(row.client)}</strong><small>${escapeHtml(row.company)}</small></td>
+            <td>${escapeHtml([...row.invoices].join(", "))}</td>
+            <td>${formatMoney(row.cost)}</td>
+            <td>${formatMoney(row.paid)}</td>
+            <td>${formatMoney(row.debt)}</td>
+          </tr>
+        `),
+        empty: "Долга по транспортным расходам нет.",
+      };
+    }
+
+    function wholesaleOverdueDetails(invoices) {
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const goodsOverdue = isOverdue(invoice.paymentDeadline, wholesaleGoodsDebt(invoice)) ? wholesaleGoodsDebt(invoice) : 0;
+        const transportOverdue = isOverdue(invoice.transportDeadline, wholesaleTransportDebt(invoice)) ? wholesaleTransportDebt(invoice) : 0;
+        if (goodsOverdue + transportOverdue <= 0) return;
+        const key = invoice.companyId || invoice.clientId || invoice.id;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            client: wholesaleClientName(invoice.clientId),
+            company: wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId),
+            invoices: new Set(),
+            goods: 0,
+            transport: 0,
+          });
+        }
+        const group = groups.get(key);
+        group.invoices.add(invoice.number || "без номера");
+        group.goods += goodsOverdue;
+        group.transport += transportOverdue;
+      });
+      const rows = [...groups.values()]
+        .map((row) => ({ ...row, total: row.goods + row.transport }))
+        .sort((a, b) => b.total - a.total);
+      return {
+        title: "Просрочено",
+        subtitle: "Просроченные суммы по оплате товара и транспортным расходам.",
+        total: rows.reduce((total, row) => total + row.total, 0),
+        columns: ["Клиент / предприятие", "Накладные", "Товар", "ТР", "Итого"],
+        rows: rows.map((row) => `
+          <tr>
+            <td><strong>${escapeHtml(row.client)}</strong><small>${escapeHtml(row.company)}</small></td>
+            <td>${escapeHtml([...row.invoices].join(", "))}</td>
+            <td>${formatMoney(row.goods)}</td>
+            <td>${formatMoney(row.transport)}</td>
+            <td>${formatMoney(row.total)}</td>
+          </tr>
+        `),
+        empty: "Просроченных платежей нет.",
+      };
+    }
+
     function renderWholesaleDashboard() {
       const invoices = getWholesaleFilteredInvoices();
       renderWholesalePaymentChart();
@@ -8054,10 +8356,11 @@
         .map((payment) => {
           const invoice = payment.invoice;
           const payer = `${wholesaleClientName(invoice.clientId)}${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId) ? ` · ${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId)}` : ""}`;
+          const ownerLabel = canViewAllWholesaleTables() && activeWholesaleScope === "all" ? ` · таблица: ${invoice.ownerEmail || wholesaleDefaultOwnerEmail()}` : "";
           return `
             <div class="payment-item">
               <strong>${escapeHtml(shortText(payer, 58))}</strong>
-              <small>${formatDate(payment.date)} · ${payment.type === "transport" ? "ТР" : "Накладная"} · № ${escapeHtml(invoice.number || "без номера")} · ${formatMoney(payment.amount)}</small>
+              <small>${formatDate(payment.date)} · ${payment.type === "transport" ? "ТР" : "Накладная"} · № ${escapeHtml(invoice.number || "без номера")} · ${formatMoney(payment.amount)}${escapeHtml(ownerLabel)}</small>
             </div>
           `;
         });
@@ -8133,7 +8436,7 @@
       });
       wholesaleClientsEmpty.classList.toggle("hidden", clients.length > 0);
       wholesaleClientsList.innerHTML = clients.map((client) => {
-        const invoices = wholesaleData.invoices.filter((invoice) => invoice.clientId === client.id);
+        const invoices = getWholesaleScopedInvoices().filter((invoice) => invoice.clientId === client.id);
         const debt = wholesaleAggregateGoodsStats(invoices).debt + invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0);
         const meta = [
           client.city,
@@ -8162,6 +8465,7 @@
     function renderWholesaleLedger() {
       renderWholesaleLedgerCompanyChips();
       const invoices = getWholesaleLedgerInvoices();
+      renderWholesaleLedgerFilterTotals(invoices);
       wholesaleLedgerEmpty.classList.toggle("hidden", invoices.length > 0);
       const groups = groupWholesaleInvoicesByCompany(invoices);
       wholesaleLedgerList.innerHTML = groups.map((group) => {
@@ -8179,6 +8483,20 @@
           </section>
         `;
       }).join("");
+    }
+
+    function renderWholesaleLedgerFilterTotals(invoices) {
+      if (!wholesaleLedgerFilterTotals) return;
+      const shouldShow = Boolean(wholesaleLedgerClientFilter.value || wholesaleLedgerCompanyFilter.value);
+      wholesaleLedgerFilterTotals.classList.toggle("hidden", !shouldShow);
+      if (!shouldShow) return;
+      const goodsStats = wholesaleAggregateGoodsStats(invoices);
+      const transportDebt = invoices.reduce((total, invoice) => total + wholesaleTransportDebt(invoice), 0);
+      const totalDebt = goodsStats.debt + transportDebt;
+      document.querySelector("#wholesaleLedgerFilterAmount").textContent = formatMoney(goodsStats.amount);
+      document.querySelector("#wholesaleLedgerFilterDebt").textContent = formatMoney(totalDebt);
+      const debtCell = document.querySelector("#wholesaleLedgerFilterDebt")?.closest(".ledger-filter-total");
+      debtCell?.classList.toggle("money-debt", totalDebt > 0);
     }
 
     function setWholesaleMetricState(selector, value, type) {
@@ -8204,13 +8522,16 @@
         const transportCommentPreview = invoice.transportComment
           ? `<div class="ledger-note" title="${escapeHtml(invoice.transportComment)}"><strong>ТР:</strong> ${escapeHtml(shortText(invoice.transportComment, 180))}</div>`
           : "";
+        const ownerMeta = canViewAllWholesaleTables() && activeWholesaleScope === "all"
+          ? ` · таблица: ${invoice.ownerEmail || wholesaleDefaultOwnerEmail()}`
+          : "";
         return `
           <article class="ledger-card compact ${activeWholesaleInvoiceId === invoice.id ? "active" : ""}" data-invoice-id="${escapeHtml(invoice.id)}">
             <div class="ledger-card-grid">
               <div class="ledger-title">
                 <strong>№ ${escapeHtml(invoice.number || "Без номера")}</strong>
                 <span class="ledger-company">${escapeHtml(wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId))}</span>
-                <span class="ledger-meta">${formatDate(invoice.shipDate)} · ${escapeHtml(wholesaleClientName(invoice.clientId))}</span>
+                <span class="ledger-meta">${formatDate(invoice.shipDate)} · ${escapeHtml(wholesaleClientName(invoice.clientId))}${escapeHtml(ownerMeta)}</span>
               </div>
               <div><strong>${formatMoney(invoice.amount)}</strong><small>Сумма</small></div>
               <div><strong>${formatMoney(wholesaleGoodsPaid(invoice))}</strong><small>Оплачено</small></div>
@@ -8543,6 +8864,7 @@
       const existing = wholesaleData.invoices.find((invoice) => invoice.id === id);
       const invoice = normalizeWholesaleInvoice({
         id,
+        ownerEmail: existing?.ownerEmail || selectedWholesaleOwnerEmail(),
         clientId: wholesaleInvoiceFields.clientId.value,
         companyId: wholesaleInvoiceFields.companyId.value,
         shipDate: wholesaleInvoiceFields.shipDate.value,
@@ -8681,7 +9003,7 @@
       const to = wholesaleDateTo.value;
       const clientId = wholesaleClientFilter.value;
       const companyId = wholesaleCompanyFilter.value;
-      return wholesaleData.invoices.filter((invoice) => {
+      return getWholesaleScopedInvoices().filter((invoice) => {
         if (from && invoice.shipDate < from) return false;
         if (to && invoice.shipDate > to) return false;
         if (clientId && invoice.clientId !== clientId) return false;
@@ -8693,7 +9015,7 @@
     function getWholesalePaymentChartInvoices() {
       const clientId = wholesaleClientFilter.value;
       const companyId = wholesaleCompanyFilter.value;
-      return wholesaleData.invoices.filter((invoice) => {
+      return getWholesaleScopedInvoices().filter((invoice) => {
         if (clientId && invoice.clientId !== clientId) return false;
         if (companyId && invoice.companyId !== companyId) return false;
         return true;
@@ -8705,7 +9027,7 @@
       const clientId = wholesaleLedgerClientFilter.value;
       const companyId = wholesaleLedgerCompanyFilter.value;
       const status = wholesaleLedgerStatusFilter.value;
-      return wholesaleData.invoices.filter((invoice) => {
+      return getWholesaleScopedInvoices().filter((invoice) => {
         const text = `${invoice.number} ${wholesaleClientName(invoice.clientId)} ${wholesaleCompanyName(invoice.clientId, invoice.companyId)} ${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId)} ${invoice.comment} ${invoice.transportComment}`.toLowerCase();
         if (query && !text.includes(query)) return false;
         if (clientId && invoice.clientId !== clientId) return false;
@@ -8851,13 +9173,14 @@
 
     function wholesaleExportRows() {
       const rows = [[
-        "Клиент", "Телефон", "Город", "Менеджер", "Договор", "Дата договора", "Предприятие", "Дата отправки", "№ накладной", "Статус документов", "Сумма накладной",
+        "Рабочая таблица", "Клиент", "Телефон", "Город", "Менеджер", "Договор", "Дата договора", "Предприятие", "Дата отправки", "№ накладной", "Статус документов", "Сумма накладной",
         "Оплачено", "Долг", "Дедлайн оплаты", "ТР / разное", "Оплачено ТР", "Долг ТР", "Дедлайн ТР", "Комментарий ТР", "Комментарий"
       ]];
       getWholesaleLedgerInvoices().forEach((invoice) => {
         const client = getWholesaleClient(invoice.clientId) || {};
         const contract = wholesaleInvoiceContract(invoice, client);
         rows.push([
+        invoice.ownerEmail || wholesaleDefaultOwnerEmail(),
         wholesaleClientName(invoice.clientId),
         client.phone || "",
         client.city || "",
@@ -8884,7 +9207,11 @@
     }
 
     function exportWholesaleJson() {
-      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data: wholesaleData }, null, 2)], { type: "application/json;charset=utf-8" });
+      const scopedData = normalizeWholesaleData({
+        ...wholesaleData,
+        invoices: getWholesaleScopedInvoices(),
+      });
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data: scopedData }, null, 2)], { type: "application/json;charset=utf-8" });
       downloadBlob(blob, `sportpro-wholesale-backup-${formatIsoDate(new Date())}.json`);
     }
 
