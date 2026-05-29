@@ -911,6 +911,24 @@
       height: 38px;
     }
 
+    .wholesale-sync-history {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: -6px 0 14px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .wholesale-sync-history strong {
+      color: var(--ink);
+    }
+
     .payment-breakdown {
       display: grid;
       gap: 8px;
@@ -3355,6 +3373,11 @@
           </div>
         </div>
 
+        <div class="wholesale-sync-history" id="wholesaleSyncHistory" title="История синхронизации появится после первых изменений">
+          <span><strong>Поставки и оплаты:</strong> синхронизаций пока нет</span>
+          <span>Наведи, чтобы увидеть последние события</span>
+        </div>
+
         <section class="summary" id="wholesaleSummary" aria-label="Итоги поставок и оплат">
           <div class="metric" data-dashboard-metric data-wholesale-metric="monthPaid"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
           <div class="metric" data-dashboard-metric data-wholesale-metric="goodsDebt"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
@@ -4032,6 +4055,7 @@
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
+    const wholesaleSyncHistoryKey = "workspace-tables.wholesale.syncHistory";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
     const deletedContentPlanKey = "workspace-tables.contentPlan.deleted";
@@ -4179,6 +4203,7 @@
     const wholesaleSummary = document.querySelector("#wholesaleSummary");
     const wholesaleMetricDetails = document.querySelector("#wholesaleMetricDetails");
     const wholesaleLedgerFilterTotals = document.querySelector("#wholesaleLedgerFilterTotals");
+    const wholesaleSyncHistoryEl = document.querySelector("#wholesaleSyncHistory");
     const wholesaleScopeSelect = document.querySelector("#wholesaleScopeSelect");
     const globalCloudStatus = document.querySelector("#globalCloudStatus");
     const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
@@ -4383,6 +4408,7 @@
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let wholesaleData = loadWholesaleData();
+    let wholesaleSyncHistory = loadWholesaleSyncHistory();
     let clientSourcesData = loadClientSourcesData();
     let clientSourcesLoadStarted = false;
     let adsSettings = loadAdsSettings();
@@ -4567,7 +4593,7 @@
     wholesaleClientsList.addEventListener("click", handleWholesaleClientAction);
     document.querySelector("#wholesaleBackupJsonBtn").addEventListener("click", exportWholesaleJson);
     document.querySelector("#wholesaleBackupJsonBtn2").addEventListener("click", exportWholesaleJson);
-    document.querySelector("#wholesaleCloudSyncBtn").addEventListener("click", syncWithCloud);
+    document.querySelector("#wholesaleCloudSyncBtn").addEventListener("click", syncWholesaleWithCloud);
     document.querySelector("#wholesaleImportJsonBtn").addEventListener("click", () => document.querySelector("#wholesaleImportJsonInput").click());
     document.querySelector("#wholesaleImportJsonInput").addEventListener("change", importWholesaleJson);
     document.querySelector("#wholesaleExportExcelBtn").addEventListener("click", () => exportRowsToExcel("postavki-i-oplaty", wholesaleExportRows()));
@@ -6012,6 +6038,23 @@
       } catch (error) {
         updateCloudStatus("Ошибка синхронизации");
         if (!options.silent) alert(`Не удалось синхронизировать облако: ${error.message}`);
+        if (options.throwOnError) throw error;
+      }
+    }
+
+    async function syncWholesaleWithCloud() {
+      if (!isCloudReady()) {
+        addWholesaleSyncEvent("Синхронизация не запущена: нужно войти в облако", "sync-error");
+        await syncWithCloud();
+        return;
+      }
+      const lastChange = latestWholesaleChangeEvent();
+      addWholesaleSyncEvent("Запущена ручная синхронизация", "sync-start");
+      try {
+        await syncWithCloud({ throwOnError: true });
+        addWholesaleSyncEvent(`Синхронизация выполнена${lastChange ? `. Последнее изменение: ${lastChange.message}` : ""}`, "sync-success");
+      } catch (error) {
+        addWholesaleSyncEvent(`Ошибка синхронизации: ${error.message || "неизвестная ошибка"}`, "sync-error");
       }
     }
 
@@ -6026,10 +6069,13 @@
       try {
         isAutoSyncing = true;
         updateCloudStatus(`${reason}: отправка в облако...`);
+        if (reason === "Поставки и оплаты") addWholesaleSyncEvent("Автосохранение отправляется в облако", "sync-start");
         await pushToCloud();
         updateCloudStatus(`Автосохранено: ${formatDateTime(new Date())}`);
+        if (reason === "Поставки и оплаты") addWholesaleSyncEvent("Автосохранение выполнено", "sync-success");
       } catch (error) {
         updateCloudStatus("Автосинхронизация не прошла");
+        if (reason === "Поставки и оплаты") addWholesaleSyncEvent("Автосинхронизация не прошла", "sync-error");
       } finally {
         isAutoSyncing = false;
       }
@@ -7795,12 +7841,65 @@
       };
     }
 
+    function loadWholesaleSyncHistory() {
+      const saved = readStorage(wholesaleSyncHistoryKey);
+      return Array.isArray(saved)
+        ? saved.filter((item) => item && item.message && item.at).slice(0, 20)
+        : [];
+    }
+
+    function saveWholesaleSyncHistory() {
+      localStorage.setItem(wholesaleSyncHistoryKey, JSON.stringify(wholesaleSyncHistory.slice(0, 20)));
+    }
+
+    function addWholesaleSyncEvent(message, type = "change") {
+      if (!message) return;
+      wholesaleSyncHistory.unshift({
+        id: createId(),
+        at: new Date().toISOString(),
+        type,
+        message,
+        user: currentCloudEmail(),
+        scope: selectedWholesaleOwnerEmail(),
+      });
+      wholesaleSyncHistory = wholesaleSyncHistory.slice(0, 20);
+      saveWholesaleSyncHistory();
+      renderWholesaleSyncHistory();
+    }
+
+    function latestWholesaleChangeEvent() {
+      return wholesaleSyncHistory.find((item) => item.type === "change") || null;
+    }
+
+    function renderWholesaleSyncHistory() {
+      if (!wholesaleSyncHistoryEl) return;
+      const latest = wholesaleSyncHistory[0];
+      if (!latest) {
+        wholesaleSyncHistoryEl.innerHTML = `
+          <span><strong>Поставки и оплаты:</strong> синхронизаций пока нет</span>
+          <span>Наведи, чтобы увидеть последние события</span>
+        `;
+        wholesaleSyncHistoryEl.title = "История синхронизации появится после первых изменений";
+        return;
+      }
+      const lastSynced = wholesaleSyncHistory.find((item) => item.type === "sync-success");
+      const lastChange = latestWholesaleChangeEvent();
+      wholesaleSyncHistoryEl.innerHTML = `
+        <span><strong>Поставки и оплаты:</strong> ${escapeHtml(lastSynced ? `последняя синхронизация ${formatDateTime(new Date(lastSynced.at))}` : "есть несинхронизированные события")}</span>
+        <span>${escapeHtml(lastChange ? `Последнее изменение: ${lastChange.message}` : latest.message)}</span>
+      `;
+      wholesaleSyncHistoryEl.title = wholesaleSyncHistory.slice(0, 6)
+        .map((item) => `${formatDateTime(new Date(item.at))} — ${item.message}${item.user ? ` (${item.user})` : ""}`)
+        .join("\n");
+    }
+
     function saveWholesaleData(options = {}) {
       wholesaleData = normalizeWholesaleData(wholesaleData);
       if (options.touch !== false) {
         wholesaleData.updatedAt = new Date().toISOString();
       }
       localStorage.setItem(wholesaleStorageKey, JSON.stringify(wholesaleData));
+      if (options.syncEvent) addWholesaleSyncEvent(options.syncEvent, "change");
       queueCloudSync("Поставки и оплаты");
     }
 
@@ -7826,6 +7925,7 @@
       renderWholesaleClients();
       renderWholesaleLedger();
       renderWholesaleDetail();
+      renderWholesaleSyncHistory();
     }
 
     function currentCloudEmail() {
@@ -8662,7 +8762,7 @@
       wholesaleData.clients = existing
         ? wholesaleData.clients.map((item) => item.id === id ? client : item)
         : [...wholesaleData.clients, client];
-      saveWholesaleData();
+      saveWholesaleData({ syncEvent: `${existing ? "Обновлен клиент" : "Добавлен клиент"}: ${client.name}` });
       resetWholesaleClientForm();
       renderWholesale();
     }
@@ -8727,7 +8827,7 @@
       if (button.dataset.wholesaleClientAction === "delete" && confirm(`Удалить клиента ${client.name}? Накладные этого клиента тоже будут удалены.`)) {
         wholesaleData.clients = wholesaleData.clients.filter((item) => item.id !== client.id);
         wholesaleData.invoices = wholesaleData.invoices.filter((invoice) => invoice.clientId !== client.id);
-        saveWholesaleData();
+        saveWholesaleData({ syncEvent: `Удален клиент: ${client.name}` });
         renderWholesale();
       }
     }
@@ -8760,7 +8860,7 @@
         wholesaleClientFields.companyName.value = "";
         wholesaleClientFields.companyContractNo.value = "";
         wholesaleClientFields.companyContractDate.value = "";
-        saveWholesaleData();
+        saveWholesaleData({ syncEvent: `Удалено предприятие: ${company.name}` });
         renderWholesale();
         const refreshed = getWholesaleClient(client.id);
         if (refreshed) {
@@ -8855,7 +8955,7 @@
           { name: "ИП Даденова", contractNo: "", contractDate: "" },
         ],
       }));
-      saveWholesaleData();
+      saveWholesaleData({ syncEvent: "Добавлен пример клиента S89" });
       renderWholesale();
     }
 
@@ -8884,7 +8984,7 @@
         ? wholesaleData.invoices.map((item) => item.id === id ? invoice : item)
         : [...wholesaleData.invoices, invoice];
       activeWholesaleInvoiceId = invoice.id;
-      saveWholesaleData();
+      saveWholesaleData({ syncEvent: `${existing ? "Обновлена накладная" : "Добавлена накладная"} № ${invoice.number || "без номера"} · ${wholesaleCompanyDisplayName(invoice.clientId, invoice.companyId)}` });
       resetWholesaleInvoiceForm();
       renderWholesale();
     }
@@ -8959,7 +9059,7 @@
       if (button.dataset.wholesaleLedgerAction === "delete" && confirm("Удалить накладную?")) {
         wholesaleData.invoices = wholesaleData.invoices.filter((item) => item.id !== invoice.id);
         if (activeWholesaleInvoiceId === invoice.id) activeWholesaleInvoiceId = "";
-        saveWholesaleData();
+        saveWholesaleData({ syncEvent: `Удалена накладная № ${invoice.number || "без номера"}` });
         renderWholesale();
       }
     }
@@ -8987,7 +9087,7 @@
         comment: form.querySelector("#wholesalePaymentComment")?.value.trim(),
       }));
       invoice.updatedAt = new Date().toISOString();
-      saveWholesaleData();
+      saveWholesaleData({ syncEvent: `Добавлен платеж ${formatMoney(paymentAmount)} по накладной № ${invoice.number || "без номера"}` });
       renderWholesale();
     }
 
@@ -9231,7 +9331,7 @@
           }
           createWholesaleSafetySnapshot("before-json-import");
           wholesaleData = mergeWholesaleDataSets(wholesaleData, nextData);
-          saveWholesaleData();
+          saveWholesaleData({ syncEvent: `Импорт JSON: клиентов ${nextData.clients.length}, накладных ${nextData.invoices.length}` });
           renderWholesale();
           alert(`Импорт объединен с текущими данными: клиентов ${nextData.clients.length}, накладных ${nextData.invoices.length}.`);
         } catch (error) {
