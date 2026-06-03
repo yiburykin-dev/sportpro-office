@@ -2029,6 +2029,12 @@
       box-shadow: 0 0 0 2px var(--accent-soft);
     }
 
+    .year-day.has-published {
+      border-color: #16a34a;
+      background: color-mix(in srgb, var(--surface) 76%, #16a34a 24%);
+      color: var(--text);
+    }
+
     .year-day.today {
       outline: 2px solid var(--accent);
       outline-offset: -2px;
@@ -2086,6 +2092,34 @@
       font-size: 22px;
     }
 
+    .content-report-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+
+    .content-report-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: var(--surface);
+    }
+
+    .content-report-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .content-report-card strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 22px;
+    }
+
     .calendar-day.today {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-soft);
@@ -2134,6 +2168,16 @@
       border-color: var(--accent);
       background: var(--accent-soft);
       box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .content-card.is-published {
+      border-left-color: #16a34a;
+      background: color-mix(in srgb, var(--surface) 82%, #16a34a 18%);
+    }
+
+    .content-card.is-overdue {
+      border-left-color: #dc2626;
+      background: color-mix(in srgb, var(--surface) 86%, #dc2626 14%);
     }
 
     .content-card strong {
@@ -2231,6 +2275,14 @@
       gap: 6px;
     }
 
+    .content-row-published {
+      background: color-mix(in srgb, var(--surface) 86%, #16a34a 14%);
+    }
+
+    .content-row-overdue {
+      background: color-mix(in srgb, var(--surface) 88%, #dc2626 12%);
+    }
+
     .content-text-cell {
       max-width: none;
       color: var(--muted);
@@ -2258,6 +2310,16 @@
       color: var(--accent-strong);
       font-size: 12px;
       white-space: nowrap;
+    }
+
+    .status-pill.status-published {
+      background: rgba(22, 163, 74, .16);
+      color: #16a34a;
+    }
+
+    .status-pill.status-overdue {
+      background: rgba(220, 38, 38, .14);
+      color: #dc2626;
     }
 
     .status-idea { border-left-color: #64748b; }
@@ -3010,6 +3072,8 @@
             </div>
             <div class="content-type-header">Типы за выбранный период</div>
             <div class="content-type-summary" id="contentTypeSummary"></div>
+            <div class="content-type-header">Отчет за выбранный период</div>
+            <div class="content-report-grid" id="contentPeriodReport"></div>
             <div class="calendar-grid" id="contentCalendarGrid"></div>
             <div class="archive-drop-zone hidden" id="calendarArchiveDrop">
               <div>
@@ -3110,6 +3174,13 @@
                   </select>
                   <select id="contentPlatformFilter" aria-label="Фильтр по площадке">
                     <option value="">Все площадки</option>
+                  </select>
+                  <select id="contentLifecycleFilter" aria-label="Фильтр по готовности">
+                    <option value="">Все публикации</option>
+                    <option value="active">Активные</option>
+                    <option value="published">Опубликованные</option>
+                    <option value="unpublished">Не опубликованные</option>
+                    <option value="overdue">Просроченные</option>
                   </select>
                 </div>
               </div>
@@ -3634,6 +3705,15 @@
               <button class="btn" id="wholesaleExportExcelBtn2" type="button">Скачать Excel</button>
               <button class="btn" id="wholesaleExportPdfBtn2" type="button">Скачать PDF</button>
             </div>
+            <div class="panel" style="margin-top: 14px;">
+              <h3>Ежедневный Excel-резерв</h3>
+              <p class="sales-goal">Один раз выбери место сохранения. После этого программа будет обновлять один и тот же Excel-файл: лист “Все вместе” и отдельные листы по менеджерам.</p>
+              <div class="actions">
+                <button class="btn primary" id="wholesaleSetupExcelBackupBtn" type="button">Выбрать файл резерва</button>
+                <button class="btn" id="wholesaleSaveExcelBackupBtn" type="button">Сохранить Excel-резерв сейчас</button>
+              </div>
+              <p class="sales-goal" id="wholesaleLocalBackupStatus">Excel-резерв еще не настроен.</p>
+            </div>
             <p class="sales-goal">Для старой Excel-таблицы подготовлен JSON-резерв: его можно загрузить через кнопку “Импорт JSON”, затем синхронизировать с облаком.</p>
           </section>
         </section>
@@ -4056,6 +4136,7 @@
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
     const wholesaleSyncHistoryKey = "workspace-tables.wholesale.syncHistory";
+    const wholesaleLocalBackupDateKey = "workspace-tables.wholesale.localBackupDate";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
     const deletedContentPlanKey = "workspace-tables.contentPlan.deleted";
@@ -4092,6 +4173,7 @@
     const calendarTitle = document.querySelector("#calendarTitle");
     const calendarMonthSelect = document.querySelector("#calendarMonthSelect");
     const contentTypeSummary = document.querySelector("#contentTypeSummary");
+    const contentPeriodReport = document.querySelector("#contentPeriodReport");
     const contentRubricsGrid = document.querySelector("#contentRubricsGrid");
     const funnelEmptyState = document.querySelector("#funnelEmptyState");
     const typeFilter = document.querySelector("#typeFilter");
@@ -4100,6 +4182,7 @@
     const contentSearch = document.querySelector("#contentSearch");
     const contentStatusFilter = document.querySelector("#contentStatusFilter");
     const contentPlatformFilter = document.querySelector("#contentPlatformFilter");
+    const contentLifecycleFilter = document.querySelector("#contentLifecycleFilter");
     const funnelSearch = document.querySelector("#funnelSearch");
     const funnelSortBy = document.querySelector("#funnelSortBy");
     const themeSelect = document.querySelector("#themeSelect");
@@ -4204,6 +4287,7 @@
     const wholesaleMetricDetails = document.querySelector("#wholesaleMetricDetails");
     const wholesaleLedgerFilterTotals = document.querySelector("#wholesaleLedgerFilterTotals");
     const wholesaleSyncHistoryEl = document.querySelector("#wholesaleSyncHistory");
+    const wholesaleLocalBackupStatus = document.querySelector("#wholesaleLocalBackupStatus");
     const wholesaleScopeSelect = document.querySelector("#wholesaleScopeSelect");
     const globalCloudStatus = document.querySelector("#globalCloudStatus");
     const wholesaleClientFilter = document.querySelector("#wholesaleClientFilter");
@@ -4459,6 +4543,7 @@
     renderSales();
     renderSalesClients();
     renderWholesale();
+    tryDailyWholesaleExcelBackup();
     applyClientSourcesConfig();
     renderClientSources();
     renderWorkspaceMembers();
@@ -4600,6 +4685,8 @@
     document.querySelector("#wholesaleExportExcelBtn2").addEventListener("click", () => exportRowsToExcel("postavki-i-oplaty", wholesaleExportRows()));
     document.querySelector("#wholesaleExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Поставки и оплаты", wholesaleExportRows()));
     document.querySelector("#wholesaleExportPdfBtn2").addEventListener("click", () => exportRowsToPdf("Поставки и оплаты", wholesaleExportRows()));
+    document.querySelector("#wholesaleSetupExcelBackupBtn").addEventListener("click", setupWholesaleExcelBackup);
+    document.querySelector("#wholesaleSaveExcelBackupBtn").addEventListener("click", () => saveWholesaleExcelBackupNow());
 
     measurementForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -4630,6 +4717,8 @@
     contentPlanForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const id = contentFields.id.value || createId();
+      const existingContentItem = contentPlanItems.find((item) => item.id === id);
+      const isPublishedStatus = contentFields.status.value === "Опубликовано";
       const entry = {
         id,
         date: contentFields.date.value,
@@ -4646,8 +4735,9 @@
         link: contentFields.link.value.trim(),
         preview: contentFields.preview.value.trim(),
         comment: contentFields.comment.value.trim(),
-        linkedAdId: contentPlanItems.find((item) => item.id === id)?.linkedAdId || "",
-        archivedAt: contentPlanItems.find((item) => item.id === id)?.archivedAt || "",
+        publishedAt: isPublishedStatus ? existingContentItem?.publishedAt || contentFields.date.value || formatIsoDate(new Date()) : "",
+        linkedAdId: existingContentItem?.linkedAdId || "",
+        archivedAt: existingContentItem?.archivedAt || "",
         updatedAt: new Date().toISOString(),
       };
 
@@ -4766,6 +4856,7 @@
     contentSearch.addEventListener("input", renderContentList);
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
+    contentLifecycleFilter.addEventListener("change", renderContentList);
     document.querySelector("#contentExportExcelBtn").addEventListener("click", () => exportRowsToExcel("content-plan-spisok", contentListExportRows()));
     document.querySelector("#contentExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Контент-план: список", contentListExportRows()));
     contentHeaderRow.addEventListener("dragstart", handleContentColumnDragStart);
@@ -6666,6 +6757,7 @@
         ? getContentItemsForMonth(calendarCursor)
         : getContentItemsForDates(days);
       renderContentTypeSummary(summaryItems);
+      renderContentPeriodReport(summaryItems);
       contentCalendarGrid.innerHTML = days.map((date) => {
         const key = formatIsoDate(date);
         const items = (itemsByDate[key] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
@@ -6698,6 +6790,7 @@
       contentCalendarEmpty.classList.toggle("hidden", items.length > 0);
       contentCalendarGrid.classList.add("year");
       renderContentTypeSummary(items);
+      renderContentPeriodReport(items);
       contentCalendarGrid.innerHTML = Array.from({ length: 12 }, (_, month) => {
         const monthItems = (itemsByMonth[String(month)] || []).sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
         const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(year, month, 1));
@@ -6719,8 +6812,9 @@
                 const inMonth = date.getMonth() === month;
                 const isToday = formatIsoDate(today) === key;
                 const typeHighlighted = activeContentTypeHighlight && dayItems.some((item) => item.type === activeContentTypeHighlight);
+                const hasPublished = dayItems.some(isContentPublished);
                 return `
-                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${typeHighlighted ? "type-highlighted" : ""} ${isToday ? "today" : ""}"
+                  <span class="year-day ${inMonth ? "" : "outside"} ${dayItems.length ? "has-items" : ""} ${hasPublished ? "has-published" : ""} ${typeHighlighted ? "type-highlighted" : ""} ${isToday ? "today" : ""}"
                     data-calendar-date="${inMonth ? key : ""}"
                     ${inMonth && dayItems.length ? `draggable="true" data-year-source-date="${key}"` : ""}
                     title="${dayItems.length ? `${formatShortDate(key)}: ${dayItems.length} публ. Перетащите на другой день, чтобы перенести.` : formatShortDate(key)}">
@@ -6780,13 +6874,41 @@
       `).join("");
     }
 
+    function renderContentPeriodReport(items) {
+      const total = items.length;
+      const published = items.filter(isContentPublished).length;
+      const overdue = items.filter(isContentOverdue).length;
+      const unpublished = total - published;
+      const active = items.filter((item) => !isContentPublished(item) && !isContentOverdue(item)).length;
+      const completion = total ? Math.round((published / total) * 100) : 0;
+      const cards = [
+        ["План", total],
+        ["Опубликовано", published],
+        ["Активные", active],
+        ["Просрочено", overdue],
+        ["Выполнение", `${completion}%`],
+      ];
+      contentPeriodReport.innerHTML = cards.map(([label, value]) => `
+        <div class="content-report-card">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join("");
+      contentPeriodReport.title = `Не опубликовано: ${unpublished}`;
+    }
+
     function contentCalendarCard(item) {
       const highlighted = activeContentTypeHighlight && item.type === activeContentTypeHighlight;
+      const published = isContentPublished(item);
+      const overdue = isContentOverdue(item);
+      const statusLine = published
+        ? `Опубликовано${item.publishedAt ? ` ${formatShortDate(item.publishedAt)}` : ""}`
+        : overdue ? "Просрочено" : item.status;
       return `
-        <button class="content-card ${statusClass(item.status)} ${highlighted ? "type-highlighted" : ""}" type="button" draggable="true" data-content-id="${escapeHtml(item.id)}">
+        <button class="content-card ${statusClass(item.status)} ${published ? "is-published" : ""} ${overdue ? "is-overdue" : ""} ${highlighted ? "type-highlighted" : ""}" type="button" draggable="true" data-content-id="${escapeHtml(item.id)}">
           <strong>${escapeHtml(item.time ? `${item.time} · ${item.topic}` : item.topic)}</strong>
           <span>${escapeHtml(item.platform)} · ${escapeHtml(item.type)}</span>
-          <span>${escapeHtml(item.status)}</span>
+          <span>${escapeHtml(statusLine)}</span>
         </button>
       `;
     }
@@ -6877,10 +6999,16 @@
       renderContentTableHeader(columns);
       contentEmptyState.classList.toggle("hidden", visible.length > 0);
       contentRowsEl.innerHTML = visible.map((item) => `
-        <tr>
+        <tr class="${contentRowClass(item)}">
           ${columns.map((column) => contentTableCellHtml(item, column)).join("")}
         </tr>
       `).join("");
+    }
+
+    function contentRowClass(item) {
+      if (isContentPublished(item)) return "content-row-published";
+      if (isContentOverdue(item)) return "content-row-overdue";
+      return "";
     }
 
     function defaultContentTableColumns() {
@@ -6895,6 +7023,7 @@
         { key: "hashtags", label: "Хэштеги", width: 170, min: 120 },
         { key: "preview", label: "Превью", width: 90, min: 72 },
         { key: "status", label: "Статус", width: 150, min: 110 },
+        { key: "publishedAt", label: "Факт публикации", width: 135, min: 110 },
         { key: "owner", label: "Ответственный", width: 150, min: 110 },
         { key: "prepDeadline", label: "Дедлайн", width: 120, min: 100 },
         { key: "actions", label: "Действия", width: 130, min: 110, numeric: true },
@@ -6955,11 +7084,12 @@
       if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}>${escapeHtml(shortText(item.text || "-", 140))}</td>`;
       if (column.key === "hashtags") return `<td ${widthStyle}>${escapeHtml(item.hashtags || "-")}</td>`;
       if (column.key === "preview") return `<td ${widthStyle}>${contentPreviewHtml(item.preview)}</td>`;
-      if (column.key === "status") return `<td ${widthStyle}><span class="status-pill">${escapeHtml(item.status)}</span></td>`;
+      if (column.key === "status") return `<td ${widthStyle}><span class="status-pill ${isContentPublished(item) ? "status-published" : isContentOverdue(item) ? "status-overdue" : ""}">${escapeHtml(isContentOverdue(item) ? "Просрочено" : item.status)}</span></td>`;
+      if (column.key === "publishedAt") return `<td ${widthStyle}>${item.publishedAt ? formatDate(item.publishedAt) : "-"}</td>`;
       if (column.key === "owner") return `<td ${widthStyle}>${escapeHtml(item.owner || "-")}</td>`;
       if (column.key === "prepDeadline") return `<td ${widthStyle}>${item.prepDeadline ? formatDate(item.prepDeadline) : "-"}</td>`;
       return `<td class="numeric" ${widthStyle}>
-        <button class="btn icon" type="button" title="Перенести в рекламу" data-action="publish-content" data-id="${item.id}">↗</button>
+        <button class="btn icon" type="button" title="${isContentPublished(item) ? "Обновить связь с рекламой" : "Отметить опубликованной"}" data-action="publish-content" data-id="${item.id}">✓</button>
         <button class="btn icon" type="button" title="Редактировать" data-action="edit-content" data-id="${item.id}">✎</button>
         <button class="btn icon danger" type="button" title="Удалить" data-action="delete-content" data-id="${item.id}">×</button>
       </td>`;
@@ -7134,18 +7264,39 @@
       const query = contentSearch.value.trim().toLowerCase();
       const status = contentStatusFilter.value;
       const platform = contentPlatformFilter.value;
+      const lifecycle = contentLifecycleFilter.value;
       return getActiveContentPlanItems()
         .filter((item) => {
           const haystack = `${item.topic} ${item.text} ${item.hashtags} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
           return (!query || haystack.includes(query))
             && (!status || item.status === status)
-            && (!platform || item.platform === platform);
+            && (!platform || item.platform === platform)
+            && contentLifecycleMatches(item, lifecycle);
         })
         .sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
     }
 
+    function contentLifecycleMatches(item, lifecycle) {
+      if (!lifecycle) return true;
+      if (lifecycle === "active") return !isContentPublished(item) && !isContentOverdue(item);
+      if (lifecycle === "published") return isContentPublished(item);
+      if (lifecycle === "unpublished") return !isContentPublished(item);
+      if (lifecycle === "overdue") return isContentOverdue(item);
+      return true;
+    }
+
     function getActiveContentPlanItems() {
       return contentPlanItems.filter((item) => !item.archivedAt);
+    }
+
+    function isContentPublished(item) {
+      return item.status === "Опубликовано";
+    }
+
+    function isContentOverdue(item) {
+      if (!item.date || isContentPublished(item)) return false;
+      const today = formatIsoDate(new Date());
+      return item.date < today;
     }
 
     function getArchivedContentPlanItems() {
@@ -7624,13 +7775,29 @@
     }
 
     function publishContentItem(item, options = {}) {
+      const today = formatIsoDate(new Date());
+      let publishedDate = options.publishedDate || item.publishedAt || item.date || today;
+      if (!options.silent) {
+        const enteredDate = prompt("Дата фактической публикации", publishedDate);
+        if (enteredDate === null) return;
+        publishedDate = enteredDate.trim() || today;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedDate)) {
+          alert("Введите дату в формате ГГГГ-ММ-ДД, например 2026-06-03.");
+          return;
+        }
+        if (!item.link) {
+          const enteredLink = prompt("Ссылка на опубликованный пост / Reels / сторис, если есть", "");
+          if (enteredLink !== null) item.link = enteredLink.trim();
+        }
+      }
       item.status = "Опубликовано";
+      item.publishedAt = publishedDate;
       item.updatedAt = new Date().toISOString();
 
       if (!item.linkedAdId) {
         const adRecord = normalizeRecord({
           id: createId(),
-          date: item.date || formatIsoDate(new Date()),
+          date: publishedDate,
           type: contentTypeToAdType(item.type),
           topic: item.topic,
           views: 0,
@@ -7643,12 +7810,22 @@
         item.linkedAdId = adRecord.id;
         records.push(adRecord);
         saveRecords();
+      } else {
+        const adRecord = records.find((record) => record.id === item.linkedAdId);
+        if (adRecord) {
+          adRecord.date = publishedDate;
+          adRecord.type = contentTypeToAdType(item.type);
+          adRecord.topic = item.topic;
+          adRecord.updatedAt = new Date().toISOString();
+          saveRecords();
+        }
       }
 
       saveContentPlanItems();
+      autoPushToCloud("Контент-план").catch(() => updateCloudStatus("Автосинхронизация не прошла"));
       render();
       if (!options.silent) {
-        alert("Публикация перенесена в Реклама → Публикации с нулевыми показателями.");
+        alert("Публикация отмечена как опубликованная и добавлена в Реклама → Публикации с нулевыми показателями.");
       }
     }
 
@@ -9273,11 +9450,15 @@
     }
 
     function wholesaleExportRows() {
+      return wholesaleRowsForInvoices(getWholesaleLedgerInvoices());
+    }
+
+    function wholesaleRowsForInvoices(invoices) {
       const rows = [[
         "Рабочая таблица", "Клиент", "Телефон", "Город", "Менеджер", "Договор", "Дата договора", "Предприятие", "Дата отправки", "№ накладной", "Статус документов", "Сумма накладной",
         "Оплачено", "Долг", "Дедлайн оплаты", "ТР / разное", "Оплачено ТР", "Долг ТР", "Дедлайн ТР", "Комментарий ТР", "Комментарий"
       ]];
-      getWholesaleLedgerInvoices().forEach((invoice) => {
+      invoices.forEach((invoice) => {
         const client = getWholesaleClient(invoice.clientId) || {};
         const contract = wholesaleInvoiceContract(invoice, client);
         rows.push([
@@ -9307,6 +9488,38 @@
       return rows;
     }
 
+    function wholesaleBackupRows() {
+      const invoices = canViewAllWholesaleTables() ? wholesaleData.invoices : getWholesaleScopedInvoices();
+      return wholesaleRowsForInvoices(invoices);
+    }
+
+    function wholesaleBackupSheets() {
+      const invoices = canViewAllWholesaleTables() ? wholesaleData.invoices : getWholesaleScopedInvoices();
+      const sheets = [{ name: "Все вместе", rows: wholesaleRowsForInvoices(invoices) }];
+      const groups = new Map();
+      invoices.forEach((invoice) => {
+        const owner = normalizeEmail(invoice.ownerEmail || wholesaleDefaultOwnerEmail());
+        if (!groups.has(owner)) groups.set(owner, []);
+        groups.get(owner).push(invoice);
+      });
+      [...groups.entries()]
+        .sort(([a], [b]) => a.localeCompare(b, "ru"))
+        .forEach(([owner, ownerInvoices]) => {
+          sheets.push({
+            name: wholesaleBackupSheetName(owner),
+            rows: wholesaleRowsForInvoices(ownerInvoices),
+          });
+        });
+      return sheets;
+    }
+
+    function wholesaleBackupSheetName(ownerEmail) {
+      const owner = normalizeEmail(ownerEmail || wholesaleDefaultOwnerEmail());
+      const member = workspaceMembers.find((item) => normalizeEmail(item.email) === owner);
+      const base = member?.email || owner || "manager";
+      return sanitizeWorksheetName(base.split("@")[0] || base);
+    }
+
     function exportWholesaleJson() {
       const scopedData = normalizeWholesaleData({
         ...wholesaleData,
@@ -9314,6 +9527,153 @@
       });
       const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data: scopedData }, null, 2)], { type: "application/json;charset=utf-8" });
       downloadBlob(blob, `sportpro-wholesale-backup-${formatIsoDate(new Date())}.json`);
+    }
+
+    function wholesaleExcelBackupFilename() {
+      return "sportpro-postavki-i-oplaty-rezerv.xls";
+    }
+
+    function wholesaleBackupFileApiSupported() {
+      return typeof window.showSaveFilePicker === "function" && typeof indexedDB !== "undefined";
+    }
+
+    function openWholesaleBackupDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("sportpro-office-local-backups", 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains("handles")) {
+            request.result.createObjectStore("handles");
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function wholesaleBackupStore(action, mode = "readonly") {
+      const db = await openWholesaleBackupDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction("handles", mode);
+        const store = transaction.objectStore("handles");
+        const request = action(store);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        transaction.oncomplete = () => db.close();
+        transaction.onerror = () => {
+          db.close();
+          reject(transaction.error);
+        };
+      });
+    }
+
+    async function getWholesaleBackupHandle() {
+      if (!wholesaleBackupFileApiSupported()) return null;
+      try {
+        return await wholesaleBackupStore((store) => store.get("wholesaleExcel"));
+      } catch {
+        return null;
+      }
+    }
+
+    async function saveWholesaleBackupHandle(handle) {
+      await wholesaleBackupStore((store) => store.put(handle, "wholesaleExcel"), "readwrite");
+    }
+
+    function renderWholesaleLocalBackupStatus(text = "") {
+      if (!wholesaleLocalBackupStatus) return;
+      if (text) {
+        wholesaleLocalBackupStatus.textContent = text;
+        return;
+      }
+      const savedDate = localStorage.getItem(wholesaleLocalBackupDateKey);
+      wholesaleLocalBackupStatus.textContent = savedDate
+        ? `Последний Excel-резерв: ${formatDate(savedDate)}. Файл: ${wholesaleExcelBackupFilename()}`
+        : `Excel-резерв еще не настроен. Файл будет называться: ${wholesaleExcelBackupFilename()}`;
+    }
+
+    async function setupWholesaleExcelBackup() {
+      if (!wholesaleBackupFileApiSupported()) {
+        alert("Этот браузер не умеет сохранять резерв прямо в выбранный файл. Файл будет скачан в папку загрузок.");
+        downloadWholesaleExcelBackup();
+        return;
+      }
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: wholesaleExcelBackupFilename(),
+          types: [{
+            description: "Excel файл",
+            accept: { "application/vnd.ms-excel": [".xls"] },
+          }],
+        });
+        await saveWholesaleBackupHandle(handle);
+        await writeWholesaleExcelBackup({ requestPermission: true, markToday: true });
+        renderWholesaleLocalBackupStatus(`Excel-резерв настроен и сохранен: ${wholesaleExcelBackupFilename()}`);
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          alert(`Не удалось настроить Excel-резерв: ${error.message}`);
+        }
+      }
+    }
+
+    async function saveWholesaleExcelBackupNow() {
+      const saved = await writeWholesaleExcelBackup({ requestPermission: true, markToday: true });
+      if (saved) {
+        alert(`Excel-резерв сохранен: ${wholesaleExcelBackupFilename()}`);
+        return;
+      }
+      if (!wholesaleBackupFileApiSupported()) {
+        downloadWholesaleExcelBackup();
+        return;
+      }
+      if (confirm("Файл резерва еще не выбран. Выбрать место сохранения сейчас?")) {
+        await setupWholesaleExcelBackup();
+      }
+    }
+
+    async function tryDailyWholesaleExcelBackup() {
+      renderWholesaleLocalBackupStatus();
+      const today = formatIsoDate(new Date());
+      if (localStorage.getItem(wholesaleLocalBackupDateKey) === today) return;
+      await writeWholesaleExcelBackup({ requestPermission: false, markToday: true });
+    }
+
+    async function writeWholesaleExcelBackup(options = {}) {
+      const rows = wholesaleBackupRows();
+      const sheets = wholesaleBackupSheets();
+      if (!rows || rows.length <= 1) {
+        renderWholesaleLocalBackupStatus("Excel-резерв не создан: в выбранной таблице пока нет накладных.");
+        return false;
+      }
+      const handle = await getWholesaleBackupHandle();
+      if (!handle) return false;
+      try {
+        let permission = await handle.queryPermission({ mode: "readwrite" });
+        if (permission !== "granted" && options.requestPermission) {
+          permission = await handle.requestPermission({ mode: "readwrite" });
+        }
+        if (permission !== "granted") return false;
+        const writable = await handle.createWritable();
+        await writable.write(rowsToExcelWorkbookBlob(sheets));
+        await writable.close();
+        if (options.markToday) {
+          localStorage.setItem(wholesaleLocalBackupDateKey, formatIsoDate(new Date()));
+        }
+        renderWholesaleLocalBackupStatus();
+        addWholesaleSyncEvent(`Локальный Excel-резерв обновлен: ${wholesaleExcelBackupFilename()}`, "backup");
+        return true;
+      } catch (error) {
+        renderWholesaleLocalBackupStatus(`Excel-резерв не сохранен: ${error.message}`);
+        return false;
+      }
+    }
+
+    function downloadWholesaleExcelBackup() {
+      const sheets = wholesaleBackupSheets();
+      if (!sheets.length || sheets.every((sheet) => sheet.rows.length <= 1)) {
+        alert("Нет данных для Excel-резерва.");
+        return;
+      }
+      downloadBlob(rowsToExcelWorkbookBlob(sheets), wholesaleExcelBackupFilename());
     }
 
     function importWholesaleJson(event) {
@@ -9537,6 +9897,7 @@
         link: item.link || "",
         preview: item.preview || "",
         comment: item.comment || "",
+        publishedAt: item.publishedAt || (item.status === "Опубликовано" ? item.date || "" : ""),
         linkedAdId: item.linkedAdId || "",
         archivedAt: item.archivedAt || "",
         updatedAt: item.updatedAt || new Date().toISOString(),
@@ -9690,6 +10051,7 @@
     function contentExportValue(item, key) {
       if (key === "date") return `${formatDate(item.date)}${item.time ? `, ${item.time}` : ""}`;
       if (key === "prepDeadline") return item.prepDeadline ? formatDate(item.prepDeadline) : "";
+      if (key === "publishedAt") return item.publishedAt ? formatDate(item.publishedAt) : "";
       return item[key] || "";
     }
 
@@ -9726,6 +10088,10 @@
         alert("Нет данных для экспорта.");
         return;
       }
+      downloadBlob(rowsToExcelBlob(rows), `${sanitizeFilename(filename)}.xls`);
+    }
+
+    function rowsToExcelBlob(rows) {
       const table = tableRowsToHtml(rows, { inline: true });
       const html = `<!doctype html>
         <html>
@@ -9739,8 +10105,62 @@
           </head>
           <body>${table}</body>
         </html>`;
-      const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
-      downloadBlob(blob, `${sanitizeFilename(filename)}.xls`);
+      return new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    }
+
+    function rowsToExcelWorkbookBlob(sheets) {
+      const usedNames = new Set();
+      const worksheetXml = sheets
+        .filter((sheet) => sheet.rows && sheet.rows.length > 1)
+        .map((sheet, index) => {
+          const name = uniqueWorksheetName(sheet.name || `Лист ${index + 1}`, usedNames);
+          const rows = sheet.rows.map((row) => `
+            <Row>${row.map((cell) => `<Cell ss:StyleID="cell"><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("")}</Row>
+          `).join("");
+          return `
+            <Worksheet ss:Name="${escapeXml(name)}">
+              <Table>${rows}</Table>
+            </Worksheet>
+          `;
+        }).join("");
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+        <?mso-application progid="Excel.Sheet"?>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+          xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+          <Styles>
+            <Style ss:ID="cell">
+              <Borders>
+                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+                <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+                <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+                <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+              </Borders>
+              <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+            </Style>
+          </Styles>
+          ${worksheetXml}
+        </Workbook>`;
+      return new Blob(["\ufeff" + xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+    }
+
+    function sanitizeWorksheetName(value) {
+      const cleaned = String(value || "Лист").replace(/[\[\]\\/*?:]/g, " ").replace(/\s+/g, " ").trim();
+      return (cleaned || "Лист").slice(0, 31);
+    }
+
+    function uniqueWorksheetName(name, usedNames) {
+      const base = sanitizeWorksheetName(name);
+      let candidate = base;
+      let index = 2;
+      while (usedNames.has(candidate.toLowerCase())) {
+        const suffix = ` ${index}`;
+        candidate = `${base.slice(0, 31 - suffix.length)}${suffix}`;
+        index += 1;
+      }
+      usedNames.add(candidate.toLowerCase());
+      return candidate;
     }
 
     function exportRowsToPdf(title, rows) {
@@ -9815,6 +10235,15 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    function escapeXml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
     }
   </script>
 </body>
