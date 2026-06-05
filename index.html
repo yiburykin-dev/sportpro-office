@@ -6944,22 +6944,25 @@
       `).join("");
     }
 
-    const installationFieldTypes = {
-      transportType: ["Доставка межгород", "Дополнительные грузоперевозки", "Такси"],
-      transferType: ["Поезд", "Самолет", "Автомобиль"],
-      lodgingType: ["Квартира", "Хостел", "Гостиница"],
-      technicalType: ["Инструмент", "Расходники", "Работа"],
-      workerType: ["Грузчик", "Дополнительный работник"],
-    };
+    function installationFieldTypes() {
+      return {
+        transportType: ["Доставка межгород", "Дополнительные грузоперевозки", "Такси"],
+        transferType: ["Поезд", "Самолет", "Автомобиль"],
+        lodgingType: ["Квартира", "Хостел", "Гостиница"],
+        technicalType: ["Инструмент", "Расходники", "Работа"],
+        workerType: ["Грузчик", "Дополнительный работник"],
+      };
+    }
 
     function installationSchemas() {
+      const fieldTypes = installationFieldTypes();
       return [
         {
           block: "block1",
           key: "transportExpenses",
           title: "Транспортные расходы",
           fields: [
-            selectField("type", "Тип расходов", installationFieldTypes.transportType),
+            selectField("type", "Тип расходов", fieldTypes.transportType),
             numberField("cost", "Стоимость"),
             numberField("quantity", "Количество"),
             numberField("days", "Дней"),
@@ -6977,7 +6980,7 @@
           key: "transfer",
           title: "Трансфер",
           fields: [
-            selectField("type", "Тип", installationFieldTypes.transferType),
+            selectField("type", "Тип", fieldTypes.transferType),
             dateField("departureDate", "Дата отъезда"),
             dateField("arrivalDate", "Дата прибытия"),
             numberField("costThere", "Туда"),
@@ -7012,7 +7015,7 @@
           key: "lodging",
           title: "Проживание",
           fields: [
-            selectField("type", "Тип проживания", installationFieldTypes.lodgingType),
+            selectField("type", "Тип проживания", fieldTypes.lodgingType),
             dateField("checkInDate", "Дата заезда"),
             timeField("checkInTime", "Время заезда"),
             dateField("checkOutDate", "Дата выезда"),
@@ -7055,7 +7058,7 @@
           key: "technical",
           title: "Расходы технические",
           fields: [
-            selectField("type", "Тип расходов", installationFieldTypes.technicalType),
+            selectField("type", "Тип расходов", fieldTypes.technicalType),
             numberField("price", "Цена"),
             numberField("quantity", "Количество"),
             numberField("days", "Дней"),
