@@ -1486,6 +1486,91 @@
       color: #15803d;
     }
 
+    .installation-project-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .installation-summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .installation-block-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .installation-subsection {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .installation-subsection-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .installation-subsection-head h3 {
+      margin: 0;
+    }
+
+    .installation-subsection-head span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .installation-table input,
+    .installation-table select,
+    .installation-table textarea {
+      min-width: 110px;
+      padding: 8px 9px;
+      font-size: 13px;
+    }
+
+    .installation-table textarea {
+      min-height: 42px;
+      resize: vertical;
+    }
+
+    .installation-table .numeric {
+      font-weight: 800;
+    }
+
+    .installation-dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 14px;
+    }
+
+    .installation-total-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .installation-total-row:last-child {
+      border-bottom: none;
+    }
+
+    .installation-total-row span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .money-overpay strong,
     .money-overpay small,
     .money-overpay span {
@@ -2424,6 +2509,10 @@
         grid-template-columns: 1fr;
       }
 
+      .installation-dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
       .workspace {
         grid-template-columns: 1fr;
       }
@@ -2448,6 +2537,8 @@
       .cloud-auth,
       .input-grid,
       .content-type-summary,
+      .installation-project-grid,
+      .installation-summary,
       .calendar-grid.year,
       .guide-layout,
       .guide-grid,
@@ -2521,6 +2612,10 @@
         <button type="button" data-view="clientSources" title="Источники клиентов">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 1 0-8 8v2A10 10 0 0 1 12 2Zm1 5v6l5 3-.9 1.6-6.1-3.6V7h2Zm6 10h3v2h-3v3h-2v-3h-3v-2h3v-3h2v3Z"/></svg>
           <span class="nav-label">Источники</span>
+        </button>
+        <button type="button" data-view="installation" title="Монтаж">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m21.7 18.3-6.4-6.4a6 6 0 0 0-7.2-7.2l3.6 3.6-3.4 3.4-3.6-3.6a6 6 0 0 0 7.2 7.2l6.4 6.4a1 1 0 0 0 1.4 0l2-2a1 1 0 0 0 0-1.4ZM9 14a4 4 0 0 1-4-4c0-.4.1-.8.2-1.2l3.1 3.1 5.6-5.6-3.1-3.1c.4-.1.8-.2 1.2-.2a4 4 0 0 1 2.7 6.9l-.7.7 6 6-1.4 1.4-6-6-.7.7A4 4 0 0 1 9 14Z"/></svg>
+          <span class="nav-label">Монтаж</span>
         </button>
         <button type="button" data-view="access" title="Доступ">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5Zm7-5V6h-3V4h3V1h2v3h3v2h-3v3h-2Z"/></svg>
@@ -3784,6 +3879,96 @@
         </section>
       </section>
 
+      <section id="installationView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Монтаж</h2>
+            <p>Проект монтажа, расходы по логистике, проживанию, работам и рабочему времени.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="installationExportExcelBtn" type="button">Excel</button>
+            <button class="btn" id="installationExportPdfBtn" type="button">PDF</button>
+            <button class="btn primary" id="installationNewProjectBtn" type="button">Новый проект</button>
+          </div>
+        </div>
+
+        <section class="panel chart-panel">
+          <div class="toolbar">
+            <div>
+              <h3>Данные проекта</h3>
+              <p class="sales-goal" id="installationSaveStatus">Автосохранение включено.</p>
+            </div>
+          </div>
+          <div class="installation-project-grid" id="installationProjectFields">
+            <label>Наименование клуба
+              <input data-installation-project="clubName" type="text" placeholder="Например: SPORTCITY Arena">
+            </label>
+            <label>Город
+              <input data-installation-project="city" type="text" placeholder="Город монтажа">
+            </label>
+            <label>Дата с
+              <input data-installation-project="dateFrom" type="date">
+            </label>
+            <label>Дата по
+              <input data-installation-project="dateTo" type="date">
+            </label>
+            <label>Контрагент
+              <input data-installation-project="contractor" type="text" placeholder="Наименование предприятия">
+            </label>
+            <label>Контактные данные
+              <input data-installation-project="contacts" type="text" placeholder="Телефон, email, WhatsApp">
+            </label>
+            <label>Куратор от заказчика
+              <input data-installation-project="curator" type="text" placeholder="ФИО и контакт">
+            </label>
+          </div>
+        </section>
+
+        <section class="installation-summary" id="installationSummary"></section>
+
+        <div class="module-tabs" aria-label="Разделы монтажа">
+          <button class="active" type="button" data-installation-mode="dashboard">Дашборд</button>
+          <button type="button" data-installation-mode="block1">Транспорт</button>
+          <button type="button" data-installation-mode="block2">Питание и проживание</button>
+          <button type="button" data-installation-mode="block3">Технические</button>
+          <button type="button" data-installation-mode="block4">Разные</button>
+          <button type="button" data-installation-mode="block5">Грузчики</button>
+          <button type="button" data-installation-mode="block6">Рабочее время</button>
+        </div>
+
+        <section id="installationDashboardView">
+          <section class="installation-dashboard-grid">
+            <section class="panel chart-panel">
+              <h3>Итоги по блокам</h3>
+              <div class="bars" id="installationBars"></div>
+            </section>
+            <section class="panel table-panel">
+              <h3>Сводка проекта</h3>
+              <div id="installationTotalsList"></div>
+            </section>
+          </section>
+        </section>
+
+        <section id="installationBlock1View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block1"></div>
+        </section>
+        <section id="installationBlock2View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block2"></div>
+        </section>
+        <section id="installationBlock3View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block3"></div>
+        </section>
+        <section id="installationBlock4View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block4"></div>
+        </section>
+        <section id="installationBlock5View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block5"></div>
+        </section>
+        <section id="installationBlock6View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block6"></div>
+        </section>
+      </section>
+
       <section id="guideView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -4132,6 +4317,7 @@
     const salesClientsStorageKey = "workspace-tables.sales.clients";
     const wholesaleStorageKey = "workspace-tables.wholesale.data";
     const wholesaleSafetySnapshotsKey = "workspace-tables.wholesale.safetySnapshots";
+    const installationStorageKey = "workspace-tables.installation.data";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
@@ -4216,6 +4402,11 @@
     const contentCloudStatus = document.querySelector("#contentCloudStatus");
     const contentCloudPullBtn = document.querySelector("#contentCloudPullBtn");
     const contentCloudSyncBtn = document.querySelector("#contentCloudSyncBtn");
+    const installationProjectFields = document.querySelector("#installationProjectFields");
+    const installationSummary = document.querySelector("#installationSummary");
+    const installationBars = document.querySelector("#installationBars");
+    const installationTotalsList = document.querySelector("#installationTotalsList");
+    const installationSaveStatus = document.querySelector("#installationSaveStatus");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const contentFormTitle = document.querySelector("#contentFormTitle");
@@ -4227,6 +4418,7 @@
       sales: document.querySelector("#salesView"),
       wholesale: document.querySelector("#wholesaleView"),
       clientSources: document.querySelector("#clientSourcesView"),
+      installation: document.querySelector("#installationView"),
       guide: document.querySelector("#guideView"),
       access: document.querySelector("#accessView"),
       future: document.querySelector("#futureView"),
@@ -4255,6 +4447,15 @@
       clients: document.querySelector("#wholesaleClientsView"),
       ledger: document.querySelector("#wholesaleLedgerView"),
       backup: document.querySelector("#wholesaleBackupView"),
+    };
+    const installationModeViews = {
+      dashboard: document.querySelector("#installationDashboardView"),
+      block1: document.querySelector("#installationBlock1View"),
+      block2: document.querySelector("#installationBlock2View"),
+      block3: document.querySelector("#installationBlock3View"),
+      block4: document.querySelector("#installationBlock4View"),
+      block5: document.querySelector("#installationBlock5View"),
+      block6: document.querySelector("#installationBlock6View"),
     };
     const salesSteps = document.querySelector("#salesSteps");
     const salesStageTitle = document.querySelector("#salesStageTitle");
@@ -4445,6 +4646,7 @@
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
       { key: "wholesale", label: "Поставки и оплаты", details: "Клиенты, предприятия, накладные, оплаты" },
       { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
+      { key: "installation", label: "Монтаж", details: "Проекты, расходы, рабочее время, дашборд" },
       { key: "guide", label: "Гайд", details: "Шпаргалка и руководство пользователя" },
       { key: "templates", label: "Шаблоны", details: "Будущие модули и план развития" },
       { key: "access", label: "Доступ", details: "Пользователи, роли, права" },
@@ -4453,31 +4655,31 @@
     const accessPresets = {
       marketer: {
         label: "Маркетолог",
-        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", installation: "read", guide: "read", templates: "read", access: "none" },
       },
       sales: {
         label: "Менеджер продаж",
-        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", installation: "none", guide: "read", templates: "none", access: "none" },
       },
       manager: {
         label: "Менеджер",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", installation: "read", guide: "read", templates: "read", access: "none" },
       },
       wholesaleHead: {
         label: "Руководитель оптового отдела",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", guide: "read", templates: "read", access: "write" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", installation: "read", guide: "read", templates: "read", access: "write" },
       },
       wholesaleManager: {
         label: "Менеджер оптового отдела",
-        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", installation: "none", guide: "read", templates: "none", access: "none" },
       },
       viewer: {
         label: "Только просмотр",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", installation: "read", guide: "read", templates: "read", access: "none" },
       },
       owner: {
         label: "Владелец",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", guide: "write", templates: "write", access: "write" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", installation: "write", guide: "write", templates: "write", access: "write" },
       },
       custom: {
         label: "Индивидуально",
@@ -4492,6 +4694,7 @@
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let wholesaleData = loadWholesaleData();
+    let installationData = loadInstallationData();
     let wholesaleSyncHistory = loadWholesaleSyncHistory();
     let clientSourcesData = loadClientSourcesData();
     let clientSourcesLoadStarted = false;
@@ -4504,6 +4707,7 @@
     let activeContentTypeHighlight = "";
     let activeWholesaleInvoiceId = "";
     let activeWholesaleScope = localStorage.getItem("workspace-tables.wholesale.scope") || "mine";
+    let activeInstallationMode = "dashboard";
     let editingMemberEmail = "";
     let selectedRecordIds = new Set();
     let selectedFunnelRecordIds = new Set();
@@ -4543,6 +4747,7 @@
     renderSales();
     renderSalesClients();
     renderWholesale();
+    renderInstallation();
     tryDailyWholesaleExcelBackup();
     applyClientSourcesConfig();
     renderClientSources();
@@ -4556,6 +4761,7 @@
         document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
         Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== view));
         if (view === "clientSources") ensureClientSourcesLoaded();
+        if (view === "installation") renderInstallation();
       });
     });
 
@@ -4603,6 +4809,20 @@
 
     document.querySelectorAll("[data-wholesale-mode]").forEach((button) => {
       button.addEventListener("click", () => setWholesaleMode(button.dataset.wholesaleMode));
+    });
+
+    document.querySelectorAll("[data-installation-mode]").forEach((button) => {
+      button.addEventListener("click", () => setInstallationMode(button.dataset.installationMode));
+    });
+
+    installationProjectFields.addEventListener("input", handleInstallationProjectInput);
+    installationProjectFields.addEventListener("change", handleInstallationProjectInput);
+    document.querySelector("#installationNewProjectBtn").addEventListener("click", resetInstallationProject);
+    document.querySelector("#installationExportExcelBtn").addEventListener("click", () => exportRowsToExcel("montazh", installationExportRows()));
+    document.querySelector("#installationExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Монтаж", installationExportRows()));
+    Object.values(installationModeViews).forEach((section) => {
+      section.addEventListener("click", handleInstallationClick);
+      section.addEventListener("change", handleInstallationInput);
     });
 
     form.addEventListener("submit", (event) => {
@@ -6724,6 +6944,509 @@
       `).join("");
     }
 
+    const installationFieldTypes = {
+      transportType: ["Доставка межгород", "Дополнительные грузоперевозки", "Такси"],
+      transferType: ["Поезд", "Самолет", "Автомобиль"],
+      lodgingType: ["Квартира", "Хостел", "Гостиница"],
+      technicalType: ["Инструмент", "Расходники", "Работа"],
+      workerType: ["Грузчик", "Дополнительный работник"],
+    };
+
+    function installationSchemas() {
+      return [
+        {
+          block: "block1",
+          key: "transportExpenses",
+          title: "Транспортные расходы",
+          fields: [
+            selectField("type", "Тип расходов", installationFieldTypes.transportType),
+            numberField("cost", "Стоимость"),
+            numberField("quantity", "Количество"),
+            numberField("days", "Дней"),
+            computedField("dayTotal", "Сумма за день"),
+            computedField("total", "Общая сумма"),
+          ],
+          create: () => ({ type: "Доставка межгород", cost: 0, quantity: 1, days: installationProjectDays() }),
+          calc: (row) => {
+            const dayTotal = money(row.cost) * numberValue(row.quantity);
+            return { dayTotal, total: dayTotal * numberValue(row.days || 1) };
+          },
+        },
+        {
+          block: "block1",
+          key: "transfer",
+          title: "Трансфер",
+          fields: [
+            selectField("type", "Тип", installationFieldTypes.transferType),
+            dateField("departureDate", "Дата отъезда"),
+            dateField("arrivalDate", "Дата прибытия"),
+            numberField("costThere", "Туда"),
+            numberField("costBack", "Обратно"),
+            numberField("people", "Человек"),
+            computedField("total", "Сумма"),
+          ],
+          create: () => ({ type: "Самолет", departureDate: installationData.project.dateFrom || "", arrivalDate: installationData.project.dateTo || "", costThere: 0, costBack: 0, people: 1 }),
+          calc: (row) => ({ total: (money(row.costThere) + money(row.costBack)) * numberValue(row.people || 1) }),
+        },
+        {
+          block: "block2",
+          key: "food",
+          title: "Питание",
+          fields: [
+            dateField("date", "Дата"),
+            numberField("mealCost", "Цена приема пищи"),
+            numberField("people", "Человек"),
+            numberField("meals", "Приемов пищи"),
+            numberField("days", "Дней"),
+            computedField("dayTotal", "Сумма за день"),
+            computedField("total", "Итого"),
+          ],
+          create: () => ({ date: installationData.project.dateFrom || "", mealCost: 0, people: 1, meals: 3, days: installationProjectDays() }),
+          calc: (row) => {
+            const dayTotal = money(row.mealCost) * numberValue(row.people || 1) * numberValue(row.meals || 1);
+            return { dayTotal, total: dayTotal * numberValue(row.days || 1) };
+          },
+        },
+        {
+          block: "block2",
+          key: "lodging",
+          title: "Проживание",
+          fields: [
+            selectField("type", "Тип проживания", installationFieldTypes.lodgingType),
+            dateField("checkInDate", "Дата заезда"),
+            timeField("checkInTime", "Время заезда"),
+            dateField("checkOutDate", "Дата выезда"),
+            timeField("checkOutTime", "Время выезда"),
+            computedField("days", "Дней"),
+            numberField("people", "Человек"),
+            numberField("pricePerDay", "Цена за день"),
+            numberField("unitsPerDay", "Кол-во за день"),
+            computedField("dayTotal", "Сумма за день"),
+            computedField("total", "За период"),
+            textField("note", "Примечание"),
+          ],
+          create: () => ({ type: "Квартира", checkInDate: installationData.project.dateFrom || "", checkInTime: "", checkOutDate: installationData.project.dateTo || "", checkOutTime: "", people: 1, pricePerDay: 0, unitsPerDay: 1, note: "" }),
+          calc: (row) => {
+            const days = dateDiffDays(row.checkInDate, row.checkOutDate) || numberValue(row.days || 1);
+            const dayTotal = money(row.pricePerDay) * numberValue(row.unitsPerDay || 1);
+            return { days, dayTotal, total: dayTotal * days };
+          },
+        },
+        {
+          block: "block2",
+          key: "perDiem",
+          title: "Командировочные",
+          fields: [
+            numberField("people", "Человек"),
+            textField("traveler", "Командируемый"),
+            numberField("dailyRate", "Цена за день"),
+            numberField("days", "Дней"),
+            computedField("dayTotal", "Сумма за день"),
+            computedField("total", "Итого"),
+          ],
+          create: () => ({ people: 1, traveler: "", dailyRate: 0, days: installationProjectDays() }),
+          calc: (row) => {
+            const dayTotal = numberValue(row.people || 1) * money(row.dailyRate);
+            return { dayTotal, total: dayTotal * numberValue(row.days || 1) };
+          },
+        },
+        {
+          block: "block3",
+          key: "technical",
+          title: "Расходы технические",
+          fields: [
+            selectField("type", "Тип расходов", installationFieldTypes.technicalType),
+            numberField("price", "Цена"),
+            numberField("quantity", "Количество"),
+            numberField("days", "Дней"),
+            computedField("dayTotal", "Сумма за день"),
+            computedField("total", "За все время"),
+          ],
+          create: () => ({ type: "Инструмент", price: 0, quantity: 1, days: installationProjectDays() }),
+          calc: (row) => {
+            const dayTotal = money(row.price) * numberValue(row.quantity || 1);
+            return { dayTotal, total: dayTotal * numberValue(row.days || 1) };
+          },
+        },
+        {
+          block: "block4",
+          key: "miscellaneous",
+          title: "Расходы разные",
+          fields: [
+            textField("name", "Наименование"),
+            numberField("quantity", "Количество"),
+            numberField("amount", "Сумма"),
+            computedField("total", "Итого"),
+            textField("note", "Примечание"),
+          ],
+          create: () => ({ name: "", quantity: 1, amount: 0, note: "" }),
+          calc: (row) => ({ total: numberValue(row.quantity || 1) * money(row.amount) }),
+        },
+        {
+          block: "block5",
+          key: "loaders",
+          title: "Грузчики",
+          fields: [
+            dateField("date", "Дата"),
+            numberField("hourRate", "Тг/час"),
+            numberField("hours", "Часов"),
+            numberField("people", "Человек"),
+            computedField("onePersonDay", "За 1 грузчика"),
+            computedField("dayTotal", "За всех в день"),
+            computedField("total", "За период"),
+          ],
+          create: () => ({ date: installationData.project.dateFrom || "", hourRate: 0, hours: 0, people: 1 }),
+          calc: (row) => {
+            const onePersonDay = money(row.hourRate) * numberValue(row.hours);
+            const dayTotal = onePersonDay * numberValue(row.people || 1);
+            return { onePersonDay, dayTotal, total: dayTotal };
+          },
+        },
+        {
+          block: "block5",
+          key: "workers",
+          title: "Дополнительные мастера",
+          fields: [
+            numberField("people", "Человек"),
+            numberField("dailyRate", "Стоимость в день"),
+            dateField("dateFrom", "Дата начала"),
+            dateField("dateTo", "Дата окончания"),
+            computedField("dayTotal", "Итого в день"),
+            computedField("total", "За период"),
+          ],
+          create: () => ({ people: 1, dailyRate: 0, dateFrom: installationData.project.dateFrom || "", dateTo: installationData.project.dateTo || "" }),
+          calc: (row) => {
+            const days = dateDiffDays(row.dateFrom, row.dateTo);
+            const dayTotal = numberValue(row.people || 1) * money(row.dailyRate);
+            return { dayTotal, total: dayTotal * days };
+          },
+        },
+        {
+          block: "block6",
+          key: "labor",
+          title: "Учет рабочего времени",
+          fields: [
+            dateField("dateFrom", "Дата начала"),
+            dateField("dateTo", "Дата окончания"),
+            timeField("timeFrom", "Время начала"),
+            timeField("timeTo", "Время окончания"),
+            computedField("hours", "Часов"),
+            numberField("people", "Человек"),
+            numberField("hourRate", "Ставка/час"),
+            computedField("dayWorkersCost", "Работники в день"),
+            numberField("extraPay", "Доп. оплата"),
+            computedField("onePersonDay", "За 1 человека/день"),
+            computedField("dayTotal", "За всех/день"),
+            computedField("total", "За весь период"),
+          ],
+          create: () => ({ dateFrom: installationData.project.dateFrom || "", dateTo: installationData.project.dateTo || "", timeFrom: "09:00", timeTo: "18:00", people: 1, hourRate: 0, extraPay: 0 }),
+          calc: (row) => {
+            const days = dateDiffDays(row.dateFrom, row.dateTo);
+            const hours = timeDiffHours(row.timeFrom, row.timeTo);
+            const people = numberValue(row.people || 1);
+            const dayWorkersCost = hours * people * money(row.hourRate);
+            const extraPay = money(row.extraPay);
+            const onePersonDay = hours * money(row.hourRate) + (people ? extraPay / people : 0);
+            const dayTotal = dayWorkersCost + extraPay;
+            return { hours, dayWorkersCost, onePersonDay, dayTotal, total: dayTotal * days };
+          },
+        },
+      ];
+    }
+
+    function selectField(key, label, options) {
+      return { key, label, type: "select", options };
+    }
+
+    function numberField(key, label) {
+      return { key, label, type: "number" };
+    }
+
+    function dateField(key, label) {
+      return { key, label, type: "date" };
+    }
+
+    function timeField(key, label) {
+      return { key, label, type: "time" };
+    }
+
+    function textField(key, label) {
+      return { key, label, type: "text" };
+    }
+
+    function computedField(key, label) {
+      return { key, label, type: "computed" };
+    }
+
+    function renderInstallation() {
+      renderInstallationProjectFields();
+      renderInstallationSummary();
+      renderInstallationBlocks();
+      renderInstallationDashboard();
+      setInstallationMode(activeInstallationMode);
+    }
+
+    function setInstallationMode(mode) {
+      activeInstallationMode = mode || "dashboard";
+      document.querySelectorAll("[data-installation-mode]").forEach((item) => item.classList.toggle("active", item.dataset.installationMode === activeInstallationMode));
+      Object.entries(installationModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== activeInstallationMode));
+    }
+
+    function renderInstallationProjectFields() {
+      installationProjectFields.querySelectorAll("[data-installation-project]").forEach((input) => {
+        input.value = installationData.project[input.dataset.installationProject] || "";
+      });
+    }
+
+    function renderInstallationSummary() {
+      const totals = installationTotals();
+      const projectDays = installationProjectDays();
+      const cards = [
+        ["Общий бюджет", totals.total],
+        ["Транспорт", totals.block1],
+        ["Питание/проживание", totals.block2],
+        ["Технические", totals.block3],
+        ["Разные", totals.block4],
+        ["Работы", totals.block5 + totals.block6],
+      ];
+      installationSummary.innerHTML = cards.map(([label, value]) => `
+        <div class="metric">
+          <span>${escapeHtml(label)}</span>
+          <strong>${formatMoney(value)}</strong>
+        </div>
+      `).join("");
+      installationSaveStatus.textContent = `Автосохранено: ${formatDateTime(new Date(installationData.updatedAt || new Date().toISOString()))}. Дней проекта: ${projectDays}.`;
+    }
+
+    function renderInstallationBlocks() {
+      const schemas = installationSchemas();
+      Object.keys(installationModeViews).filter((key) => key !== "dashboard").forEach((block) => {
+        const container = document.querySelector(`[data-installation-block="${block}"]`);
+        const blockSchemas = schemas.filter((schema) => schema.block === block);
+        container.innerHTML = blockSchemas.map((schema) => installationSubsectionHtml(schema)).join("");
+      });
+    }
+
+    function installationSubsectionHtml(schema) {
+      const rows = installationData.sections[schema.key] || [];
+      const total = rows.reduce((value, row) => value + installationRowCalculated(schema, row).total, 0);
+      return `
+        <section class="installation-subsection" data-installation-section="${escapeHtml(schema.key)}">
+          <div class="installation-subsection-head">
+            <div>
+              <h3>${escapeHtml(schema.title)}</h3>
+              <span>${rows.length} строк · ${formatMoney(total)}</span>
+            </div>
+            <button class="btn primary" type="button" data-installation-action="add-row" data-section-key="${escapeHtml(schema.key)}">Добавить строку</button>
+          </div>
+          <div class="table-wrap">
+            <table class="installation-table">
+              <thead>
+                <tr>
+                  ${schema.fields.map((field) => `<th>${escapeHtml(field.label)}</th>`).join("")}
+                  <th class="numeric">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.length ? rows.map((row) => installationRowHtml(schema, row)).join("") : `<tr><td colspan="${schema.fields.length + 1}" class="empty">Строк пока нет</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function installationRowHtml(schema, row) {
+      const calculated = installationRowCalculated(schema, row);
+      return `
+        <tr data-section-key="${escapeHtml(schema.key)}" data-row-id="${escapeHtml(row.id)}">
+          ${schema.fields.map((field) => installationCellHtml(field, row, calculated)).join("")}
+          <td class="numeric">
+            <button class="btn icon danger" type="button" title="Удалить строку" data-installation-action="delete-row" data-section-key="${escapeHtml(schema.key)}" data-row-id="${escapeHtml(row.id)}">×</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function installationCellHtml(field, row, calculated) {
+      const value = field.type === "computed" ? calculated[field.key] : row[field.key];
+      if (field.type === "computed") {
+        const output = field.key === "hours" || field.key === "days" ? formatNumber(value) : formatMoney(value);
+        return `<td class="numeric">${escapeHtml(output)}</td>`;
+      }
+      if (field.type === "select") {
+        return `<td><select data-installation-field="${escapeHtml(field.key)}">${field.options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></td>`;
+      }
+      if (field.type === "text") {
+        return `<td><textarea data-installation-field="${escapeHtml(field.key)}">${escapeHtml(value || "")}</textarea></td>`;
+      }
+      return `<td><input data-installation-field="${escapeHtml(field.key)}" type="${field.type}" value="${escapeHtml(value ?? "")}" ${field.type === "number" ? "step=\"0.01\"" : ""}></td>`;
+    }
+
+    function renderInstallationDashboard() {
+      const totals = installationTotals();
+      const maxValue = Math.max(...installationDashboardRows(totals).map((row) => row.value), 1);
+      installationBars.innerHTML = installationDashboardRows(totals).map((row) => `
+        <div class="bar-row">
+          <span>${escapeHtml(row.label)}</span>
+          <div class="bar-track"><div style="width:${Math.max(4, Math.round((row.value / maxValue) * 100))}%"></div></div>
+          <strong>${formatMoney(row.value)}</strong>
+        </div>
+      `).join("");
+      installationTotalsList.innerHTML = installationDashboardRows(totals).map((row) => `
+        <div class="installation-total-row">
+          <span>${escapeHtml(row.label)}</span>
+          <strong>${formatMoney(row.value)}</strong>
+        </div>
+      `).join("") + `
+        <div class="installation-total-row">
+          <span>Итого по проекту</span>
+          <strong>${formatMoney(totals.total)}</strong>
+        </div>
+      `;
+    }
+
+    function installationDashboardRows(totals) {
+      return [
+        { label: "Транспортные расходы и трансфер", value: totals.block1 },
+        { label: "Питание, проживание, командировочные", value: totals.block2 },
+        { label: "Расходы технические", value: totals.block3 },
+        { label: "Расходы разные", value: totals.block4 },
+        { label: "Грузчики и дополнительные мастера", value: totals.block5 },
+        { label: "Учет рабочего времени", value: totals.block6 },
+      ];
+    }
+
+    function handleInstallationProjectInput(event) {
+      const input = event.target.closest("[data-installation-project]");
+      if (!input) return;
+      installationData.project[input.dataset.installationProject] = input.value;
+      saveInstallationData();
+      renderInstallationSummary();
+      renderInstallationDashboard();
+    }
+
+    function handleInstallationClick(event) {
+      const button = event.target.closest("[data-installation-action]");
+      if (!button) return;
+      const sectionKey = button.dataset.sectionKey;
+      if (button.dataset.installationAction === "add-row") {
+        addInstallationRow(sectionKey);
+      }
+      if (button.dataset.installationAction === "delete-row" && confirm("Удалить строку расходов?")) {
+        installationData.sections[sectionKey] = (installationData.sections[sectionKey] || []).filter((row) => row.id !== button.dataset.rowId);
+        saveInstallationData();
+        renderInstallation();
+      }
+    }
+
+    function handleInstallationInput(event) {
+      const input = event.target.closest("[data-installation-field]");
+      const rowEl = event.target.closest("[data-section-key][data-row-id]");
+      if (!input || !rowEl) return;
+      const sectionKey = rowEl.dataset.sectionKey;
+      const row = (installationData.sections[sectionKey] || []).find((item) => item.id === rowEl.dataset.rowId);
+      if (!row) return;
+      row[input.dataset.installationField] = input.value;
+      row.updatedAt = new Date().toISOString();
+      saveInstallationData();
+      renderInstallation();
+    }
+
+    function addInstallationRow(sectionKey) {
+      const schema = installationSchemas().find((item) => item.key === sectionKey);
+      if (!schema) return;
+      const row = normalizeInstallationRow({ id: createId(), ...schema.create() });
+      installationData.sections[sectionKey] = [...(installationData.sections[sectionKey] || []), row];
+      saveInstallationData();
+      renderInstallation();
+    }
+
+    function resetInstallationProject() {
+      if (!confirm("Создать новый проект монтажа? Текущие данные будут очищены.")) return;
+      installationData = defaultInstallationData();
+      saveInstallationData();
+      renderInstallation();
+    }
+
+    function installationRowCalculated(schema, row) {
+      const calculated = schema.calc ? schema.calc(row) : {};
+      return { total: 0, ...calculated };
+    }
+
+    function installationTotals() {
+      const schemas = installationSchemas();
+      const totals = { block1: 0, block2: 0, block3: 0, block4: 0, block5: 0, block6: 0, total: 0 };
+      schemas.forEach((schema) => {
+        const sectionTotal = (installationData.sections[schema.key] || []).reduce((value, row) => value + installationRowCalculated(schema, row).total, 0);
+        totals[schema.block] += sectionTotal;
+        totals.total += sectionTotal;
+      });
+      return totals;
+    }
+
+    function installationProjectDays() {
+      return dateDiffDays(installationData.project.dateFrom, installationData.project.dateTo) || 1;
+    }
+
+    function dateDiffDays(from, to) {
+      if (!from || !to) return 1;
+      const start = new Date(`${from}T00:00:00`);
+      const end = new Date(`${to}T00:00:00`);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
+      return Math.max(1, Math.round((end - start) / 86400000) + 1);
+    }
+
+    function timeDiffHours(from, to) {
+      if (!from || !to) return 0;
+      const [fromHours, fromMinutes] = from.split(":").map(Number);
+      const [toHours, toMinutes] = to.split(":").map(Number);
+      const minutes = (toHours * 60 + toMinutes) - (fromHours * 60 + fromMinutes);
+      return Math.max(0, Math.round((minutes / 60) * 100) / 100);
+    }
+
+    function money(value) {
+      return Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
+    }
+
+    function numberValue(value) {
+      return Number(value) || 0;
+    }
+
+    function installationExportRows() {
+      const rows = [
+        ["Монтаж: проект"],
+        ["Наименование клуба", installationData.project.clubName || ""],
+        ["Город", installationData.project.city || ""],
+        ["Дата с", installationData.project.dateFrom ? formatDate(installationData.project.dateFrom) : ""],
+        ["Дата по", installationData.project.dateTo ? formatDate(installationData.project.dateTo) : ""],
+        ["Контрагент", installationData.project.contractor || ""],
+        ["Контактные данные", installationData.project.contacts || ""],
+        ["Куратор от заказчика", installationData.project.curator || ""],
+        [],
+        ["Блок", "Подраздел", "Поле", "Значение"],
+      ];
+      installationSchemas().forEach((schema) => {
+        (installationData.sections[schema.key] || []).forEach((row) => {
+          const calculated = installationRowCalculated(schema, row);
+          schema.fields.forEach((field) => {
+            const value = field.type === "computed" ? calculated[field.key] : row[field.key];
+            rows.push([schema.block, schema.title, field.label, field.type === "computed" && field.key !== "hours" && field.key !== "days" ? formatMoney(value) : value || ""]);
+          });
+          rows.push([schema.block, schema.title, "Итого строки", formatMoney(calculated.total)]);
+        });
+      });
+      rows.push([]);
+      installationDashboardRows(installationTotals()).forEach((row) => rows.push(["Итого", row.label, "", formatMoney(row.value)]));
+      rows.push(["Итого", "Общий бюджет", "", formatMoney(installationTotals().total)]);
+      return rows;
+    }
+
+    function saveInstallationData() {
+      installationData.updatedAt = new Date().toISOString();
+      localStorage.setItem(installationStorageKey, JSON.stringify(normalizeInstallationData(installationData)));
+    }
+
     function renderContentPlan() {
       renderContentRubricOptions();
       renderContentFilters();
@@ -7934,6 +8657,54 @@
         clients: Array.isArray(data.clients) ? data.clients.map(normalizeWholesaleClient) : [],
         invoices: Array.isArray(data.invoices) ? data.invoices.map(normalizeWholesaleInvoice).filter(isWholesaleValidInvoice) : [],
         updatedAt: data.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function loadInstallationData() {
+      return normalizeInstallationData(readStorage(installationStorageKey) || defaultInstallationData());
+    }
+
+    function defaultInstallationData() {
+      const today = formatIsoDate(new Date());
+      return {
+        project: {
+          clubName: "",
+          city: "",
+          dateFrom: today,
+          dateTo: today,
+          contractor: "",
+          contacts: "",
+          curator: "",
+        },
+        sections: {},
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    function normalizeInstallationData(data = {}) {
+      const defaults = defaultInstallationData();
+      const sectionKeys = installationSchemas().map((schema) => schema.key);
+      const sections = {};
+      sectionKeys.forEach((key) => {
+        sections[key] = Array.isArray(data.sections?.[key])
+          ? data.sections[key].map(normalizeInstallationRow)
+          : [];
+      });
+      return {
+        project: {
+          ...defaults.project,
+          ...(data.project || {}),
+        },
+        sections,
+        updatedAt: data.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function normalizeInstallationRow(row = {}) {
+      return {
+        ...row,
+        id: row.id || createId(),
+        updatedAt: row.updatedAt || new Date().toISOString(),
       };
     }
 
