@@ -1511,6 +1511,11 @@
       font-weight: 600;
     }
 
+    .installation-project-compact.focused {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
     .installation-summary {
       display: grid;
       grid-template-columns: repeat(6, minmax(130px, 1fr));
@@ -7311,7 +7316,7 @@
           <div class="actions">
             ${options.draft
               ? `<button class="btn primary" type="button" data-installation-project-action="save-draft">Сохранить</button>`
-              : `<button class="btn primary" type="button" data-installation-project-action="open" data-project-id="${escapeHtml(project.id)}">Открыть</button>
+              : `<button class="btn ${active ? "" : "primary"}" type="button" data-installation-project-action="${active ? "focus" : "open"}" data-project-id="${escapeHtml(project.id)}">${active ? "Открыт" : "Открыть"}</button>
                  <button class="btn danger" type="button" data-installation-project-action="delete" data-project-id="${escapeHtml(project.id)}">Удалить</button>`}
           </div>
         </article>
@@ -7491,6 +7496,9 @@
       if (button.dataset.installationProjectAction === "save-draft") {
         saveCurrentInstallationProject();
       }
+      if (button.dataset.installationProjectAction === "focus") {
+        focusInstallationProjectArea();
+      }
       if (button.dataset.installationProjectAction === "open") {
         openInstallationProject(projectId);
       }
@@ -7538,7 +7546,10 @@
 
     function openInstallationProject(projectId) {
       const project = installationProjects.find((item) => item.id === projectId);
-      if (!project) return;
+      if (!project) {
+        alert("Проект не найден. Обновите список или сохраните текущий проект заново.");
+        return;
+      }
       installationData = normalizeInstallationData(project);
       activeInstallationProjectId = installationData.id;
       localStorage.setItem("workspace-tables.installation.activeProjectId", activeInstallationProjectId);
@@ -7546,6 +7557,15 @@
       installationProjectFields.classList.add("hidden");
       installationProjectToggleBtn.textContent = "Развернуть";
       renderInstallation();
+      setTimeout(() => focusInstallationProjectArea(), 30);
+    }
+
+    function focusInstallationProjectArea() {
+      setInstallationMode("dashboard");
+      installationSaveStatus.textContent = `Открыт проект: ${installationData.project.clubName || "без названия"}. Автосохранение включено.`;
+      installationProjectCompact.classList.add("focused");
+      installationProjectCompact.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => installationProjectCompact.classList.remove("focused"), 1200);
     }
 
     function handleInstallationClick(event) {
