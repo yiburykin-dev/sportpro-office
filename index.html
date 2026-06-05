@@ -4321,6 +4321,11 @@
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
+    const defaultCloudConfig = {
+      url: "https://zfntoxwdqochvwymwbef.supabase.co",
+      key: "sb_publishable_emLp2Fs7nD9OGjVVMVa1gA_cGZ5PdAa",
+      workspace: "sportpro-main",
+    };
     const wholesaleSyncHistoryKey = "workspace-tables.wholesale.syncHistory";
     const wholesaleLocalBackupDateKey = "workspace-tables.wholesale.localBackupDate";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
@@ -5915,12 +5920,12 @@
     function loadCloudConfig() {
       const saved = readStorage(cloudConfigKey);
       if (!saved || Array.isArray(saved) || typeof saved !== "object") {
-        return { url: "", key: "", workspace: "sportpro-main" };
+        return { ...defaultCloudConfig };
       }
       return {
-        url: saved.url || "",
-        key: saved.key || "",
-        workspace: saved.workspace || "sportpro-main",
+        url: saved.url || defaultCloudConfig.url,
+        key: saved.key || defaultCloudConfig.key,
+        workspace: saved.workspace || defaultCloudConfig.workspace,
       };
     }
 
