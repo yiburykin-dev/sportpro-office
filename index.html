@@ -3958,7 +3958,7 @@
             </div>
           </div>
           <div class="installation-projects-list" id="installationProjectsList"></div>
-          <div class="empty hidden" id="installationProjectsEmpty">Сохраненных проектов пока нет.</div>
+          <div class="empty hidden" id="installationProjectsEmpty">Проектов пока нет. Заполните данные ниже и нажмите “Сохранить проект”.</div>
         </section>
 
         <section class="panel chart-panel">
@@ -7287,28 +7287,43 @@
       const projects = installationProjects
         .slice()
         .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
-      installationProjectsEmpty.classList.toggle("hidden", projects.length > 0);
-      installationProjectsList.innerHTML = projects.map((project) => installationProjectCardHtml(project)).join("");
+      const showDraft = hasInstallationDraftData() && (!activeInstallationProjectId || !projects.some((project) => project.id === activeInstallationProjectId));
+      const cards = [
+        ...(showDraft ? [installationProjectCardHtml(installationData, { draft: true })] : []),
+        ...projects.map((project) => installationProjectCardHtml(project)),
+      ];
+      installationProjectsEmpty.classList.toggle("hidden", cards.length > 0);
+      installationProjectsList.innerHTML = cards.join("");
     }
 
-    function installationProjectCardHtml(project) {
+    function installationProjectCardHtml(project, options = {}) {
       const totals = installationTotals(project);
       const dates = installationProjectDatesLabel(project.project);
-      const active = project.id === activeInstallationProjectId;
+      const active = options.draft || project.id === activeInstallationProjectId;
       return `
         <article class="installation-project-card ${active ? "active" : ""}">
           <strong>${escapeHtml(project.project.clubName || "Проект без названия")}</strong>
           <span>${escapeHtml([project.project.city, dates, project.project.contractor].filter(Boolean).join(" · ") || "Данные проекта не заполнены")}</span>
           <div class="installation-project-card-footer">
-            <span>${project.savedAt ? `Сохранен: ${formatDate(project.savedAt.slice(0, 10))}` : "Черновик"}</span>
+            <span>${options.draft ? "Текущий черновик · еще не сохранен в список" : project.savedAt ? `Сохранен: ${formatDate(project.savedAt.slice(0, 10))}` : "Черновик"}</span>
             <strong>${formatMoney(totals.total)}</strong>
           </div>
           <div class="actions">
-            <button class="btn primary" type="button" data-installation-project-action="open" data-project-id="${escapeHtml(project.id)}">Открыть</button>
-            <button class="btn danger" type="button" data-installation-project-action="delete" data-project-id="${escapeHtml(project.id)}">Удалить</button>
+            ${options.draft
+              ? `<button class="btn primary" type="button" data-installation-project-action="save-draft">Сохранить</button>`
+              : `<button class="btn primary" type="button" data-installation-project-action="open" data-project-id="${escapeHtml(project.id)}">Открыть</button>
+                 <button class="btn danger" type="button" data-installation-project-action="delete" data-project-id="${escapeHtml(project.id)}">Удалить</button>`}
           </div>
         </article>
       `;
+    }
+
+    function hasInstallationDraftData() {
+      const project = installationData.project || {};
+      const hasProjectFields = ["clubName", "city", "contractor", "contacts", "curator"].some((key) => String(project[key] || "").trim());
+      const hasRows = Object.values(installationData.sections || {}).some((rows) => Array.isArray(rows) && rows.length);
+      const hasMoney = installationTotals().total > 0;
+      return hasProjectFields || hasRows || hasMoney;
     }
 
     function renderInstallationProjectFields() {
@@ -7473,6 +7488,9 @@
       const button = event.target.closest("[data-installation-project-action]");
       if (!button) return;
       const projectId = button.dataset.projectId;
+      if (button.dataset.installationProjectAction === "save-draft") {
+        saveCurrentInstallationProject();
+      }
       if (button.dataset.installationProjectAction === "open") {
         openInstallationProject(projectId);
       }
