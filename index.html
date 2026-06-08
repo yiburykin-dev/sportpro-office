@@ -932,6 +932,44 @@
       margin-bottom: 6px;
     }
 
+    .memory-user-answer {
+      display: grid;
+      gap: 7px;
+    }
+
+    .memory-user-answer textarea {
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .memory-user-answer-preview {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .memory-hint-toggle {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      width: fit-content;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .memory-subtle-hint {
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+    }
+
     .memory-rating-actions {
       display: grid;
       grid-template-columns: repeat(4, minmax(90px, 1fr));
@@ -4497,7 +4535,7 @@
               <p class="sales-goal">Карточка должна заставлять вспоминать, а не просто узнавать ответ глазами.</p>
               <form id="memoryCardForm">
                 <label>Колода
-                  <input id="memoryDeck" type="text" placeholder="Продажи, товар, английский">
+                  <input id="memoryDeck" type="text" placeholder="Наука, история, английский">
                 </label>
                 <label>Тип
                   <select id="memoryType">
@@ -4544,7 +4582,7 @@
                 <h3>Свободное вспоминание</h3>
                 <p class="sales-goal">Введи список элементов, изучи его, затем восстанови по памяти. Это тренирует извлечение, а не узнавание.</p>
                 <label>Материал
-                  <textarea id="memoryRecallSource" rows="4" placeholder="Например: доставка, монтаж, оплата, гарантия, сервис"></textarea>
+                  <textarea id="memoryRecallSource" rows="4" placeholder="Например: планеты, океаны, столицы, формулы, даты"></textarea>
                 </label>
                 <label>Ответ по памяти
                   <textarea id="memoryRecallAnswer" rows="4" placeholder="Запиши, что удалось вспомнить"></textarea>
@@ -4617,6 +4655,7 @@
                     <th>Дата</th>
                     <th>Тип</th>
                     <th>Результат</th>
+                    <th>Мой ответ</th>
                   </tr>
                 </thead>
                 <tbody id="memoryAttemptsRows"></tbody>
@@ -5261,6 +5300,8 @@
     let activeMemoryMode = "today";
     let activeMemoryCardId = "";
     let memoryReviewRevealed = false;
+    let memoryDraftAnswer = "";
+    let memoryHintVisible = false;
     let memoryCurrentSpan = "";
     let editingMemberEmail = "";
     let selectedRecordIds = new Set();
@@ -8285,10 +8326,18 @@
           <span>Следующее: ${card.dueAt ? formatDate(card.dueAt) : "сегодня"}</span>
         </div>
         <h3>${escapeHtml(card.front)}</h3>
-        <p>${escapeHtml(card.association || "Сначала ответь по памяти. Подсказку можно добавить в карточке.")}</p>
+        <label class="memory-hint-toggle">
+          <input id="memoryHintToggle" type="checkbox" ${memoryHintVisible ? "checked" : ""}>
+          <span>Показать подсказку</span>
+        </label>
+        ${memoryHintVisible ? `<p class="memory-subtle-hint">${escapeHtml(minimalMemoryHint(card))}</p>` : ""}
         ${memoryReviewRevealed ? `
+          <div class="memory-user-answer">
+            <strong>Мой ответ</strong>
+            <div class="memory-user-answer-preview">${escapeHtml(memoryDraftAnswer || "Ответ не был введен.")}</div>
+          </div>
           <div class="memory-answer">
-            <strong>Ответ</strong>
+            <strong>Правильный ответ</strong>
             <p>${escapeHtml(card.back)}</p>
           </div>
           <div class="memory-rating-actions">
@@ -8298,17 +8347,48 @@
             <button class="btn" type="button" data-memory-rating="easy">Легко</button>
           </div>
         ` : `
+          <label class="memory-user-answer">
+            <span>Мой ответ</span>
+            <textarea id="memoryUserAnswer" rows="4" placeholder="Напиши ответ по памяти, потом открой правильный.">${escapeHtml(memoryDraftAnswer)}</textarea>
+          </label>
           <button class="btn primary" type="button" id="memoryRevealBtn">Показать ответ</button>
         `}
       `;
+      const answerInput = memoryReviewCard.querySelector("#memoryUserAnswer");
+      if (answerInput) answerInput.addEventListener("input", () => {
+        memoryDraftAnswer = answerInput.value;
+      });
+      const hintToggle = memoryReviewCard.querySelector("#memoryHintToggle");
+      if (hintToggle) hintToggle.addEventListener("change", () => {
+        memoryHintVisible = hintToggle.checked;
+        renderMemoryReviewCard();
+      });
       const revealBtn = memoryReviewCard.querySelector("#memoryRevealBtn");
       if (revealBtn) revealBtn.addEventListener("click", () => {
+        memoryDraftAnswer = memoryReviewCard.querySelector("#memoryUserAnswer")?.value.trim() || "";
         memoryReviewRevealed = true;
         renderMemoryReviewCard();
       });
       memoryReviewCard.querySelectorAll("[data-memory-rating]").forEach((button) => {
         button.addEventListener("click", () => rateMemoryCard(button.dataset.memoryRating));
       });
+    }
+
+    function minimalMemoryHint(card = {}) {
+      const deck = String(card.deck || "").toLowerCase();
+      if (deck.includes("истор")) return "Вспомни эпоху, порядок событий и общий контекст.";
+      if (deck.includes("географ")) return "Представь карту, масштаб и расположение.";
+      if (deck.includes("космос")) return "Представь устройство системы и расстояния.";
+      if (deck.includes("биолог") || deck.includes("медицин")) return "Подумай о функции внутри живого организма.";
+      if (deck.includes("физик") || deck.includes("хим")) return "Вспомни явление, единицу измерения или свойство вещества.";
+      if (deck.includes("искус") || deck.includes("литератур") || deck.includes("кино") || deck.includes("музык")) return "Вспомни автора, произведение или характерный образ.";
+      if (deck.includes("математ") || deck.includes("логик")) return "Проверь определение и связь между условиями.";
+      if (deck.includes("технолог")) return "Подумай о назначении и принципе работы.";
+      if (deck.includes("кух")) return "Вспомни процесс, ингредиент или страну происхождения.";
+      if (deck.includes("путеше")) return "Представь маршрут и документы поездки.";
+      if (deck.includes("миф")) return "Вспомни персонажа, символ или сюжет.";
+      if (deck.includes("эконом")) return "Подумай о деньгах, обмене, доходах или расходах.";
+      return "Вспомни общий смысл темы, не пытаясь угадывать по словам вопроса.";
     }
 
     function renderMemoryCards() {
@@ -8384,8 +8464,9 @@
           <td>${formatDateTime(attempt.createdAt)}</td>
           <td>${escapeHtml(memoryAttemptLabel(attempt.type))}</td>
           <td>${escapeHtml(attempt.scoreLabel || (attempt.success ? "успешно" : "нужно повторить"))}</td>
+          <td>${escapeHtml(attempt.userAnswer || "—")}</td>
         </tr>
-      `).join("") || `<tr><td colspan="3" class="empty">Попыток пока нет.</td></tr>`;
+      `).join("") || `<tr><td colspan="4" class="empty">Попыток пока нет.</td></tr>`;
     }
 
     function handleMemoryQuickCardSubmit(event) {
@@ -8438,6 +8519,8 @@
       saveMemoryData();
       activeMemoryCardId = card.id;
       memoryReviewRevealed = false;
+      memoryDraftAnswer = "";
+      memoryHintVisible = false;
       renderMemory();
     }
 
@@ -8473,6 +8556,8 @@
       saveMemoryData();
       activeMemoryCardId = newCards[0]?.id || memoryDueCards()[0]?.id || "";
       memoryReviewRevealed = false;
+      memoryDraftAnswer = "";
+      memoryHintVisible = false;
       setMemoryMode("today");
       if (options.silent !== true) {
         alert(`Готовый набор добавлен: ${newCards.length} карточек и ${newLoci.length} точек маршрута.`);
@@ -8556,6 +8641,51 @@
         c("Культура", "Карточка", "Как называется традиционная японская чайная церемония?", "Тяною или садо.", "Чай как ритуал."),
         c("Культура", "Карточка", "Как называется испанский танец с кастаньетами и выразительным ритмом?", "Фламенко.", "Ритм, гитара, танец."),
         c("Культура", "Карточка", "Как называется древнегреческий театр под открытым небом?", "Амфитеатр.", "Ступени вокруг сцены."),
+        c("Музыка", "Карточка", "Сколько струн обычно у классической гитары?", "Шесть.", "Гитара чаще всего шестиструнная."),
+        c("Музыка", "Карточка", "Как называется человек, который руководит оркестром?", "Дирижер.", "Палочка и оркестр."),
+        c("Музыка", "Карточка", "Какой инструмент называют королем инструментов?", "Орган.", "Большой инструмент в соборе."),
+        c("Музыка", "Карточка", "Что такое темп в музыке?", "Скорость исполнения музыкального произведения.", "Темп отвечает за быстро или медленно."),
+        c("Музыка", "Карточка", "Как называется короткая повторяющаяся музыкальная фраза?", "Рифф.", "Повторяющийся музыкальный крючок."),
+        c("Кино", "Карточка", "Кто является режиссером фильма 'Титаник' 1997 года?", "Джеймс Кэмерон.", "Кэмерон и большой океанский фильм."),
+        c("Кино", "Карточка", "Как называется премия Американской киноакадемии?", "Оскар.", "Золотая статуэтка."),
+        c("Кино", "Карточка", "Что такое монтаж в кино?", "Соединение кадров и сцен в цельное повествование.", "Кадры складываются в историю."),
+        c("Кино", "Карточка", "Как называется текст ролей и действий для фильма?", "Сценарий.", "План будущего фильма на бумаге."),
+        c("Кино", "Карточка", "Что такое саундтрек?", "Музыкальное сопровождение фильма или игры.", "Звук, который сопровождает историю."),
+        c("Архитектура", "Карточка", "Как называется верхняя часть колонны?", "Капитель.", "Шапка колонны."),
+        c("Архитектура", "Карточка", "Как называется здание с куполом и минаретами в исламской архитектуре?", "Мечеть.", "Купол, минарет, молитва."),
+        c("Архитектура", "Карточка", "Что такое фасад здания?", "Внешняя лицевая сторона здания.", "Лицо дома."),
+        c("Архитектура", "Карточка", "Как называется арочное перекрытие между опорами?", "Свод.", "Арка, растянутая в пространство."),
+        c("Архитектура", "Карточка", "Какой стиль известен стрельчатыми арками и витражами?", "Готика.", "Высокие соборы и цветные окна."),
+        c("Технологии", "Карточка", "Что означает аббревиатура GPS?", "Глобальная система позиционирования.", "Спутники помогают найти место."),
+        c("Технологии", "Карточка", "Что такое алгоритм?", "Последовательность шагов для решения задачи.", "Рецепт действий."),
+        c("Технологии", "Карточка", "Что такое облачное хранилище?", "Хранение данных на удаленных серверах с доступом через интернет.", "Файлы не только на одном компьютере."),
+        c("Технологии", "Карточка", "Что такое резервная копия?", "Дополнительная копия данных на случай потери основной.", "Запасной парашют для данных."),
+        c("Технологии", "Карточка", "Что такое QR-код?", "Двумерный код, который можно считать камерой.", "Квадратный код со ссылкой или данными."),
+        c("Медицина", "Карточка", "Какой орган отвечает за перекачивание крови?", "Сердце.", "Главный насос организма."),
+        c("Медицина", "Карточка", "Что измеряет термометр?", "Температуру.", "Прибор для жара и холода."),
+        c("Медицина", "Карточка", "Что такое пульс?", "Ритмичные колебания сосудов, связанные с работой сердца.", "Сердце отдает ритм в сосуды."),
+        c("Медицина", "Карточка", "Что такое иммунитет?", "Способность организма защищаться от инфекций и чужеродных веществ.", "Защитная система тела."),
+        c("Медицина", "Карточка", "Какой витамин часто связывают с солнечным светом?", "Витамин D.", "Солнце помогает его выработке."),
+        c("Кухня", "Карточка", "Как называется итальянское блюдо из риса с кремовой текстурой?", "Ризотто.", "Рис, бульон и медленное помешивание."),
+        c("Кухня", "Карточка", "Что такое пастеризация?", "Нагрев продукта для уничтожения части микроорганизмов и продления хранения.", "Молоко нагревают для безопасности."),
+        c("Кухня", "Карточка", "Как называется японское блюдо из риса и рыбы?", "Суши.", "Рис, рыба, нори."),
+        c("Кухня", "Карточка", "Что такое ферментация?", "Процесс преобразования веществ с участием микроорганизмов или ферментов.", "Кефир, хлеб, квашеная капуста."),
+        c("Кухня", "Карточка", "Какая специя дает карри яркий желтый цвет?", "Куркума.", "Желтый порошок."),
+        c("Путешествия", "Карточка", "Что такое транзитный рейс?", "Перелет с пересадкой по пути к конечному пункту.", "Остановка между стартом и финишем."),
+        c("Путешествия", "Карточка", "Что такое багажная бирка?", "Метка на багаже с данными рейса и маршрута.", "Паспорт чемодана."),
+        c("Путешествия", "Карточка", "Как называется документ с планом поездки и бронированиями?", "Маршрутный лист или itinerary.", "Карта поездки на бумаге."),
+        c("Путешествия", "Карточка", "Что такое часовой пояс?", "Регион с единым стандартным временем.", "Время меняется по поясам."),
+        c("Путешествия", "Карточка", "Что означает термин check-in?", "Регистрация на рейс, в гостиницу или на мероприятие.", "Подтверждение прибытия."),
+        c("Мифология", "Карточка", "Кто в греческой мифологии был богом моря?", "Посейдон.", "Трезубец и море."),
+        c("Мифология", "Карточка", "Как назывался дом богов в греческой мифологии?", "Олимп.", "Гора богов."),
+        c("Мифология", "Карточка", "Кто в скандинавской мифологии владел молотом Мьёльнир?", "Тор.", "Молот грома."),
+        c("Мифология", "Карточка", "Как звали героя, победившего Минотавра?", "Тесей.", "Лабиринт и нить Ариадны."),
+        c("Мифология", "Карточка", "Что такое феникс в мифах?", "Птица, возрождающаяся из пепла.", "Символ обновления."),
+        c("Экономика", "Карточка", "Что такое инфляция?", "Рост общего уровня цен и снижение покупательной способности денег.", "Те же деньги покупают меньше."),
+        c("Экономика", "Карточка", "Что такое спрос?", "Желание и возможность покупателей приобрести товар или услугу.", "Люди хотят и могут купить."),
+        c("Экономика", "Карточка", "Что такое предложение?", "Количество товара или услуги, которое продавцы готовы продать.", "Что рынок готов отдать."),
+        c("Экономика", "Карточка", "Что такое прибыль?", "Разница между доходами и расходами.", "Остаток после затрат."),
+        c("Экономика", "Карточка", "Что такое бюджет?", "План доходов и расходов на период.", "Финансовый план."),
       ];
     }
 
@@ -8579,6 +8709,8 @@
       }
       activeMemoryCardId = due[0]?.id || "";
       memoryReviewRevealed = false;
+      memoryDraftAnswer = "";
+      memoryHintVisible = false;
       renderMemory();
     }
 
@@ -8597,10 +8729,13 @@
         success: rating !== "again",
         score: rating === "easy" ? 1 : rating === "good" ? .85 : rating === "hard" ? .6 : 0,
         scoreLabel: memoryRatingLabel(rating),
+        userAnswer: memoryDraftAnswer,
         createdAt: now.toISOString(),
       });
       activeMemoryCardId = memoryDueCards().find((item) => item.id !== card.id)?.id || "";
       memoryReviewRevealed = false;
+      memoryDraftAnswer = "";
+      memoryHintVisible = false;
       saveMemoryData();
       renderMemory();
     }
@@ -8764,6 +8899,8 @@
       memoryData = loadMemoryData();
       activeMemoryCardId = "";
       memoryReviewRevealed = false;
+      memoryDraftAnswer = "";
+      memoryHintVisible = false;
       renderMemory();
     }
 
@@ -8835,6 +8972,7 @@
         success: Boolean(attempt.success),
         score: Number(attempt.score) || 0,
         scoreLabel: attempt.scoreLabel || "",
+        userAnswer: attempt.userAnswer || "",
         createdAt: attempt.createdAt || new Date().toISOString(),
       };
     }
@@ -8918,11 +9056,12 @@
         card.lapses,
         card.dueAt ? formatDateTime(card.dueAt) : "",
       ]));
-      rows.push([], ["Попытки"], ["Дата", "Тип", "Результат"]);
+      rows.push([], ["Попытки"], ["Дата", "Тип", "Результат", "Мой ответ"]);
       memoryData.attempts.forEach((attempt) => rows.push([
         formatDateTime(attempt.createdAt),
         memoryAttemptLabel(attempt.type),
         attempt.scoreLabel || (attempt.success ? "успешно" : "нужно повторить"),
+        attempt.userAnswer || "",
       ]));
       rows.push([], ["Метод локусов"], ["Место", "Образ", "Что запомнить"]);
       memoryData.loci.forEach((locus) => rows.push([locus.place, locus.image, locus.meaning]));
