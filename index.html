@@ -793,6 +793,14 @@
       align-items: start;
     }
 
+    .content-list-workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .content-list-workspace.is-form-open {
+      grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+    }
+
     .dashboard-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
@@ -1407,6 +1415,24 @@
       overflow-x: auto;
     }
 
+    .floating-x-scroll {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      height: 18px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin-top: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+      box-shadow: var(--shadow);
+    }
+
+    .floating-x-scroll > div {
+      height: 1px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -1415,6 +1441,38 @@
 
     .content-plan-table {
       table-layout: fixed;
+    }
+
+    .content-plan-table tbody tr {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .content-plan-table tbody tr.is-selected-row {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .content-row-actions {
+      position: sticky;
+      right: 10px;
+      float: right;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 7px;
+      margin-top: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      z-index: 2;
+    }
+
+    .content-row-actions .btn {
+      min-height: 34px;
+      padding: 6px 10px;
+      font-size: 13px;
     }
 
     th,
@@ -3470,8 +3528,8 @@
         </section>
 
         <section id="contentListView" class="hidden">
-          <section class="workspace">
-            <aside class="panel form-panel">
+          <section class="workspace content-list-workspace" id="contentListWorkspace">
+            <aside class="panel form-panel hidden" id="contentFormPanel">
               <h3 id="contentFormTitle">Новая публикация</h3>
               <form id="contentPlanForm">
                 <input id="contentItemId" type="hidden">
@@ -3551,6 +3609,7 @@
 
             <section class="panel table-panel">
               <div class="toolbar">
+                <button class="btn primary" id="contentNewItemBtn" type="button">Новая публикация</button>
                 <input class="search" id="contentSearch" type="search" placeholder="Поиск по теме, рубрике или комментарию">
                 <div class="filters">
                   <select id="contentStatusFilter" aria-label="Фильтр по статусу">
@@ -3575,7 +3634,7 @@
                   <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
                 </div>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" id="contentTableWrap">
                 <table class="content-plan-table" id="contentPlanTable">
                   <colgroup id="contentColGroup"></colgroup>
                   <thead>
@@ -3584,6 +3643,9 @@
                   <tbody id="contentRows"></tbody>
                 </table>
                 <div class="empty" id="contentEmptyState">Публикаций пока нет</div>
+              </div>
+              <div class="floating-x-scroll" id="contentFloatingScroll" aria-label="Горизонтальная прокрутка списка контент-плана">
+                <div id="contentFloatingScrollInner"></div>
               </div>
             </section>
           </section>
@@ -4887,10 +4949,15 @@
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
     const contentPlanForm = document.querySelector("#contentPlanForm");
+    const contentListWorkspace = document.querySelector("#contentListWorkspace");
+    const contentFormPanel = document.querySelector("#contentFormPanel");
     const contentIdeaForm = document.querySelector("#contentIdeaForm");
     const funnelForm = document.querySelector("#funnelForm");
     const rowsEl = document.querySelector("#rows");
     const contentPlanTable = document.querySelector("#contentPlanTable");
+    const contentTableWrap = document.querySelector("#contentTableWrap");
+    const contentFloatingScroll = document.querySelector("#contentFloatingScroll");
+    const contentFloatingScrollInner = document.querySelector("#contentFloatingScrollInner");
     const contentColGroup = document.querySelector("#contentColGroup");
     const contentHeaderRow = document.querySelector("#contentHeaderRow");
     const contentRowsEl = document.querySelector("#contentRows");
@@ -5310,6 +5377,7 @@
     let draggedContentId = "";
     let draggedContentDate = "";
     let draggedContentColumn = "";
+    let activeContentRowId = "";
     let contentColumnResize = null;
     let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
@@ -5561,6 +5629,11 @@
       const id = contentFields.id.value || createId();
       const existingContentItem = contentPlanItems.find((item) => item.id === id);
       const isPublishedStatus = contentFields.status.value === "Опубликовано";
+      if (isPublishedStatus && isFutureContentDate(contentFields.date.value)) {
+        alert("Нельзя поставить статус “Опубликовано” публикации с будущей датой. Сначала дождитесь даты публикации или измените дату на сегодняшнюю/прошедшую.");
+        contentFields.status.value = existingContentItem?.status && existingContentItem.status !== "Опубликовано" ? existingContentItem.status : "Запланировано";
+        return;
+      }
       const entry = {
         id,
         date: contentFields.date.value,
@@ -5699,6 +5772,12 @@
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
     contentLifecycleFilter.addEventListener("change", renderContentList);
+    contentFields.status.addEventListener("change", enforceContentStatusDateRule);
+    contentFields.date.addEventListener("change", enforceContentStatusDateRule);
+    document.querySelector("#contentNewItemBtn").addEventListener("click", () => {
+      resetContentForm({ close: false });
+      openContentFormPanel();
+    });
     document.querySelector("#contentExportExcelBtn").addEventListener("click", () => exportRowsToExcel("content-plan-spisok", contentListExportRows()));
     document.querySelector("#contentExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Контент-план: список", contentListExportRows()));
     contentHeaderRow.addEventListener("dragstart", handleContentColumnDragStart);
@@ -5707,6 +5786,9 @@
     contentHeaderRow.addEventListener("drop", handleContentColumnDrop);
     contentHeaderRow.addEventListener("dragend", handleContentColumnDragEnd);
     contentHeaderRow.addEventListener("mousedown", handleContentColumnResizeStart);
+    contentTableWrap?.addEventListener("scroll", () => syncContentFloatingScroll("table"));
+    contentFloatingScroll?.addEventListener("scroll", () => syncContentFloatingScroll("floating"));
+    window.addEventListener("resize", () => syncContentFloatingScroll());
     rowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedRecordIds));
     funnelRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedFunnelRecordIds));
     contentRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedContentPlanIds));
@@ -5842,11 +5924,19 @@
 
     contentRowsEl.addEventListener("click", (event) => {
       const button = event.target.closest("button");
-      if (!button) return;
+      if (!button) {
+        if (event.target.closest("input, a, select, textarea")) return;
+        const row = event.target.closest("[data-content-row-id]");
+        if (!row) return;
+        activeContentRowId = activeContentRowId === row.dataset.contentRowId ? "" : row.dataset.contentRowId;
+        renderContentList();
+        return;
+      }
 
       const id = button.dataset.id;
       const item = contentPlanItems.find((record) => record.id === id);
       if (!item) return;
+      activeContentRowId = id;
 
       if (button.dataset.action === "edit-content") {
         fillContentForm(item);
@@ -9363,10 +9453,33 @@
       renderContentTableHeader(columns);
       contentEmptyState.classList.toggle("hidden", visible.length > 0);
       contentRowsEl.innerHTML = visible.map((item) => `
-        <tr class="${contentRowClass(item)}">
+        <tr class="${contentRowClass(item)} ${activeContentRowId === item.id ? "is-selected-row" : ""}" data-content-row-id="${escapeHtml(item.id)}">
           ${columns.map((column) => contentTableCellHtml(item, column)).join("")}
         </tr>
       `).join("");
+      syncContentFloatingScroll();
+    }
+
+    function syncContentFloatingScroll(source = "") {
+      if (!contentTableWrap || !contentFloatingScroll || !contentFloatingScrollInner || !contentPlanTable) return;
+      const scrollWidth = Math.max(contentPlanTable.scrollWidth, contentTableWrap.scrollWidth);
+      contentFloatingScrollInner.style.width = `${scrollWidth}px`;
+      const hasOverflow = scrollWidth > contentTableWrap.clientWidth + 4;
+      contentFloatingScroll.classList.toggle("hidden", !hasOverflow);
+      if (!hasOverflow) return;
+      if (source === "floating") {
+        if (contentTableWrap.scrollLeft !== contentFloatingScroll.scrollLeft) {
+          contentTableWrap.scrollLeft = contentFloatingScroll.scrollLeft;
+        }
+        return;
+      }
+      if (source === "table") {
+        if (contentFloatingScroll.scrollLeft !== contentTableWrap.scrollLeft) {
+          contentFloatingScroll.scrollLeft = contentTableWrap.scrollLeft;
+        }
+        return;
+      }
+      contentFloatingScroll.scrollLeft = contentTableWrap.scrollLeft;
     }
 
     function contentRowClass(item) {
@@ -9390,7 +9503,6 @@
         { key: "publishedAt", label: "Факт публикации", width: 135, min: 110 },
         { key: "owner", label: "Ответственный", width: 150, min: 110 },
         { key: "prepDeadline", label: "Дедлайн", width: 120, min: 100 },
-        { key: "actions", label: "Действия", width: 130, min: 110, numeric: true },
       ];
     }
 
@@ -9439,7 +9551,14 @@
 
     function contentTableCellHtml(item, column) {
       const widthStyle = `style="width: ${column.width}px;"`;
-      if (column.key === "select") return `<td class="select-cell" ${widthStyle}><input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${item.id}" ${selectedContentPlanIds.has(item.id) ? "checked" : ""}></td>`;
+      if (column.key === "select") return `<td class="select-cell" ${widthStyle}>
+        <input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${item.id}" ${selectedContentPlanIds.has(item.id) ? "checked" : ""}>
+        ${activeContentRowId === item.id ? `<div class="content-row-actions">
+          <button class="btn primary" type="button" data-action="edit-content" data-id="${escapeHtml(item.id)}">Редактировать</button>
+          <button class="btn" type="button" data-action="publish-content" data-id="${escapeHtml(item.id)}">${isContentPublished(item) ? "Обновить публикацию" : "Опубликовано"}</button>
+          <button class="btn danger" type="button" data-action="delete-content" data-id="${escapeHtml(item.id)}">Удалить</button>
+        </div>` : ""}
+      </td>`;
       if (column.key === "date") return `<td ${widthStyle}>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>`;
       if (column.key === "platform") return `<td ${widthStyle}>${escapeHtml(item.platform)}</td>`;
       if (column.key === "type") return `<td ${widthStyle}>${escapeHtml(item.type)}</td>`;
@@ -9655,6 +9774,11 @@
 
     function isContentPublished(item) {
       return item.status === "Опубликовано";
+    }
+
+    function isFutureContentDate(dateValue) {
+      if (!dateValue) return false;
+      return dateValue > formatIsoDate(new Date());
     }
 
     function isContentOverdue(item) {
@@ -10085,6 +10209,7 @@
     }
 
     function fillContentForm(item) {
+      openContentFormPanel();
       contentFields.id.value = item.id;
       contentFields.date.value = item.date;
       contentFields.time.value = item.time;
@@ -10105,18 +10230,42 @@
       contentFields.topic.focus();
     }
 
-    function resetContentForm() {
+    function resetContentForm(options = {}) {
       contentPlanForm.reset();
       contentFields.id.value = "";
       contentFields.date.valueAsDate = new Date();
       contentFields.prepDeadline.valueAsDate = new Date();
       contentFormTitle.textContent = "Новая публикация";
       contentCancelEditBtn.classList.add("hidden");
+      if (options.close !== false) closeContentFormPanel();
+    }
+
+    function openContentFormPanel() {
+      contentFormPanel?.classList.remove("hidden");
+      contentListWorkspace?.classList.add("is-form-open");
+      window.setTimeout(() => syncContentFloatingScroll(), 0);
+    }
+
+    function closeContentFormPanel() {
+      contentFormPanel?.classList.add("hidden");
+      contentListWorkspace?.classList.remove("is-form-open");
+      activeContentRowId = "";
+      window.setTimeout(() => {
+        renderContentList();
+        syncContentFloatingScroll();
+      }, 0);
+    }
+
+    function enforceContentStatusDateRule() {
+      if (contentFields.status.value !== "Опубликовано" || !isFutureContentDate(contentFields.date.value)) return;
+      alert("Нельзя поставить статус “Опубликовано” публикации с будущей датой.");
+      contentFields.status.value = "Запланировано";
     }
 
     function scheduleIdea(idea) {
       document.querySelector('[data-content-mode="list"]').click();
-      resetContentForm();
+      resetContentForm({ close: false });
+      openContentFormPanel();
       contentFields.topic.value = idea.title;
       contentFields.rubric.value = idea.rubric;
       contentFields.platform.value = idea.platform || "Instagram";
@@ -10140,13 +10289,25 @@
 
     function publishContentItem(item, options = {}) {
       const today = formatIsoDate(new Date());
+      if (isFutureContentDate(item.date)) {
+        alert("Эта публикация запланирована на будущую дату. Ее нельзя отметить как опубликованную раньше дня публикации.");
+        return;
+      }
       let publishedDate = options.publishedDate || item.publishedAt || item.date || today;
+      if (isFutureContentDate(publishedDate)) {
+        alert("Дата фактической публикации не может быть в будущем.");
+        return;
+      }
       if (!options.silent) {
         const enteredDate = prompt("Дата фактической публикации", publishedDate);
         if (enteredDate === null) return;
         publishedDate = enteredDate.trim() || today;
         if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedDate)) {
           alert("Введите дату в формате ГГГГ-ММ-ДД, например 2026-06-03.");
+          return;
+        }
+        if (isFutureContentDate(publishedDate)) {
+          alert("Дата фактической публикации не может быть в будущем.");
           return;
         }
         if (!item.link) {
@@ -12304,6 +12465,7 @@
     }
 
     function normalizeContentPlanItem(item) {
+      const futurePublished = item.status === "Опубликовано" && isFutureContentDate(item.date || "");
       return {
         id: item.id || createId(),
         date: item.date || "",
@@ -12314,13 +12476,13 @@
         topic: item.topic || "",
         text: item.text || "",
         hashtags: item.hashtags || "",
-        status: item.status || "Идея",
+        status: futurePublished ? "Запланировано" : item.status || "Идея",
         owner: item.owner || "",
         prepDeadline: item.prepDeadline || "",
         link: item.link || "",
         preview: item.preview || "",
         comment: item.comment || "",
-        publishedAt: item.publishedAt || (item.status === "Опубликовано" ? item.date || "" : ""),
+        publishedAt: futurePublished ? "" : item.publishedAt || (item.status === "Опубликовано" ? item.date || "" : ""),
         linkedAdId: item.linkedAdId || "",
         archivedAt: item.archivedAt || "",
         updatedAt: item.updatedAt || new Date().toISOString(),
