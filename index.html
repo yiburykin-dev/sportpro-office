@@ -3070,7 +3070,7 @@
           <button class="active" type="button" data-ads-mode="dashboard">Дашборд</button>
           <button type="button" data-ads-mode="input">Ввод данных</button>
           <button type="button" data-ads-mode="table">Публикации</button>
-          <button type="button" data-ads-mode="funnel">Итоги дня</button>
+          <button type="button" data-ads-mode="funnel">Лиды. Итоги дня</button>
         </div>
 
         <section id="adsDashboardView">
@@ -3264,6 +3264,9 @@
               <label>Сообщения сейчас
                 <input id="messages" type="number" min="0" step="1" value="0" required>
               </label>
+              <label>Новые подписчики
+                <input id="followers" type="number" min="0" step="1" value="0" required>
+              </label>
               <label>Вывод
                 <textarea id="conclusion" placeholder="Что сработало, что повторить, что изменить"></textarea>
               </label>
@@ -3289,22 +3292,6 @@
                   </label>
                   <label>Сообщения
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
-                  </label>
-                </div>
-                <div class="two">
-                  <label>Лиды
-                    <input id="measurementLeads" type="number" min="0" step="1" value="0">
-                  </label>
-                  <label>КП
-                    <input id="measurementOffers" type="number" min="0" step="1" value="0">
-                  </label>
-                </div>
-                <div class="two">
-                  <label>Сделки
-                    <input id="measurementDeals" type="number" min="0" step="1" value="0">
-                  </label>
-                  <label>Выручка
-                    <input id="measurementRevenue" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
                 <label>Комментарий к замеру
@@ -3346,6 +3333,7 @@
                     <th class="numeric">Просмотры</th>
                     <th class="numeric">Сохранения</th>
                     <th class="numeric">Сообщения</th>
+                    <th class="numeric">Подписчики</th>
                     <th class="numeric">Отклик</th>
                     <th>Замеры</th>
                     <th>Вывод</th>
@@ -3363,10 +3351,11 @@
       <section id="adsFunnelView" class="hidden">
         <div class="topbar">
           <div class="title">
-            <h2>Итоги дня</h2>
+            <h2>Лиды. Итоги дня</h2>
             <p>Бизнес-показатели рекламы по дням или отчетным периодам.</p>
           </div>
           <div class="actions">
+            <button class="btn primary" id="funnelNewRecordBtn" type="button">Новый итог дня</button>
             <button class="btn" id="funnelExportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
             <button class="btn" id="funnelExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn danger hidden" id="funnelClearBtn" type="button" title="Очистить все записи">Очистить</button>
@@ -3381,8 +3370,8 @@
           <div class="metric"><span>ROMI</span><strong id="funnelTotalRomi">0%</strong></div>
         </section>
 
-        <section class="workspace">
-          <aside class="panel form-panel">
+        <section class="workspace content-list-workspace" id="adsFunnelWorkspace">
+          <aside class="panel form-panel hidden" id="funnelFormPanel">
             <h3 id="funnelFormTitle">Новый итог дня</h3>
             <form id="funnelForm">
               <input id="funnelId" type="hidden">
@@ -4381,7 +4370,7 @@
                 <div class="guide-step">
                   <div>
                     <strong>Подвести итог</strong>
-                    <span>В конце дня заполни Итоги дня: подписчики, охват, сообщения, лиды, КП, сделки, выручка.</span>
+                    <span>В конце дня заполни Лиды. Итоги дня: подписчики, охват, сообщения, лиды, КП, сделки, выручка.</span>
                   </div>
                 </div>
                 <div class="guide-step">
@@ -4401,7 +4390,7 @@
                 <ul>
                   <li>Проверь, какие публикации вышли сегодня.</li>
                   <li>Добавь первый замер, если уже есть просмотры или реакции.</li>
-                  <li>Заполни Итоги дня: новые подписчики, охват, сообщения, лиды, КП, сделки, выручка.</li>
+                  <li>Заполни Лиды. Итоги дня: новые подписчики, охват, сообщения, лиды, КП, сделки, выручка.</li>
                   <li>Если были обращения клиентов, занеси их в Продажи → Клиенты.</li>
                   <li>Коротко запиши вывод: что сработало, что нужно проверить завтра.</li>
                 </ul>
@@ -4435,7 +4424,7 @@
                 <ul>
                   <li>Публикация: дата, тип, тема и первичный вывод.</li>
                   <li>Замер: просмотры, сохранения, сообщения, лиды, сделки по конкретной публикации.</li>
-                  <li>Итоги дня: общие дневные показатели аккаунта и продажной воронки.</li>
+                  <li>Лиды. Итоги дня: общие дневные показатели аккаунта и продажной воронки.</li>
                   <li>Дашборд показывает, какие материалы реально дают отклик и продажи.</li>
                 </ul>
               </section>
@@ -4471,7 +4460,7 @@
                   <ol>
                     <li>Проверить, что опубликовано.</li>
                     <li>Добавить свежие замеры по опубликованным материалам.</li>
-                    <li>Заполнить Итоги дня.</li>
+                    <li>Заполнить Лиды. Итоги дня.</li>
                     <li>Добавить новых клиентов и следующий шаг в Продажи.</li>
                   </ol>
                 </div>
@@ -4956,6 +4945,8 @@
     const contentFormPanel = document.querySelector("#contentFormPanel");
     const contentIdeaForm = document.querySelector("#contentIdeaForm");
     const funnelForm = document.querySelector("#funnelForm");
+    const adsFunnelWorkspace = document.querySelector("#adsFunnelWorkspace");
+    const funnelFormPanel = document.querySelector("#funnelFormPanel");
     const rowsEl = document.querySelector("#rows");
     const contentPlanTable = document.querySelector("#contentPlanTable");
     const contentTableWrap = document.querySelector("#contentTableWrap");
@@ -5194,6 +5185,7 @@
       views: document.querySelector("#views"),
       saves: document.querySelector("#saves"),
       messages: document.querySelector("#messages"),
+      followers: document.querySelector("#followers"),
       conclusion: document.querySelector("#conclusion"),
     };
 
@@ -5230,10 +5222,6 @@
       views: document.querySelector("#measurementViews"),
       saves: document.querySelector("#measurementSaves"),
       messages: document.querySelector("#measurementMessages"),
-      leads: document.querySelector("#measurementLeads"),
-      offers: document.querySelector("#measurementOffers"),
-      deals: document.querySelector("#measurementDeals"),
-      revenue: document.querySelector("#measurementRevenue"),
       note: document.querySelector("#measurementNote"),
     };
 
@@ -5297,7 +5285,7 @@
     let activeWholesaleMetric = "";
 
     const accessModules = [
-      { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, итоги дня" },
+      { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, лиды и итоги дня" },
       { key: "contentPlan", label: "Контент-план", details: "Календарь, список, идеи, архив" },
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
       { key: "wholesale", label: "Поставки и оплаты", details: "Клиенты, предприятия, накладные, оплаты" },
@@ -5533,6 +5521,7 @@
         views: Number(fields.views.value) || 0,
         saves: Number(fields.saves.value) || 0,
         messages: Number(fields.messages.value) || 0,
+        followers: Number(fields.followers.value) || 0,
         conclusion: fields.conclusion.value.trim(),
         measurements: [],
         updatedAt: new Date().toISOString(),
@@ -5618,10 +5607,6 @@
         views: Number(measurementFields.views.value) || 0,
         saves: Number(measurementFields.saves.value) || 0,
         messages: Number(measurementFields.messages.value) || 0,
-        leads: Number(measurementFields.leads.value) || 0,
-        offers: Number(measurementFields.offers.value) || 0,
-        deals: Number(measurementFields.deals.value) || 0,
-        revenue: Number(measurementFields.revenue.value) || 0,
         note: measurementFields.note.value.trim(),
         updatedAt: new Date().toISOString(),
       });
@@ -5767,13 +5752,21 @@
     });
     document.querySelector("#quickFunnelBtn").addEventListener("click", () => {
       setAdsMode("funnel");
-      resetFunnelForm();
+      resetFunnelForm({ close: false });
+      openFunnelFormPanel();
+      funnelCancelEditBtn.classList.remove("hidden");
+      funnelFields.followers.focus();
+    });
+    document.querySelector("#funnelNewRecordBtn").addEventListener("click", () => {
+      resetFunnelForm({ close: false });
+      openFunnelFormPanel();
+      funnelCancelEditBtn.classList.remove("hidden");
       funnelFields.followers.focus();
     });
     document.querySelector("#exportBtn").addEventListener("click", () => exportRowsToExcel("reklama-publikacii", adsExportRows()));
     document.querySelector("#exportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: публикации", adsExportRows()));
     document.querySelector("#funnelExportBtn").addEventListener("click", () => exportRowsToExcel("reklama-itogi-dnya", funnelExportRows()));
-    document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: итоги дня", funnelExportRows()));
+    document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: лиды. итоги дня", funnelExportRows()));
     contentImportDate.addEventListener("change", renderContentImportControls);
     contentImportBtn.addEventListener("click", importSelectedContentToAds);
     contentCloudPullBtn.addEventListener("click", () => pullFromCloud());
@@ -5927,6 +5920,7 @@
         fields.views.value = record.views;
         fields.saves.value = record.saves;
         fields.messages.value = record.messages;
+        fields.followers.value = getRecordFollowers(record);
         fields.conclusion.value = record.conclusion;
         formTitle.textContent = "Редактирование";
         cancelEditBtn.classList.remove("hidden");
@@ -6145,6 +6139,7 @@
       if (!record) return;
 
       if (button.dataset.action === "edit") {
+        openFunnelFormPanel();
         funnelFields.id.value = record.id;
         funnelFields.date.value = record.date;
         funnelFields.followers.value = record.followers;
@@ -7513,7 +7508,7 @@
     }
 
     function getContentItemsAvailableForAds() {
-      return getActiveContentPlanItems().filter((item) => item.date && !item.linkedAdId);
+      return getActiveContentPlanItems().filter((item) => item.date && !findLinkedAdRecordForContent(item, item.publishedAt || item.date));
     }
 
     function contentImportLabel(item) {
@@ -7632,8 +7627,19 @@
       return normalizeClientSourcesData(readStorage(clientSourcesDataKey) || {});
     }
 
+    function isPublishedAdRecord(record) {
+      if (!record?.date) return false;
+      return record.date <= formatIsoDate(new Date());
+    }
+
+    function getRecordFollowers(record) {
+      return Number(record.followers) || 0;
+    }
+
     function getFollowersGrowth() {
-      return sum(funnelRecords, "followers");
+      return records
+        .filter(isPublishedAdRecord)
+        .reduce((total, record) => total + getRecordFollowers(record), 0);
     }
 
     function getAccountFollowersTotal() {
@@ -7700,6 +7706,7 @@
             <td class="numeric">${formatNumber(record.views)}</td>
             <td class="numeric">${formatNumber(record.saves)}</td>
             <td class="numeric">${formatNumber(record.messages)}</td>
+            <td class="numeric">${formatNumber(getRecordFollowers(record))}</td>
             <td class="numeric">${rate(record)}%</td>
             <td>${escapeHtml(measureInfo)}</td>
             <td class="result">${escapeHtml(record.conclusion || "-")}</td>
@@ -10090,8 +10097,8 @@
         },
         followers: {
           title: "подписчики",
-          source: "funnel",
-          value: (items) => getLatestRecord(items)?.followers || 0,
+          source: "content",
+          value: (items) => items.reduce((total, item) => total + getRecordFollowers(item), 0),
           format: (value) => formatNumber(value),
         },
         reach: {
@@ -10230,6 +10237,7 @@
       fields.views.value = 0;
       fields.saves.value = 0;
       fields.messages.value = 0;
+      fields.followers.value = 0;
       formTitle.textContent = "Новая публикация";
       cancelEditBtn.classList.add("hidden");
       if (options.close !== false) closeAdsPublicationFormPanel();
@@ -10357,8 +10365,9 @@
       item.publishedAt = publishedDate;
       item.updatedAt = new Date().toISOString();
 
-      if (!item.linkedAdId) {
-        const adRecord = normalizeRecord({
+      let adRecord = findLinkedAdRecordForContent(item, publishedDate);
+      if (!adRecord) {
+        adRecord = normalizeRecord({
           id: createId(),
           date: publishedDate,
           type: contentTypeToAdType(item.type),
@@ -10366,7 +10375,9 @@
           views: 0,
           saves: 0,
           messages: 0,
+          followers: 0,
           conclusion: `Из контент-плана: ${item.rubric}`,
+          linkedContentId: item.id,
           measurements: [],
           updatedAt: new Date().toISOString(),
         });
@@ -10374,14 +10385,13 @@
         records.push(adRecord);
         saveRecords();
       } else {
-        const adRecord = records.find((record) => record.id === item.linkedAdId);
-        if (adRecord) {
-          adRecord.date = publishedDate;
-          adRecord.type = contentTypeToAdType(item.type);
-          adRecord.topic = item.topic;
-          adRecord.updatedAt = new Date().toISOString();
-          saveRecords();
-        }
+        item.linkedAdId = adRecord.id;
+        adRecord.linkedContentId = item.id;
+        adRecord.date = publishedDate;
+        adRecord.type = contentTypeToAdType(item.type);
+        adRecord.topic = item.topic;
+        adRecord.updatedAt = new Date().toISOString();
+        saveRecords();
       }
 
       saveContentPlanItems();
@@ -10412,11 +10422,28 @@
       return map[type] || "Другое";
     }
 
+    function findLinkedAdRecordForContent(item, publishedDate = "") {
+      const date = publishedDate || item.publishedAt || item.date || "";
+      const type = contentTypeToAdType(item.type);
+      return records.find((record) => record.linkedContentId === item.id)
+        || (item.linkedAdId ? records.find((record) => record.id === item.linkedAdId) : null)
+        || records.find((record) =>
+          !record.linkedContentId
+          && record.date === date
+          && record.type === type
+          && normalizeMemoryText(record.topic) === normalizeMemoryText(item.topic)
+        )
+        || null;
+    }
+
     function ensureContentPlanFromAdRecord(record) {
       const normalizedRecord = normalizeRecord(record);
       const now = new Date().toISOString();
       const publishedDate = normalizedRecord.date || formatIsoDate(new Date());
-      const existingIndex = contentPlanItems.findIndex((item) => item.linkedAdId === normalizedRecord.id);
+      const existingIndex = contentPlanItems.findIndex((item) =>
+        item.linkedAdId === normalizedRecord.id
+        || item.id === normalizedRecord.linkedContentId
+      );
       const existing = existingIndex >= 0 ? contentPlanItems[existingIndex] : null;
       const linkedItem = normalizeContentPlanItem({
         ...(existing || {}),
@@ -10445,17 +10472,26 @@
       } else {
         contentPlanItems.push(linkedItem);
       }
+      const recordIndex = records.findIndex((item) => item.id === normalizedRecord.id);
+      if (recordIndex >= 0 && records[recordIndex].linkedContentId !== linkedItem.id) {
+        records[recordIndex].linkedContentId = linkedItem.id;
+        records[recordIndex].updatedAt = now;
+        saveRecords();
+      }
       saveContentPlanItems();
     }
 
     function syncPublishedContentPlanToAds() {
       let recordsChanged = false;
       let contentChanged = false;
+      const dedupeResult = dedupeLinkedAdRecords();
+      if (dedupeResult.removedIds.length) recordsChanged = true;
+      if (dedupeResult.contentChanged) contentChanged = true;
       contentPlanItems.forEach((item) => {
         if (!isContentPublished(item) || item.archivedAt || isFutureContentDate(item.date)) return;
         const publishedDate = item.publishedAt || item.date || formatIsoDate(new Date());
         if (isFutureContentDate(publishedDate)) return;
-        let adRecord = item.linkedAdId ? records.find((record) => record.id === item.linkedAdId) : null;
+        let adRecord = findLinkedAdRecordForContent(item, publishedDate);
         if (!adRecord) {
           adRecord = normalizeRecord({
             id: createId(),
@@ -10465,7 +10501,9 @@
             views: 0,
             saves: 0,
             messages: 0,
+            followers: 0,
             conclusion: `Из контент-плана: ${item.rubric}`,
+            linkedContentId: item.id,
             measurements: [],
             updatedAt: new Date().toISOString(),
           });
@@ -10478,7 +10516,12 @@
           return;
         }
         const nextType = contentTypeToAdType(item.type);
-        if (adRecord.date !== publishedDate || adRecord.type !== nextType || adRecord.topic !== item.topic) {
+        if (item.linkedAdId !== adRecord.id) {
+          item.linkedAdId = adRecord.id;
+          contentChanged = true;
+        }
+        if (adRecord.linkedContentId !== item.id || adRecord.date !== publishedDate || adRecord.type !== nextType || adRecord.topic !== item.topic) {
+          adRecord.linkedContentId = item.id;
           adRecord.date = publishedDate;
           adRecord.type = nextType;
           adRecord.topic = item.topic;
@@ -10488,6 +10531,46 @@
       });
       if (recordsChanged) saveRecords();
       if (contentChanged) saveContentPlanItems();
+    }
+
+    function dedupeLinkedAdRecords() {
+      const removableIds = new Set();
+      let contentChanged = false;
+      const groups = new Map();
+      records.forEach((record) => {
+        const looksLinked = record.linkedContentId || String(record.conclusion || "").includes("Из контент-плана:");
+        if (!looksLinked || Number(record.views) || Number(record.saves) || Number(record.messages) || Number(record.followers)) return;
+        const key = `${record.date}|${record.type}|${normalizeMemoryText(record.topic)}|${normalizeMemoryText(record.conclusion)}`;
+        const list = groups.get(key) || [];
+        list.push(record);
+        groups.set(key, list);
+      });
+      groups.forEach((group) => {
+        if (group.length < 2) return;
+        const keep = group.find((record) => record.linkedContentId) || group[0];
+        group.forEach((record) => {
+          if (record.id !== keep.id) removableIds.add(record.id);
+        });
+      });
+      if (!removableIds.size) return { removedIds: [], contentChanged };
+      const deletedAt = new Date().toISOString();
+      removableIds.forEach((id) => {
+        deletedRecords[id] = deletedAt;
+      });
+      saveDeletedRecords(deletedRecordsKey, deletedRecords);
+      records = records.filter((record) => !removableIds.has(record.id));
+      contentPlanItems.forEach((item) => {
+        if (removableIds.has(item.linkedAdId)) {
+          const replacement = findLinkedAdRecordForContent({ ...item, linkedAdId: "" }, item.publishedAt || item.date);
+          const nextLinkedAdId = replacement?.id || "";
+          if (item.linkedAdId !== nextLinkedAdId) {
+            item.linkedAdId = nextLinkedAdId;
+            item.updatedAt = new Date().toISOString();
+            contentChanged = true;
+          }
+        }
+      });
+      return { removedIds: [...removableIds], contentChanged };
     }
 
     function openMeasurementPanel(recordId) {
@@ -10504,10 +10587,6 @@
       measurementFields.views.value = Number(latest.views) || 0;
       measurementFields.saves.value = Number(latest.saves) || 0;
       measurementFields.messages.value = Number(latest.messages) || 0;
-      measurementFields.leads.value = Number(latest.leads) || 0;
-      measurementFields.offers.value = Number(latest.offers) || 0;
-      measurementFields.deals.value = Number(latest.deals) || 0;
-      measurementFields.revenue.value = Number(latest.revenue) || 0;
       measurementFields.note.value = "";
       renderMeasurementHistory(record);
       measurementFields.views.focus();
@@ -10541,14 +10620,13 @@
           <strong>${formatDate(measurement.date)}</strong>
           <span>
             ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.saves)} сохранений,
-            ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.leads)} лидов,
-            ${formatNumber(measurement.deals)} сделок${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
+            ${formatNumber(measurement.messages)} сообщений${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
           </span>
         </div>
       `).join("");
     }
 
-    function resetFunnelForm() {
+    function resetFunnelForm(options = {}) {
       funnelForm.reset();
       funnelFields.id.value = "";
       funnelFields.date.valueAsDate = new Date();
@@ -10563,6 +10641,17 @@
       funnelFields.spend.value = 0;
       funnelFormTitle.textContent = "Новый итог дня";
       funnelCancelEditBtn.classList.add("hidden");
+      if (options.close !== false) closeFunnelFormPanel();
+    }
+
+    function openFunnelFormPanel() {
+      funnelFormPanel?.classList.remove("hidden");
+      adsFunnelWorkspace?.classList.add("is-form-open");
+    }
+
+    function closeFunnelFormPanel() {
+      funnelFormPanel?.classList.add("hidden");
+      adsFunnelWorkspace?.classList.remove("is-form-open");
     }
 
     function setWholesaleMode(mode) {
@@ -12469,7 +12558,7 @@
     function saveFunnelRecords() {
       funnelRecords = uniqueRecordsById(funnelRecords, normalizeFunnelRecord);
       localStorage.setItem(funnelStorageKey, JSON.stringify(funnelRecords));
-      queueCloudSync("Итоги дня");
+      queueCloudSync("Лиды. Итоги дня");
     }
 
     function saveContentPlanItems() {
@@ -12513,8 +12602,10 @@
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
+        followers: Number(record.followers) || 0,
         measurements,
         conclusion: record.conclusion || "",
+        linkedContentId: record.linkedContentId || "",
         updatedAt: record.updatedAt || new Date().toISOString(),
       };
 
@@ -12534,6 +12625,7 @@
         views: Number(measurement.views) || 0,
         saves: Number(measurement.saves) || 0,
         messages: Number(measurement.messages) || 0,
+        followers: Number(measurement.followers) || 0,
         leads: Number(measurement.leads) || 0,
         offers: Number(measurement.offers) || 0,
         deals: Number(measurement.deals) || 0,
@@ -12716,7 +12808,7 @@
     function adsExportRows() {
       const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
-        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Отклик %", "Замеры", "Вывод"],
+        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Подписчики", "Отклик %", "Замеры", "Вывод"],
         ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
@@ -12726,6 +12818,7 @@
             record.views,
             record.saves,
             record.messages,
+            getRecordFollowers(record),
             rate(record),
             latest ? `${record.measurements.length} / ${formatDate(latest.date)}` : "Нет",
             record.conclusion,
