@@ -1246,6 +1246,17 @@
       border-top: 1px solid var(--line);
     }
 
+    .form-panel.measurement-only #formTitle,
+    .form-panel.measurement-only #entryForm {
+      display: none;
+    }
+
+    .form-panel.measurement-only .measurement-panel {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
     .measurement-panel.hidden {
       display: none;
     }
@@ -3068,9 +3079,9 @@
 
         <div class="module-tabs" aria-label="Вид раздела рекламы">
           <button class="active" type="button" data-ads-mode="dashboard">Дашборд</button>
-          <button type="button" data-ads-mode="input">Ввод данных</button>
           <button type="button" data-ads-mode="table">Публикации</button>
           <button type="button" data-ads-mode="funnel">Лиды. Итоги дня</button>
+          <button type="button" data-ads-mode="input">Ввод данных</button>
         </div>
 
         <section id="adsDashboardView">
@@ -3292,6 +3303,22 @@
                   </label>
                   <label>Сообщения
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Лайки
+                    <input id="measurementLikes" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Переслано
+                    <input id="measurementForwards" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Репосты
+                    <input id="measurementReposts" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Посещения профиля
+                    <input id="measurementProfileVisits" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
                 <label>Комментарий к замеру
@@ -4423,7 +4450,7 @@
                 <p>Используется после публикации и для учета результата. Здесь фиксируется факт выхода материала и его показатели.</p>
                 <ul>
                   <li>Публикация: дата, тип, тема и первичный вывод.</li>
-                  <li>Замер: просмотры, сохранения, сообщения, лиды, сделки по конкретной публикации.</li>
+                  <li>Замер: просмотры, сохранения, сообщения, лайки, пересылки, репосты и посещения профиля по конкретной публикации.</li>
                   <li>Лиды. Итоги дня: общие дневные показатели аккаунта и продажной воронки.</li>
                   <li>Дашборд показывает, какие материалы реально дают отклик и продажи.</li>
                 </ul>
@@ -5222,6 +5249,10 @@
       views: document.querySelector("#measurementViews"),
       saves: document.querySelector("#measurementSaves"),
       messages: document.querySelector("#measurementMessages"),
+      likes: document.querySelector("#measurementLikes"),
+      forwards: document.querySelector("#measurementForwards"),
+      reposts: document.querySelector("#measurementReposts"),
+      profileVisits: document.querySelector("#measurementProfileVisits"),
       note: document.querySelector("#measurementNote"),
     };
 
@@ -5607,6 +5638,10 @@
         views: Number(measurementFields.views.value) || 0,
         saves: Number(measurementFields.saves.value) || 0,
         messages: Number(measurementFields.messages.value) || 0,
+        likes: Number(measurementFields.likes.value) || 0,
+        forwards: Number(measurementFields.forwards.value) || 0,
+        reposts: Number(measurementFields.reposts.value) || 0,
+        profileVisits: Number(measurementFields.profileVisits.value) || 0,
         note: measurementFields.note.value.trim(),
         updatedAt: new Date().toISOString(),
       });
@@ -6171,6 +6206,7 @@
       const nextMode = adsModeViews[mode] ? mode : "dashboard";
       document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item.dataset.adsMode === nextMode));
       Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+      if (nextMode === "funnel") closeFunnelFormPanel();
     }
 
     function render() {
@@ -10243,13 +10279,20 @@
       if (options.close !== false) closeAdsPublicationFormPanel();
     }
 
-    function openAdsPublicationFormPanel() {
+    function openAdsPublicationFormPanel(options = {}) {
       adsPublicationFormPanel?.classList.remove("hidden");
       adsPublicationsWorkspace?.classList.add("is-form-open");
+      if (!options.measurementOnly) {
+        adsPublicationFormPanel?.classList.remove("measurement-only");
+        measurementPanel?.classList.add("hidden");
+        if (measurementFields?.recordId) measurementFields.recordId.value = "";
+        if (measurementHistory) measurementHistory.innerHTML = "";
+      }
     }
 
     function closeAdsPublicationFormPanel() {
       adsPublicationFormPanel?.classList.add("hidden");
+      adsPublicationFormPanel?.classList.remove("measurement-only");
       adsPublicationsWorkspace?.classList.remove("is-form-open");
     }
 
@@ -10578,7 +10621,8 @@
       if (!record) return;
 
       setAdsMode("table");
-      openAdsPublicationFormPanel();
+      openAdsPublicationFormPanel({ measurementOnly: true });
+      adsPublicationFormPanel?.classList.add("measurement-only");
       const latest = getLatestMeasurement(record) || record;
       measurementPanel.classList.remove("hidden");
       measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
@@ -10587,6 +10631,10 @@
       measurementFields.views.value = Number(latest.views) || 0;
       measurementFields.saves.value = Number(latest.saves) || 0;
       measurementFields.messages.value = Number(latest.messages) || 0;
+      measurementFields.likes.value = Number(latest.likes) || 0;
+      measurementFields.forwards.value = Number(latest.forwards) || 0;
+      measurementFields.reposts.value = Number(latest.reposts) || 0;
+      measurementFields.profileVisits.value = Number(latest.profileVisits) || 0;
       measurementFields.note.value = "";
       renderMeasurementHistory(record);
       measurementFields.views.focus();
@@ -10597,6 +10645,9 @@
       measurementFields.recordId.value = "";
       measurementPanel.classList.add("hidden");
       measurementHistory.innerHTML = "";
+      if (adsPublicationFormPanel?.classList.contains("measurement-only")) {
+        closeAdsPublicationFormPanel();
+      }
     }
 
     function renderMeasurementHistory(record) {
@@ -10620,7 +10671,9 @@
           <strong>${formatDate(measurement.date)}</strong>
           <span>
             ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.saves)} сохранений,
-            ${formatNumber(measurement.messages)} сообщений${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
+            ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.likes)} лайков,
+            ${formatNumber(measurement.forwards)} переслано, ${formatNumber(measurement.reposts)} репостов,
+            ${formatNumber(measurement.profileVisits)} посещений профиля${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
           </span>
         </div>
       `).join("");
@@ -12602,6 +12655,10 @@
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
+        likes: Number(record.likes) || 0,
+        forwards: Number(record.forwards) || 0,
+        reposts: Number(record.reposts) || 0,
+        profileVisits: Number(record.profileVisits) || 0,
         followers: Number(record.followers) || 0,
         measurements,
         conclusion: record.conclusion || "",
@@ -12625,6 +12682,10 @@
         views: Number(measurement.views) || 0,
         saves: Number(measurement.saves) || 0,
         messages: Number(measurement.messages) || 0,
+        likes: Number(measurement.likes) || 0,
+        forwards: Number(measurement.forwards) || 0,
+        reposts: Number(measurement.reposts) || 0,
+        profileVisits: Number(measurement.profileVisits) || 0,
         followers: Number(measurement.followers) || 0,
         leads: Number(measurement.leads) || 0,
         offers: Number(measurement.offers) || 0,
@@ -12636,13 +12697,18 @@
     }
 
     function createMeasurementFromEntry(record) {
-      const hasMetrics = Number(record.views) || Number(record.saves) || Number(record.messages);
+      const hasMetrics = Number(record.views) || Number(record.saves) || Number(record.messages)
+        || Number(record.likes) || Number(record.forwards) || Number(record.reposts) || Number(record.profileVisits);
       if (!hasMetrics) return null;
       return normalizeMeasurement({
         date: record.date,
         views: record.views,
         saves: record.saves,
         messages: record.messages,
+        likes: record.likes,
+        forwards: record.forwards,
+        reposts: record.reposts,
+        profileVisits: record.profileVisits,
         note: "Первый замер",
         updatedAt: record.updatedAt,
       });
@@ -12661,6 +12727,10 @@
       record.views = latest.views;
       record.saves = latest.saves;
       record.messages = latest.messages;
+      record.likes = latest.likes;
+      record.forwards = latest.forwards;
+      record.reposts = latest.reposts;
+      record.profileVisits = latest.profileVisits;
       record.measurements = (Array.isArray(record.measurements) ? record.measurements : []).map(normalizeMeasurement);
       return record;
     }
@@ -12808,7 +12878,7 @@
     function adsExportRows() {
       const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
-        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Подписчики", "Отклик %", "Замеры", "Вывод"],
+        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
         ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
@@ -12818,6 +12888,10 @@
             record.views,
             record.saves,
             record.messages,
+            record.likes,
+            record.forwards,
+            record.reposts,
+            record.profileVisits,
             getRecordFollowers(record),
             rate(record),
             latest ? `${record.measurements.length} / ${formatDate(latest.date)}` : "Нет",
