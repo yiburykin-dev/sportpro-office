@@ -3230,8 +3230,8 @@
           <div class="cloud-help" id="contentImportStatus">Доступны публикации из контент-плана, которые еще не перенесены в рекламный учет.</div>
         </section>
 
-        <section class="workspace">
-          <aside class="panel form-panel">
+        <section class="workspace content-list-workspace" id="adsPublicationsWorkspace">
+          <aside class="panel form-panel hidden" id="adsPublicationFormPanel">
             <h3 id="formTitle">Новая публикация</h3>
             <form id="entryForm">
               <input id="entryId" type="hidden">
@@ -3321,6 +3321,7 @@
 
           <section class="panel table-panel">
             <div class="toolbar">
+              <button class="btn primary" id="adsNewPublicationBtn" type="button">Новая публикация вручную</button>
               <input class="search" id="search" type="search" placeholder="Поиск по теме или выводу">
               <div class="filters">
                 <select id="typeFilter" aria-label="Фильтр по типу">
@@ -4948,6 +4949,8 @@
     const memoryCloudTable = "sportpro_memory_profiles";
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
+    const adsPublicationsWorkspace = document.querySelector("#adsPublicationsWorkspace");
+    const adsPublicationFormPanel = document.querySelector("#adsPublicationFormPanel");
     const contentPlanForm = document.querySelector("#contentPlanForm");
     const contentListWorkspace = document.querySelector("#contentListWorkspace");
     const contentFormPanel = document.querySelector("#contentFormPanel");
@@ -5517,6 +5520,10 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (isFutureContentDate(fields.date.value)) {
+        alert("Нельзя добавить опубликованную публикацию с будущей датой. Используйте сегодняшнюю или прошедшую дату.");
+        return;
+      }
       const id = fields.id.value || createId();
       const entry = {
         id,
@@ -5541,6 +5548,7 @@
         records.push(entry);
       }
 
+      ensureContentPlanFromAdRecord(entry);
       saveRecords();
       resetForm();
       render();
@@ -5663,6 +5671,13 @@
         contentPlanItems.push(entry);
       }
 
+      if (isPublishedStatus) {
+        publishContentItem(entry, { silent: true, publishedDate: entry.publishedAt || entry.date });
+        resetContentForm();
+        renderContentPlan();
+        return;
+      }
+
       saveContentPlanItems();
       autoPushToCloud("Контент-план").catch(() => updateCloudStatus("Автосинхронизация не прошла"));
       resetContentForm();
@@ -5731,7 +5746,15 @@
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
     document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
       setAdsMode("table");
-      resetForm();
+      resetForm({ close: false });
+      openAdsPublicationFormPanel();
+      cancelEditBtn.classList.remove("hidden");
+      fields.topic.focus();
+    });
+    document.querySelector("#adsNewPublicationBtn").addEventListener("click", () => {
+      resetForm({ close: false });
+      openAdsPublicationFormPanel();
+      cancelEditBtn.classList.remove("hidden");
       fields.topic.focus();
     });
     document.querySelector("#quickMeasurementBtn").addEventListener("click", () => {
@@ -5777,6 +5800,7 @@
     document.querySelector("#contentNewItemBtn").addEventListener("click", () => {
       resetContentForm({ close: false });
       openContentFormPanel();
+      contentCancelEditBtn.classList.remove("hidden");
     });
     document.querySelector("#contentExportExcelBtn").addEventListener("click", () => exportRowsToExcel("content-plan-spisok", contentListExportRows()));
     document.querySelector("#contentExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Контент-план: список", contentListExportRows()));
@@ -5895,6 +5919,7 @@
       if (!record) return;
 
       if (button.dataset.action === "edit") {
+        openAdsPublicationFormPanel();
         fields.id.value = record.id;
         fields.date.value = record.date;
         fields.type.value = record.type;
@@ -6154,6 +6179,7 @@
     }
 
     function render() {
+      syncPublishedContentPlanToAds();
       renderDashboard();
       renderInputHub();
       renderFollowersSummary();
@@ -10197,7 +10223,7 @@
       }, {});
     }
 
-    function resetForm() {
+    function resetForm(options = {}) {
       form.reset();
       fields.id.value = "";
       fields.date.valueAsDate = new Date();
@@ -10206,6 +10232,17 @@
       fields.messages.value = 0;
       formTitle.textContent = "Новая публикация";
       cancelEditBtn.classList.add("hidden");
+      if (options.close !== false) closeAdsPublicationFormPanel();
+    }
+
+    function openAdsPublicationFormPanel() {
+      adsPublicationFormPanel?.classList.remove("hidden");
+      adsPublicationsWorkspace?.classList.add("is-form-open");
+    }
+
+    function closeAdsPublicationFormPanel() {
+      adsPublicationFormPanel?.classList.add("hidden");
+      adsPublicationsWorkspace?.classList.remove("is-form-open");
     }
 
     function fillContentForm(item) {
@@ -10266,6 +10303,7 @@
       document.querySelector('[data-content-mode="list"]').click();
       resetContentForm({ close: false });
       openContentFormPanel();
+      contentCancelEditBtn.classList.remove("hidden");
       contentFields.topic.value = idea.title;
       contentFields.rubric.value = idea.rubric;
       contentFields.platform.value = idea.platform || "Instagram";
@@ -10364,11 +10402,100 @@
       return map[type] || "Другое";
     }
 
+    function adTypeToContentType(type) {
+      const map = {
+        "Рилс": "Reels",
+        "Пост": "Пост",
+        "Сторис": "Сторис",
+        "Реклама": "Рекламный креатив",
+      };
+      return map[type] || "Другое";
+    }
+
+    function ensureContentPlanFromAdRecord(record) {
+      const normalizedRecord = normalizeRecord(record);
+      const now = new Date().toISOString();
+      const publishedDate = normalizedRecord.date || formatIsoDate(new Date());
+      const existingIndex = contentPlanItems.findIndex((item) => item.linkedAdId === normalizedRecord.id);
+      const existing = existingIndex >= 0 ? contentPlanItems[existingIndex] : null;
+      const linkedItem = normalizeContentPlanItem({
+        ...(existing || {}),
+        id: existing?.id || createId(),
+        date: publishedDate,
+        time: existing?.time || "",
+        platform: existing?.platform || "Instagram",
+        type: adTypeToContentType(normalizedRecord.type),
+        rubric: existing?.rubric || defaultContentRubrics()[0].name,
+        topic: normalizedRecord.topic,
+        text: existing?.text || "",
+        hashtags: existing?.hashtags || "",
+        status: "Опубликовано",
+        owner: existing?.owner || "",
+        prepDeadline: existing?.prepDeadline || "",
+        link: existing?.link || "",
+        preview: existing?.preview || "",
+        comment: existing?.comment || normalizedRecord.conclusion || "Добавлено вручную из раздела Реклама.",
+        publishedAt: publishedDate,
+        linkedAdId: normalizedRecord.id,
+        archivedAt: existing?.archivedAt || "",
+        updatedAt: now,
+      });
+      if (existingIndex >= 0) {
+        contentPlanItems[existingIndex] = linkedItem;
+      } else {
+        contentPlanItems.push(linkedItem);
+      }
+      saveContentPlanItems();
+    }
+
+    function syncPublishedContentPlanToAds() {
+      let recordsChanged = false;
+      let contentChanged = false;
+      contentPlanItems.forEach((item) => {
+        if (!isContentPublished(item) || item.archivedAt || isFutureContentDate(item.date)) return;
+        const publishedDate = item.publishedAt || item.date || formatIsoDate(new Date());
+        if (isFutureContentDate(publishedDate)) return;
+        let adRecord = item.linkedAdId ? records.find((record) => record.id === item.linkedAdId) : null;
+        if (!adRecord) {
+          adRecord = normalizeRecord({
+            id: createId(),
+            date: publishedDate,
+            type: contentTypeToAdType(item.type),
+            topic: item.topic,
+            views: 0,
+            saves: 0,
+            messages: 0,
+            conclusion: `Из контент-плана: ${item.rubric}`,
+            measurements: [],
+            updatedAt: new Date().toISOString(),
+          });
+          records.push(adRecord);
+          item.linkedAdId = adRecord.id;
+          item.publishedAt = publishedDate;
+          item.updatedAt = new Date().toISOString();
+          recordsChanged = true;
+          contentChanged = true;
+          return;
+        }
+        const nextType = contentTypeToAdType(item.type);
+        if (adRecord.date !== publishedDate || adRecord.type !== nextType || adRecord.topic !== item.topic) {
+          adRecord.date = publishedDate;
+          adRecord.type = nextType;
+          adRecord.topic = item.topic;
+          adRecord.updatedAt = new Date().toISOString();
+          recordsChanged = true;
+        }
+      });
+      if (recordsChanged) saveRecords();
+      if (contentChanged) saveContentPlanItems();
+    }
+
     function openMeasurementPanel(recordId) {
       const record = records.find((item) => item.id === recordId);
       if (!record) return;
 
       setAdsMode("table");
+      openAdsPublicationFormPanel();
       const latest = getLatestMeasurement(record) || record;
       measurementPanel.classList.remove("hidden");
       measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
