@@ -1291,6 +1291,13 @@
       line-height: 1.4;
     }
 
+    .measurement-history-row small {
+      display: block;
+      margin-top: 5px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
     .input-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3297,31 +3304,31 @@
                   <label>Дата замера
                     <input id="measurementDate" type="date" required>
                   </label>
-                  <label>Просмотры
+                  <label>Просмотры всего
                     <input id="measurementViews" type="number" min="0" step="1" value="0" required>
                   </label>
                 </div>
                 <div class="two">
-                  <label>Сохранения
+                  <label>Сохранения всего
                     <input id="measurementSaves" type="number" min="0" step="1" value="0" required>
                   </label>
-                  <label>Сообщения
+                  <label>Сообщения всего
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
                   </label>
                 </div>
                 <div class="two">
-                  <label>Лайки
+                  <label>Лайки всего
                     <input id="measurementLikes" type="number" min="0" step="1" value="0">
                   </label>
-                  <label>Переслано
+                  <label>Переслано всего
                     <input id="measurementForwards" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
                 <div class="two">
-                  <label>Репосты
+                  <label>Репосты всего
                     <input id="measurementReposts" type="number" min="0" step="1" value="0">
                   </label>
-                  <label>Посещения профиля
+                  <label>Посещения профиля всего
                     <input id="measurementProfileVisits" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
@@ -10004,7 +10011,7 @@
       const grouped = groupByTimelineScale(sourceItems, timelineScale.value);
       const points = Object.entries(grouped)
         .map(([key, group]) => {
-          const recordsForDate = group.items;
+          const recordsForDate = metric.useMeasurements ? latestTimelineItemsByRecord(group.items) : group.items;
           const rawValue = metric.value(recordsForDate);
           return { key, label: group.label, value: rawValue };
         })
@@ -10041,6 +10048,22 @@
           topic: record.topic,
         }));
       });
+    }
+
+    function latestTimelineItemsByRecord(items) {
+      const byRecord = new Map();
+      items.forEach((item) => {
+        const key = item.parentId || item.id;
+        const existing = byRecord.get(key);
+        if (!existing || compareTimelineItems(item, existing) > 0) {
+          byRecord.set(key, item);
+        }
+      });
+      return [...byRecord.values()];
+    }
+
+    function compareTimelineItems(a, b) {
+      return `${a.date || ""}|${a.updatedAt || ""}`.localeCompare(`${b.date || ""}|${b.updatedAt || ""}`);
     }
 
     function groupByTimelineScale(items, scale) {
@@ -10655,8 +10678,14 @@
     }
 
     function renderMeasurementHistory(record) {
-      const measurements = [...(record.measurements || [])]
+      const measurementsAsc = [...(record.measurements || [])]
         .map(normalizeMeasurement)
+        .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.updatedAt || "").localeCompare(b.updatedAt || ""));
+      const measurements = measurementsAsc
+        .map((measurement, index) => ({
+          ...measurement,
+          deltaText: measurementDeltaText(measurement, measurementsAsc[index - 1]),
+        }))
         .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updatedAt || "").localeCompare(a.updatedAt || ""))
         .slice(0, 6);
 
@@ -10678,9 +10707,31 @@
             ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.likes)} лайков,
             ${formatNumber(measurement.forwards)} переслано, ${formatNumber(measurement.reposts)} репостов,
             ${formatNumber(measurement.profileVisits)} посещений профиля${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
+            <small>${escapeHtml(measurement.deltaText)}</small>
           </span>
         </div>
       `).join("");
+    }
+
+    function measurementDeltaText(current, previous) {
+      if (!previous) return "Первый замер";
+      const metrics = [
+        ["views", "просмотров"],
+        ["saves", "сохранений"],
+        ["messages", "сообщений"],
+        ["likes", "лайков"],
+        ["forwards", "переслано"],
+        ["reposts", "репостов"],
+        ["profileVisits", "посещений профиля"],
+      ];
+      const parts = metrics
+        .map(([key, label]) => {
+          const delta = (Number(current[key]) || 0) - (Number(previous[key]) || 0);
+          if (!delta) return "";
+          return `${delta > 0 ? "+" : ""}${formatNumber(delta)} ${label}`;
+        })
+        .filter(Boolean);
+      return parts.length ? `Прирост: ${parts.join(", ")}` : "Без изменений к предыдущему замеру";
     }
 
     function resetFunnelForm(options = {}) {
