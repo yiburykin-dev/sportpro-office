@@ -1477,22 +1477,16 @@
       height: 1px;
     }
 
-    .hashtags-cell-scroll {
-      max-height: 4.4em;
-      overflow-y: auto;
+    .content-cell-clamp {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
       white-space: pre-line;
-      line-height: 1.45;
-      padding-right: 4px;
-      scrollbar-width: thin;
-    }
-
-    .hashtags-cell-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .hashtags-cell-scroll::-webkit-scrollbar-thumb {
-      background: color-mix(in srgb, var(--accent) 45%, var(--line));
-      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      cursor: help;
     }
 
     table {
@@ -2774,9 +2768,6 @@
 
     .content-text-cell {
       max-width: none;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.35;
     }
 
     .content-preview-thumb {
@@ -9903,8 +9894,8 @@
       if (column.key === "type") return `<td ${widthStyle}>${escapeHtml(item.type)}</td>`;
       if (column.key === "rubric") return `<td ${widthStyle}>${escapeHtml(item.rubric)}</td>`;
       if (column.key === "topic") return `<td ${widthStyle}>${escapeHtml(item.topic)}</td>`;
-      if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}>${escapeHtml(shortText(item.text || "-", 140))}</td>`;
-      if (column.key === "hashtags") return `<td ${widthStyle}><div class="hashtags-cell-scroll" title="${escapeHtml(item.hashtags || "-")}">${escapeHtml(item.hashtags || "-")}</div></td>`;
+      if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.text || "-")}">${escapeHtml(item.text || "-")}</div></td>`;
+      if (column.key === "hashtags") return `<td ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.hashtags || "-")}">${escapeHtml(item.hashtags || "-")}</div></td>`;
       if (column.key === "preview") return `<td ${widthStyle}>${contentPreviewHtml(item.preview)}</td>`;
       if (column.key === "status") return `<td ${widthStyle}><span class="status-pill ${isContentPublished(item) ? "status-published" : isContentOverdue(item) ? "status-overdue" : ""}">${escapeHtml(isContentOverdue(item) ? "Просрочено" : item.status)}</span></td>`;
       if (column.key === "publishedAt") return `<td ${widthStyle}>${item.publishedAt ? formatDate(item.publishedAt) : "-"}</td>`;
