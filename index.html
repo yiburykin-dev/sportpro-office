@@ -1509,26 +1509,34 @@
       outline-offset: -2px;
     }
 
-    .content-row-actions {
-      position: sticky;
-      right: 10px;
-      float: right;
-      display: inline-flex;
-      gap: 6px;
+    .content-selected-actions {
+      display: flex;
       align-items: center;
-      padding: 7px;
-      margin-top: 4px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      z-index: 2;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+      flex-wrap: wrap;
     }
 
-    .content-row-actions .btn {
+    .content-selected-actions strong {
+      min-width: 220px;
+      max-width: min(620px, 100%);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .content-selected-actions .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .content-selected-actions .btn {
       min-height: 34px;
-      padding: 6px 10px;
-      font-size: 13px;
+      padding: 6px 12px;
     }
 
     th,
@@ -3740,6 +3748,7 @@
                   <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
                 </div>
               </div>
+              <div class="content-selected-actions hidden" id="contentRowActionBar"></div>
               <div class="table-wrap" id="contentTableWrap">
                 <table class="content-plan-table" id="contentPlanTable">
                   <colgroup id="contentColGroup"></colgroup>
@@ -5071,6 +5080,7 @@
     const contentColGroup = document.querySelector("#contentColGroup");
     const contentHeaderRow = document.querySelector("#contentHeaderRow");
     const contentRowsEl = document.querySelector("#contentRows");
+    const contentRowActionBar = document.querySelector("#contentRowActionBar");
     const contentIdeasList = document.querySelector("#contentIdeasList");
     const funnelRowsEl = document.querySelector("#funnelRows");
     const emptyState = document.querySelector("#emptyState");
@@ -6103,27 +6113,13 @@
         return;
       }
 
-      const id = button.dataset.id;
-      const item = contentPlanItems.find((record) => record.id === id);
-      if (!item) return;
-      activeContentRowId = id;
+      handleContentItemAction(button.dataset.action, button.dataset.id);
+    });
 
-      if (button.dataset.action === "edit-content") {
-        fillContentForm(item);
-      }
-
-      if (button.dataset.action === "publish-content") {
-        publishContentItem(item);
-      }
-
-      if (button.dataset.action === "delete-content" && confirm("Удалить публикацию из контент-плана?")) {
-        deletedContentPlan[id] = new Date().toISOString();
-        contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
-        selectedContentPlanIds.delete(id);
-        saveContentPlanItems();
-        saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
-        renderContentPlan();
-      }
+    contentRowActionBar.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      handleContentItemAction(button.dataset.action, button.dataset.id);
     });
 
     contentArchiveList.addEventListener("click", (event) => {
@@ -9787,7 +9783,53 @@
           ${columns.map((column) => contentTableCellHtml(item, column)).join("")}
         </tr>
       `).join("");
+      renderContentRowActionBar(visible);
       syncContentFloatingScroll();
+    }
+
+    function handleContentItemAction(action, id) {
+      const item = contentPlanItems.find((record) => record.id === id);
+      if (!item) return;
+      activeContentRowId = id;
+
+      if (action === "edit-content") {
+        fillContentForm(item);
+        return;
+      }
+
+      if (action === "publish-content") {
+        publishContentItem(item);
+        return;
+      }
+
+      if (action === "delete-content" && confirm("Удалить публикацию из контент-плана?")) {
+        deletedContentPlan[id] = new Date().toISOString();
+        contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
+        selectedContentPlanIds.delete(id);
+        saveContentPlanItems();
+        saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
+        renderContentPlan();
+      }
+    }
+
+    function renderContentRowActionBar(visibleItems = getVisibleContentItems()) {
+      const item = visibleItems.find((record) => record.id === activeContentRowId);
+      if (!item) {
+        activeContentRowId = "";
+        contentRowActionBar.classList.add("hidden");
+        contentRowActionBar.innerHTML = "";
+        return;
+      }
+
+      contentRowActionBar.classList.remove("hidden");
+      contentRowActionBar.innerHTML = `
+        <strong>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""} · ${escapeHtml(item.topic || "Без темы")}</strong>
+        <div class="actions">
+          <button class="btn primary" type="button" data-action="edit-content" data-id="${escapeHtml(item.id)}">Редактировать</button>
+          <button class="btn" type="button" data-action="publish-content" data-id="${escapeHtml(item.id)}">${isContentPublished(item) ? "Обновить в рекламе" : "Опубликовать"}</button>
+          <button class="btn danger" type="button" data-action="delete-content" data-id="${escapeHtml(item.id)}">Удалить</button>
+        </div>
+      `;
     }
 
     function syncContentFloatingScroll(source = "") {
@@ -9883,11 +9925,6 @@
       const widthStyle = `style="width: ${column.width}px;"`;
       if (column.key === "select") return `<td class="select-cell" ${widthStyle}>
         <input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${item.id}" ${selectedContentPlanIds.has(item.id) ? "checked" : ""}>
-        ${activeContentRowId === item.id ? `<div class="content-row-actions">
-          <button class="btn primary" type="button" data-action="edit-content" data-id="${escapeHtml(item.id)}">Редактировать</button>
-          <button class="btn" type="button" data-action="publish-content" data-id="${escapeHtml(item.id)}">${isContentPublished(item) ? "Обновить публикацию" : "Опубликовано"}</button>
-          <button class="btn danger" type="button" data-action="delete-content" data-id="${escapeHtml(item.id)}">Удалить</button>
-        </div>` : ""}
       </td>`;
       if (column.key === "date") return `<td ${widthStyle}>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>`;
       if (column.key === "platform") return `<td ${widthStyle}>${escapeHtml(item.platform)}</td>`;
