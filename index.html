@@ -1384,6 +1384,28 @@
       gap: 10px;
     }
 
+    .checkbox-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .checkbox-line input {
+      width: auto;
+    }
+
+    .ad-budget-fields {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-soft) 36%, transparent);
+    }
+
     .table-panel {
       overflow: hidden;
     }
@@ -1453,6 +1475,24 @@
 
     .floating-x-scroll > div {
       height: 1px;
+    }
+
+    .hashtags-cell-scroll {
+      max-height: 4.4em;
+      overflow-y: auto;
+      white-space: pre-line;
+      line-height: 1.45;
+      padding-right: 4px;
+      scrollbar-width: thin;
+    }
+
+    .hashtags-cell-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .hashtags-cell-scroll::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--accent) 45%, var(--line));
+      border-radius: 999px;
     }
 
     table {
@@ -1578,6 +1618,11 @@
       color: var(--accent-strong);
       font-size: 12px;
       white-space: nowrap;
+    }
+
+    .ad-pill {
+      background: rgba(14, 165, 233, .16);
+      color: #0284c7;
     }
 
     .empty {
@@ -3121,7 +3166,7 @@
         <section class="summary" aria-label="Итоги воронки">
           <div class="metric" data-dashboard-metric="followers"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
           <div class="metric" data-dashboard-metric="reach"><span>Охват</span><strong id="dashReach">0</strong></div>
-          <div class="metric" data-dashboard-metric="reelsViews"><span>Reels</span><strong id="dashReels">0</strong></div>
+          <div class="metric" data-dashboard-metric="adSpend"><span>Затраты</span><strong id="dashAdSpend">0</strong></div>
           <div class="metric" data-dashboard-metric="leads"><span>Лиды</span><strong id="dashLeads">0</strong></div>
           <div class="metric" data-dashboard-metric="revenue"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
         </section>
@@ -3146,6 +3191,30 @@
               <h3>Типы контента</h3>
               <div class="bars" id="typeBars"></div>
               <div class="dashboard-empty hidden" id="typeEmpty">Пока недостаточно данных для сравнения типов.</div>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="chart-header">
+                <h3>Расходы на рекламу</h3>
+                <div class="actions">
+                  <select id="adSpendPeriod" aria-label="Период расходов">
+                    <option value="currentMonth">Текущий месяц</option>
+                    <option value="previousMonth">Прошлый месяц</option>
+                    <option value="month">Выбор месяца</option>
+                    <option value="year">Год</option>
+                    <option value="all">Весь период</option>
+                  </select>
+                  <input id="adSpendMonth" type="month" aria-label="Месяц расходов">
+                  <button class="btn" id="adSpendExportExcelBtn" type="button">Excel</button>
+                  <button class="btn" id="adSpendExportPdfBtn" type="button">PDF</button>
+                </div>
+              </div>
+              <section class="summary compact-summary" aria-label="Итоги расходов">
+                <div class="metric"><span>Расходы</span><strong id="adSpendTotal">0</strong></div>
+                <div class="metric"><span>Публикаций</span><strong id="adSpendPosts">0</strong></div>
+              </section>
+              <div class="bars" id="adSpendBars"></div>
+              <div class="dashboard-empty hidden" id="adSpendEmpty">За выбранный период рекламных расходов пока нет.</div>
             </section>
 
             <section class="panel chart-panel">
@@ -3289,6 +3358,23 @@
               <label>Новые подписчики
                 <input id="followers" type="number" min="0" step="1" value="0" required>
               </label>
+              <label class="checkbox-line">
+                <input id="isAd" type="checkbox">
+                <span>Реклама</span>
+              </label>
+              <div class="ad-budget-fields hidden" id="adBudgetFields">
+                <div class="two">
+                  <label>Стоимость дня, $
+                    <input id="adDailyCost" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Количество дней
+                    <input id="adDays" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <label>Общий бюджет, $
+                  <input id="adBudget" type="number" min="0" step="1" value="0" readonly>
+                </label>
+              </div>
               <label>Вывод
                 <textarea id="conclusion" placeholder="Что сработало, что повторить, что изменить"></textarea>
               </label>
@@ -3368,6 +3454,7 @@
                     <th>Дата</th>
                     <th>Тип</th>
                     <th>Тема</th>
+                    <th>Реклама</th>
                     <th class="numeric">Просмотры</th>
                     <th class="numeric">Сохранения</th>
                     <th class="numeric">Сообщения</th>
@@ -5038,6 +5125,12 @@
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
     const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
+    const adSpendPeriod = document.querySelector("#adSpendPeriod");
+    const adSpendMonth = document.querySelector("#adSpendMonth");
+    const adSpendTotal = document.querySelector("#adSpendTotal");
+    const adSpendPosts = document.querySelector("#adSpendPosts");
+    const adSpendBars = document.querySelector("#adSpendBars");
+    const adSpendEmpty = document.querySelector("#adSpendEmpty");
     const cancelEditBtn = document.querySelector("#cancelEditBtn");
     const measurementPanel = document.querySelector("#measurementPanel");
     const measurementTitle = document.querySelector("#measurementTitle");
@@ -5224,6 +5317,10 @@
       saves: document.querySelector("#saves"),
       messages: document.querySelector("#messages"),
       followers: document.querySelector("#followers"),
+      isAd: document.querySelector("#isAd"),
+      adDailyCost: document.querySelector("#adDailyCost"),
+      adDays: document.querySelector("#adDays"),
+      adBudget: document.querySelector("#adBudget"),
       conclusion: document.querySelector("#conclusion"),
     };
 
@@ -5430,6 +5527,7 @@
     applyCloudConfig();
     updateCloudAuthStatus();
     fields.date.valueAsDate = new Date();
+    adSpendMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     contentFields.date.valueAsDate = new Date();
     contentFields.prepDeadline.valueAsDate = new Date();
     funnelFields.date.valueAsDate = new Date();
@@ -5564,6 +5662,10 @@
         saves: Number(fields.saves.value) || 0,
         messages: Number(fields.messages.value) || 0,
         followers: Number(fields.followers.value) || 0,
+        isAd: Boolean(fields.isAd.checked),
+        adDailyCost: fields.isAd.checked ? Number(fields.adDailyCost.value) || 0 : 0,
+        adDays: fields.isAd.checked ? Number(fields.adDays.value) || 0 : 0,
+        adBudget: fields.isAd.checked ? adBudgetFromFields() : 0,
         conclusion: fields.conclusion.value.trim(),
         measurements: [],
         updatedAt: new Date().toISOString(),
@@ -5660,7 +5762,7 @@
       syncRecordWithLatestMeasurement(record);
       saveRecords();
       render();
-      openMeasurementPanel(record.id);
+      closeMeasurementPanel();
     });
 
     contentPlanForm.addEventListener("submit", (event) => {
@@ -5774,6 +5876,9 @@
     });
 
     cancelEditBtn.addEventListener("click", resetForm);
+    fields.isAd.addEventListener("change", updateAdBudgetFields);
+    fields.adDailyCost.addEventListener("input", updateAdBudgetFields);
+    fields.adDays.addEventListener("input", updateAdBudgetFields);
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
     document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
       setAdsMode("table");
@@ -5811,6 +5916,10 @@
     });
     document.querySelector("#exportBtn").addEventListener("click", () => exportRowsToExcel("reklama-publikacii", adsExportRows()));
     document.querySelector("#exportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: публикации", adsExportRows()));
+    document.querySelector("#adSpendExportExcelBtn").addEventListener("click", () => exportRowsToExcel("reklama-zatraty", adSpendExportRows()));
+    document.querySelector("#adSpendExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: затраты", adSpendExportRows()));
+    adSpendPeriod.addEventListener("change", renderAdSpendStats);
+    adSpendMonth.addEventListener("change", renderAdSpendStats);
     document.querySelector("#funnelExportBtn").addEventListener("click", () => exportRowsToExcel("reklama-itogi-dnya", funnelExportRows()));
     document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: лиды. итоги дня", funnelExportRows()));
     contentImportDate.addEventListener("change", renderContentImportControls);
@@ -5967,6 +6076,11 @@
         fields.saves.value = record.saves;
         fields.messages.value = record.messages;
         fields.followers.value = getRecordFollowers(record);
+        fields.isAd.checked = Boolean(record.isAd);
+        fields.adDailyCost.value = Number(record.adDailyCost) || 0;
+        fields.adDays.value = Number(record.adDays) || 0;
+        fields.adBudget.value = adRecordBudget(record);
+        updateAdBudgetFields();
         fields.conclusion.value = record.conclusion;
         formTitle.textContent = "Редактирование";
         cancelEditBtn.classList.remove("hidden");
@@ -7489,9 +7603,9 @@
       const saves = sum(scoped, "saves");
       const messages = sum(scoped, "messages");
       const funnelReach = sum(funnelScoped, "reach");
-      const funnelReels = sum(funnelScoped, "reelsViews");
       const funnelLeads = sum(funnelScoped, "leads");
       const funnelRevenue = sum(funnelScoped, "revenue");
+      const currentMonthSpend = adSpendInRange(records, monthRange(new Date()));
 
       document.querySelector("#dashRows").textContent = scoped.length;
       document.querySelector("#dashViews").textContent = formatNumber(totalViews);
@@ -7500,16 +7614,160 @@
       document.querySelector("#dashRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
       document.querySelector("#dashFollowers").textContent = formatNumber(getAccountFollowersTotal());
       document.querySelector("#dashReach").textContent = formatNumber(funnelReach);
-      document.querySelector("#dashReels").textContent = formatNumber(funnelReels);
+      document.querySelector("#dashAdSpend").textContent = formatUsd(currentMonthSpend);
       document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
       document.querySelector("#dashRevenue").textContent = formatMoney(funnelRevenue);
 
       renderTimeline(scoped, funnelScoped);
       updateDashboardMetricSelection();
       renderGroupedBars("#typeBars", "#typeEmpty", groupBy(scoped, "type"), "views", 5);
+      renderAdSpendStats();
       renderGroupedBars("#topicBars", "#topicEmpty", groupBy(scoped, "topic"), "views", 5);
       renderFunnelBars(funnelScoped);
       renderInsights(scoped, funnelScoped);
+    }
+
+    function updateAdBudgetFields() {
+      const enabled = Boolean(fields.isAd.checked);
+      document.querySelector("#adBudgetFields")?.classList.toggle("hidden", !enabled);
+      if (!enabled) {
+        fields.adDailyCost.value = 0;
+        fields.adDays.value = 0;
+        fields.adBudget.value = 0;
+        return;
+      }
+      fields.adBudget.value = adBudgetFromFields();
+    }
+
+    function adBudgetFromFields() {
+      return (Number(fields.adDailyCost.value) || 0) * (Number(fields.adDays.value) || 0);
+    }
+
+    function adRecordBudget(record) {
+      if (!record?.isAd) return 0;
+      const savedBudget = Number(record.adBudget) || 0;
+      const calculatedBudget = (Number(record.adDailyCost) || 0) * (Number(record.adDays) || 0);
+      return savedBudget || calculatedBudget;
+    }
+
+    function adSpendEvents(sourceRecords = records) {
+      return sourceRecords.flatMap((record) => {
+        if (!record?.isAd || !record.date) return [];
+        const dailyCost = Number(record.adDailyCost) || 0;
+        const days = Math.max(0, Math.floor(Number(record.adDays) || 0));
+        if (!dailyCost || !days) return [];
+        const start = new Date(`${record.date}T00:00:00`);
+        if (Number.isNaN(start.getTime())) return [];
+        return Array.from({ length: days }, (_, index) => {
+          const date = new Date(start);
+          date.setDate(start.getDate() + index);
+          return {
+            id: `${record.id}-${index}`,
+            parentId: record.id,
+            date: formatIsoDate(date),
+            type: record.type,
+            topic: record.topic,
+            amount: dailyCost,
+            dailyCost,
+            days,
+            totalBudget: adRecordBudget(record),
+          };
+        });
+      });
+    }
+
+    function monthRange(date) {
+      const from = new Date(date.getFullYear(), date.getMonth(), 1);
+      const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      return { from: formatIsoDate(from), to: formatIsoDate(to) };
+    }
+
+    function yearRange(date) {
+      return { from: `${date.getFullYear()}-01-01`, to: `${date.getFullYear()}-12-31` };
+    }
+
+    function adSpendInRange(sourceRecords, range) {
+      return filterAdSpendEvents(adSpendEvents(sourceRecords), range).reduce((total, event) => total + event.amount, 0);
+    }
+
+    function filterAdSpendEvents(events, range) {
+      if (!range?.from || !range?.to) return events;
+      return events.filter((event) => event.date >= range.from && event.date <= range.to);
+    }
+
+    function selectedAdSpendRange() {
+      const now = new Date();
+      if (adSpendPeriod.value === "previousMonth") {
+        return monthRange(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+      }
+      if (adSpendPeriod.value === "month") {
+        const [year, month] = (adSpendMonth.value || "").split("-").map(Number);
+        return monthRange(new Date(year || now.getFullYear(), (month || now.getMonth() + 1) - 1, 1));
+      }
+      if (adSpendPeriod.value === "year") return yearRange(now);
+      if (adSpendPeriod.value === "all") return {};
+      return monthRange(now);
+    }
+
+    function groupedAdSpendRows(events) {
+      const byRecord = new Map();
+      events.forEach((event) => {
+        const row = byRecord.get(event.parentId) || {
+          id: event.parentId,
+          date: event.date,
+          type: event.type,
+          topic: event.topic,
+          amount: 0,
+          daysInPeriod: 0,
+          dailyCost: event.dailyCost,
+          days: event.days,
+          totalBudget: event.totalBudget,
+        };
+        row.date = row.date < event.date ? row.date : event.date;
+        row.amount += event.amount;
+        row.daysInPeriod += 1;
+        byRecord.set(event.parentId, row);
+      });
+      return [...byRecord.values()].sort((a, b) => b.amount - a.amount);
+    }
+
+    function renderAdSpendStats() {
+      const range = selectedAdSpendRange();
+      const events = filterAdSpendEvents(adSpendEvents(records), range);
+      const rows = groupedAdSpendRows(events);
+      const total = events.reduce((sumValue, event) => sumValue + event.amount, 0);
+      const max = Math.max(...rows.map((row) => row.amount), 0);
+
+      adSpendTotal.textContent = formatUsd(total);
+      adSpendPosts.textContent = formatNumber(rows.length);
+      adSpendBars.classList.toggle("hidden", rows.length === 0);
+      adSpendEmpty.classList.toggle("hidden", rows.length > 0);
+
+      adSpendBars.innerHTML = rows.slice(0, 10).map((row) => `
+        <div class="bar-row" title="${escapeHtml(row.topic || "Без темы")}">
+          <span>${escapeHtml(row.topic || "Без темы")}</span>
+          <div class="bar-track"><div class="bar-fill" style="--value: ${max ? (row.amount / max) * 100 : 0}%"></div></div>
+          <span class="bar-value">${formatUsd(row.amount)}</span>
+        </div>
+      `).join("");
+    }
+
+    function adSpendExportRows() {
+      const range = selectedAdSpendRange();
+      const rows = groupedAdSpendRows(filterAdSpendEvents(adSpendEvents(records), range));
+      return [
+        ["Дата старта", "Тип", "Публикация", "Стоимость дня, USD", "Дней всего", "Дней в периоде", "Расход в периоде, USD", "Общий бюджет, USD"],
+        ...rows.map((row) => [
+          formatDate(row.date),
+          row.type,
+          row.topic,
+          row.dailyCost,
+          row.days,
+          row.daysInPeriod,
+          row.amount,
+          row.totalBudget,
+        ]),
+      ];
     }
 
     function renderInputHub() {
@@ -7750,6 +8008,7 @@
             <td>${formatDate(record.date)}</td>
             <td><span class="type-pill">${escapeHtml(record.type)}</span></td>
             <td>${escapeHtml(record.topic)}</td>
+            <td>${record.isAd ? `<span class="type-pill ad-pill">Реклама · ${formatUsd(adRecordBudget(record))}</span>` : "-"}</td>
             <td class="numeric">${formatNumber(record.views)}</td>
             <td class="numeric">${formatNumber(record.saves)}</td>
             <td class="numeric">${formatNumber(record.messages)}</td>
@@ -9645,7 +9904,7 @@
       if (column.key === "rubric") return `<td ${widthStyle}>${escapeHtml(item.rubric)}</td>`;
       if (column.key === "topic") return `<td ${widthStyle}>${escapeHtml(item.topic)}</td>`;
       if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}>${escapeHtml(shortText(item.text || "-", 140))}</td>`;
-      if (column.key === "hashtags") return `<td ${widthStyle}>${escapeHtml(item.hashtags || "-")}</td>`;
+      if (column.key === "hashtags") return `<td ${widthStyle}><div class="hashtags-cell-scroll" title="${escapeHtml(item.hashtags || "-")}">${escapeHtml(item.hashtags || "-")}</div></td>`;
       if (column.key === "preview") return `<td ${widthStyle}>${contentPreviewHtml(item.preview)}</td>`;
       if (column.key === "status") return `<td ${widthStyle}><span class="status-pill ${isContentPublished(item) ? "status-published" : isContentOverdue(item) ? "status-overdue" : ""}">${escapeHtml(isContentOverdue(item) ? "Просрочено" : item.status)}</span></td>`;
       if (column.key === "publishedAt") return `<td ${widthStyle}>${item.publishedAt ? formatDate(item.publishedAt) : "-"}</td>`;
@@ -10036,6 +10295,7 @@
 
     function getTimelineSourceItems(items, funnelItems, metric) {
       if (metric.source === "funnel") return funnelItems;
+      if (metric.source === "adSpend") return adSpendEvents(items);
       if (!metric.useMeasurements) return items;
 
       return items.flatMap((record) => {
@@ -10170,11 +10430,11 @@
           value: (items) => sum(items, "reach"),
           format: (value) => formatNumber(value),
         },
-        reelsViews: {
-          title: "Reels",
-          source: "funnel",
-          value: (items) => sum(items, "reelsViews"),
-          format: (value) => formatNumber(value),
+        adSpend: {
+          title: "затраты",
+          source: "adSpend",
+          value: (items) => sum(items, "amount"),
+          format: (value) => formatUsd(value),
         },
         leads: {
           title: "лиды",
@@ -10301,6 +10561,11 @@
       fields.saves.value = 0;
       fields.messages.value = 0;
       fields.followers.value = 0;
+      fields.isAd.checked = false;
+      fields.adDailyCost.value = 0;
+      fields.adDays.value = 0;
+      fields.adBudget.value = 0;
+      updateAdBudgetFields();
       formTitle.textContent = "Новая публикация";
       cancelEditBtn.classList.add("hidden");
       if (options.close !== false) closeAdsPublicationFormPanel();
@@ -10446,6 +10711,10 @@
           saves: 0,
           messages: 0,
           followers: 0,
+          isAd: false,
+          adDailyCost: 0,
+          adDays: 0,
+          adBudget: 0,
           conclusion: `Из контент-плана: ${item.rubric}`,
           linkedContentId: item.id,
           measurements: [],
@@ -10572,6 +10841,10 @@
             saves: 0,
             messages: 0,
             followers: 0,
+            isAd: false,
+            adDailyCost: 0,
+            adDays: 0,
+            adBudget: 0,
             conclusion: `Из контент-плана: ${item.rubric}`,
             linkedContentId: item.id,
             measurements: [],
@@ -12715,6 +12988,10 @@
         reposts: Number(record.reposts) || 0,
         profileVisits: Number(record.profileVisits) || 0,
         followers: Number(record.followers) || 0,
+        isAd: Boolean(record.isAd),
+        adDailyCost: Number(record.adDailyCost) || 0,
+        adDays: Number(record.adDays) || 0,
+        adBudget: Boolean(record.isAd) ? (Number(record.adBudget) || ((Number(record.adDailyCost) || 0) * (Number(record.adDays) || 0))) : 0,
         measurements,
         conclusion: record.conclusion || "",
         linkedContentId: record.linkedContentId || "",
@@ -12879,6 +13156,10 @@
       return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value || 0);
     }
 
+    function formatUsd(value) {
+      return `$${formatMoney(value)}`;
+    }
+
     function formatDate(value) {
       if (!value) return "";
       const date = value instanceof Date ? value : new Date(String(value).includes("T") ? value : `${value}T00:00:00`);
@@ -12933,13 +13214,17 @@
     function adsExportRows() {
       const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
-        ["Дата", "Тип", "Тема", "Просмотры", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
+        ["Дата", "Тип", "Тема", "Реклама", "Стоимость дня, USD", "Дней", "Бюджет, USD", "Просмотры", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
         ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
             formatDate(record.date),
             record.type,
             record.topic,
+            record.isAd ? "Да" : "Нет",
+            record.adDailyCost,
+            record.adDays,
+            adRecordBudget(record),
             record.views,
             record.saves,
             record.messages,
