@@ -1161,8 +1161,9 @@
 
     .user-chip-text {
       min-width: 0;
-      display: grid;
-      gap: 1px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
       line-height: 1.1;
     }
 
@@ -1180,6 +1181,10 @@
     .user-chip-text span {
       color: var(--muted);
       font-size: 11px;
+    }
+
+    .user-chip-text span::before {
+      content: "· ";
     }
 
     .wholesale-scope-action {
@@ -3232,7 +3237,6 @@
             <span id="topUserStatus">Вход не выполнен</span>
           </span>
         </button>
-        <span class="cloud-status" id="globalCloudStatus">Облако не настроено</span>
       </div>
 
       <section id="adsView">
