@@ -3568,6 +3568,14 @@
                   </label>
                 </div>
                 <div class="two">
+                  <label>Охват всего
+                    <input id="measurementReach" type="number" min="0" step="1" value="0">
+                  </label>
+                  <label>Новые подписчики от публикации
+                    <input id="measurementFollowers" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
+                <div class="two">
                   <label>Сохранения всего
                     <input id="measurementSaves" type="number" min="0" step="1" value="0" required>
                   </label>
@@ -3629,6 +3637,7 @@
                     <th>Тема</th>
                     <th>Реклама</th>
                     <th class="numeric">Просмотры</th>
+                    <th class="numeric">Охват</th>
                     <th class="numeric">Сохранения</th>
                     <th class="numeric">Сообщения</th>
                     <th class="numeric">Подписчики</th>
@@ -5271,6 +5280,8 @@
     const themeStorageKey = "workspace-tables.theme";
     const contentPlanStorageKey = "workspace-tables.contentPlan.items";
     const contentPlanTableLayoutKey = "workspace-tables.contentPlan.tableLayout";
+    const contentPlanDeadlineCleanupKey = "workspace-tables.contentPlan.deadlineDefaultsCleared";
+    const contentPlanCloudDeadlineCleanupKey = "workspace-tables.contentPlan.cloudDeadlineDefaultsCleared";
     const sidebarCollapsedKey = "workspace-tables.sidebar.collapsed";
     const clientSourcesUrlKey = "workspace-tables.clientSources.url";
     const clientSourcesDataKey = "workspace-tables.clientSources.data";
@@ -5627,6 +5638,8 @@
       recordId: document.querySelector("#measurementRecordId"),
       date: document.querySelector("#measurementDate"),
       views: document.querySelector("#measurementViews"),
+      reach: document.querySelector("#measurementReach"),
+      followers: document.querySelector("#measurementFollowers"),
       saves: document.querySelector("#measurementSaves"),
       messages: document.querySelector("#measurementMessages"),
       likes: document.querySelector("#measurementLikes"),
@@ -5801,7 +5814,7 @@
     fields.date.valueAsDate = new Date();
     adSpendMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     contentFields.date.valueAsDate = new Date();
-    contentFields.prepDeadline.valueAsDate = new Date();
+    contentFields.prepDeadline.value = "";
     funnelFields.date.valueAsDate = new Date();
     wholesaleInvoiceFields.shipDate.valueAsDate = new Date();
     if (wholesalePaymentFields.date) wholesalePaymentFields.date.valueAsDate = new Date();
@@ -5809,6 +5822,7 @@
     renderContentRubricOptions();
     renderPermissionPresetOptions();
     renderPermissionGrid(memberPermissionsGrid, permissionsFromPreset("manager"));
+    clearDefaultContentDeadlines();
     render();
     renderContentPlan();
     renderSales();
@@ -5822,6 +5836,7 @@
     renderWorkspaceMembers();
     loadLeadDraft();
     startCloudAutoLoad();
+    showAuthOnFirstOpen();
 
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -6021,6 +6036,8 @@
         id: createId(),
         date: measurementFields.date.value,
         views: Number(measurementFields.views.value) || 0,
+        reach: Number(measurementFields.reach.value) || 0,
+        followers: Number(measurementFields.followers.value) || 0,
         saves: Number(measurementFields.saves.value) || 0,
         messages: Number(measurementFields.messages.value) || 0,
         likes: Number(measurementFields.likes.value) || 0,
@@ -7334,6 +7351,13 @@
       authModal.classList.add("hidden");
     }
 
+    function showAuthOnFirstOpen() {
+      if (cloudSession.accessToken) return;
+      window.setTimeout(() => {
+        if (!cloudSession.accessToken) openAuthModal();
+      }, 350);
+    }
+
     function saveCloudSession(session) {
       cloudSession = session;
       localStorage.setItem(cloudSessionKey, JSON.stringify(cloudSession));
@@ -7884,6 +7908,7 @@
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
         funnelRecords = mergeCloudRows(funnelCloudRows, funnelRecords, deletedFunnelRecords, normalizeFunnelRecord);
         contentPlanItems = mergeCloudRows(contentPlanRows, contentPlanItems, deletedContentPlan, normalizeContentPlanItem);
+        clearDefaultContentDeadlines(contentPlanCloudDeadlineCleanupKey);
         contentIdeas = mergeCloudRows(contentIdeaRows, contentIdeas, deletedContentIdeas, normalizeContentIdea);
         salesClients = mergeCloudRows(salesClientRows, salesClients, deletedSalesClients, normalizeSalesClient);
         const mergedScripts = mergeCloudRows(salesScriptRows, [salesScriptCloudRecord()], {}, normalizeSalesScript);
@@ -8055,7 +8080,7 @@
       const totalViews = sum(scoped, "views");
       const saves = sum(scoped, "saves");
       const messages = sum(scoped, "messages");
-      const funnelReach = sum(funnelScoped, "reach");
+      const contentReach = sum(scoped, "reach");
       const funnelLeads = sum(funnelScoped, "leads");
       const funnelRevenue = sum(funnelScoped, "revenue");
       const currentMonthSpend = adSpendInRange(records, monthRange(new Date()));
@@ -8066,7 +8091,7 @@
       document.querySelector("#dashMessages").textContent = formatNumber(messages);
       document.querySelector("#dashRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
       document.querySelector("#dashFollowers").textContent = formatNumber(getAccountFollowersTotal());
-      document.querySelector("#dashReach").textContent = formatNumber(funnelReach);
+      document.querySelector("#dashReach").textContent = formatNumber(contentReach);
       document.querySelector("#dashAdSpend").textContent = formatUsd(currentMonthSpend);
       document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
       document.querySelector("#dashRevenue").textContent = formatMoney(funnelRevenue);
@@ -8463,6 +8488,7 @@
             <td>${escapeHtml(record.topic)}</td>
             <td>${record.isAd ? `<span class="type-pill ad-pill">Реклама · ${formatUsd(adRecordBudget(record))}</span>` : "-"}</td>
             <td class="numeric">${formatNumber(record.views)}</td>
+            <td class="numeric">${formatNumber(record.reach)}</td>
             <td class="numeric">${formatNumber(record.saves)}</td>
             <td class="numeric">${formatNumber(record.messages)}</td>
             <td class="numeric">${formatNumber(getRecordFollowers(record))}</td>
@@ -10268,6 +10294,11 @@
         return;
       }
 
+      if (action === "repeat-content") {
+        repeatContentItem(item);
+        return;
+      }
+
       if (action === "delete-content" && confirm("Удалить публикацию из контент-плана?")) {
         deletedContentPlan[id] = new Date().toISOString();
         contentPlanItems = contentPlanItems.filter((record) => record.id !== id);
@@ -10292,6 +10323,7 @@
         <strong>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""} · ${escapeHtml(item.topic || "Без темы")}</strong>
         <div class="actions">
           <button class="btn primary" type="button" data-action="edit-content" data-id="${escapeHtml(item.id)}">Редактировать</button>
+          <button class="btn" type="button" data-action="repeat-content" data-id="${escapeHtml(item.id)}">Повторить публикацию</button>
           <button class="btn" type="button" data-action="publish-content" data-id="${escapeHtml(item.id)}">${isContentPublished(item) ? "Обновить в рекламе" : "Опубликовать"}</button>
           <button class="btn danger" type="button" data-action="delete-content" data-id="${escapeHtml(item.id)}">Удалить</button>
         </div>
@@ -10620,6 +10652,19 @@
       return item.date < today;
     }
 
+    function clearDefaultContentDeadlines(markerKey = contentPlanDeadlineCleanupKey) {
+      if (localStorage.getItem(markerKey) === "true") return;
+      const today = formatIsoDate(new Date());
+      let changed = false;
+      contentPlanItems = contentPlanItems.map((item) => {
+        if (!item.prepDeadline || isContentPublished(item) || item.prepDeadline > today) return item;
+        changed = true;
+        return { ...item, prepDeadline: "", updatedAt: new Date().toISOString() };
+      });
+      localStorage.setItem(markerKey, "true");
+      if (changed) saveContentPlanItems();
+    }
+
     function getArchivedContentPlanItems() {
       return contentPlanItems.filter((item) => item.archivedAt);
     }
@@ -10915,12 +10960,14 @@
         followers: {
           title: "подписчики",
           source: "content",
+          useMeasurements: true,
           value: (items) => items.reduce((total, item) => total + getRecordFollowers(item), 0),
           format: (value) => formatNumber(value),
         },
         reach: {
           title: "охват",
-          source: "funnel",
+          source: "content",
+          useMeasurements: true,
           value: (items) => sum(items, "reach"),
           format: (value) => formatNumber(value),
         },
@@ -11108,7 +11155,7 @@
       contentPlanForm.reset();
       contentFields.id.value = "";
       contentFields.date.valueAsDate = new Date();
-      contentFields.prepDeadline.valueAsDate = new Date();
+      contentFields.prepDeadline.value = "";
       contentFormTitle.textContent = "Новая публикация";
       contentCancelEditBtn.classList.add("hidden");
       if (options.close !== false) closeContentFormPanel();
@@ -11162,6 +11209,28 @@
       contentImportStatus.textContent = "Публикация добавлена в рекламный учет.";
     }
 
+    function repeatContentItem(item) {
+      const now = new Date().toISOString();
+      const copy = normalizeContentPlanItem({
+        ...item,
+        id: createId(),
+        date: formatIsoDate(new Date()),
+        time: "",
+        status: "Запланировано",
+        prepDeadline: "",
+        publishedAt: "",
+        linkedAdId: "",
+        archivedAt: "",
+        updatedAt: now,
+      });
+      contentPlanItems.unshift(copy);
+      activeContentRowId = copy.id;
+      saveContentPlanItems();
+      renderContentPlan();
+      fillContentForm(copy);
+      contentFields.date.focus();
+    }
+
     function publishContentItem(item, options = {}) {
       const today = formatIsoDate(new Date());
       if (isFutureContentDate(item.date)) {
@@ -11202,6 +11271,7 @@
           type: contentTypeToAdType(item.type),
           topic: item.topic,
           views: 0,
+          reach: 0,
           saves: 0,
           messages: 0,
           followers: 0,
@@ -11332,6 +11402,7 @@
             type: contentTypeToAdType(item.type),
             topic: item.topic,
             views: 0,
+            reach: 0,
             saves: 0,
             messages: 0,
             followers: 0,
@@ -11376,7 +11447,8 @@
       const groups = new Map();
       records.forEach((record) => {
         const looksLinked = record.linkedContentId || String(record.conclusion || "").includes("Из контент-плана:");
-        if (!looksLinked || Number(record.views) || Number(record.saves) || Number(record.messages) || Number(record.followers)) return;
+        if (!looksLinked || Number(record.views) || Number(record.reach) || Number(record.saves) || Number(record.messages)
+          || Number(record.followers) || Number(record.likes) || Number(record.forwards) || Number(record.reposts) || Number(record.profileVisits)) return;
         const key = `${record.date}|${record.type}|${normalizeMemoryText(record.topic)}|${normalizeMemoryText(record.conclusion)}`;
         const list = groups.get(key) || [];
         list.push(record);
@@ -11423,6 +11495,8 @@
       measurementFields.recordId.value = record.id;
       measurementFields.date.valueAsDate = new Date();
       measurementFields.views.value = Number(latest.views) || 0;
+      measurementFields.reach.value = Number(latest.reach) || 0;
+      measurementFields.followers.value = Number(latest.followers) || 0;
       measurementFields.saves.value = Number(latest.saves) || 0;
       measurementFields.messages.value = Number(latest.messages) || 0;
       measurementFields.likes.value = Number(latest.likes) || 0;
@@ -11470,7 +11544,8 @@
         <div class="measurement-history-row">
           <strong>${formatDate(measurement.date)}</strong>
           <span>
-            ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.saves)} сохранений,
+            ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.reach)} охват,
+            ${formatNumber(measurement.followers)} подписчиков, ${formatNumber(measurement.saves)} сохранений,
             ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.likes)} лайков,
             ${formatNumber(measurement.forwards)} переслано, ${formatNumber(measurement.reposts)} репостов,
             ${formatNumber(measurement.profileVisits)} посещений профиля${measurement.note ? `. ${escapeHtml(measurement.note)}` : ""}
@@ -11484,6 +11559,8 @@
       if (!previous) return "Первый замер";
       const metrics = [
         ["views", "просмотров"],
+        ["reach", "охват"],
+        ["followers", "подписчиков"],
         ["saves", "сохранений"],
         ["messages", "сообщений"],
         ["likes", "лайков"],
@@ -13477,6 +13554,7 @@
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
+        reach: Number(record.reach) || 0,
         likes: Number(record.likes) || 0,
         forwards: Number(record.forwards) || 0,
         reposts: Number(record.reposts) || 0,
@@ -13506,6 +13584,7 @@
         id: measurement.id || createId(),
         date: measurement.date || "",
         views: Number(measurement.views) || 0,
+        reach: Number(measurement.reach) || 0,
         saves: Number(measurement.saves) || 0,
         messages: Number(measurement.messages) || 0,
         likes: Number(measurement.likes) || 0,
@@ -13523,12 +13602,14 @@
     }
 
     function createMeasurementFromEntry(record) {
-      const hasMetrics = Number(record.views) || Number(record.saves) || Number(record.messages)
-        || Number(record.likes) || Number(record.forwards) || Number(record.reposts) || Number(record.profileVisits);
+      const hasMetrics = Number(record.views) || Number(record.reach) || Number(record.saves) || Number(record.messages)
+        || Number(record.followers) || Number(record.likes) || Number(record.forwards) || Number(record.reposts) || Number(record.profileVisits);
       if (!hasMetrics) return null;
       return normalizeMeasurement({
         date: record.date,
         views: record.views,
+        reach: record.reach,
+        followers: record.followers,
         saves: record.saves,
         messages: record.messages,
         likes: record.likes,
@@ -13551,8 +13632,10 @@
       const latest = getLatestMeasurement(record);
       if (!latest) return record;
       record.views = latest.views;
+      record.reach = latest.reach;
       record.saves = latest.saves;
       record.messages = latest.messages;
+      record.followers = latest.followers;
       record.likes = latest.likes;
       record.forwards = latest.forwards;
       record.reposts = latest.reposts;
@@ -13708,7 +13791,7 @@
     function adsExportRows() {
       const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
-        ["Дата", "Тип", "Тема", "Реклама", "Стоимость дня, USD", "Дней", "Бюджет, USD", "Просмотры", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
+        ["Дата", "Тип", "Тема", "Реклама", "Стоимость дня, USD", "Дней", "Бюджет, USD", "Просмотры", "Охват", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
         ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
@@ -13720,6 +13803,7 @@
             record.adDays,
             adRecordBudget(record),
             record.views,
+            record.reach,
             record.saves,
             record.messages,
             record.likes,
