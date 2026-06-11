@@ -1732,6 +1732,113 @@
       margin-top: 18px;
     }
 
+    .access-auth-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+
+    .access-auth-card strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .access-auth-card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(2, 6, 23, .72);
+      backdrop-filter: blur(8px);
+    }
+
+    .auth-modal-card {
+      width: min(960px, 100%);
+      max-height: min(760px, calc(100vh - 48px));
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .32);
+    }
+
+    .auth-modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .auth-modal-head h3 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+
+    .auth-modal-head p,
+    .auth-note,
+    .first-login-list {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .auth-modal-body {
+      display: grid;
+      grid-template-columns: minmax(280px, .9fr) minmax(320px, 1fr);
+      gap: 20px;
+      padding: 24px;
+    }
+
+    .first-login-box {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+    }
+
+    .first-login-box h4 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .first-login-list {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .auth-status-line {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .wholesale-client-list,
     .wholesale-ledger,
     .payment-list {
@@ -2917,6 +3024,10 @@
       }
 
       .installation-dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-modal-body {
         grid-template-columns: 1fr;
       }
 
@@ -4849,9 +4960,21 @@
             <p>Пользователи, которые могут входить в облако и работать с общими данными SPORTPRO Office.</p>
           </div>
           <div class="actions">
+            <button class="btn primary" id="accessOpenAuthBtn" type="button">Войти / сменить пользователя</button>
+            <button class="btn" id="accessLogoutBtn" type="button">Выйти</button>
             <button class="btn" id="membersRefreshBtn" type="button">Обновить список</button>
           </div>
         </div>
+
+        <section class="access-auth-card" aria-label="Авторизация">
+          <div>
+            <strong id="accessCurrentUser">Вход не выполнен</strong>
+            <span id="accessAuthStatus">Для работы с общими данными войдите под email и паролем, созданными в Supabase.</span>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="accessOpenAuthCardBtn" type="button">Открыть окно входа</button>
+          </div>
+        </section>
 
         <section class="workspace">
           <aside class="panel form-panel">
@@ -5016,6 +5139,41 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div class="auth-modal hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="auth-modal-card">
+      <div class="auth-modal-head">
+        <div>
+          <h3 id="authModalTitle">Вход в SPORTPRO Office</h3>
+          <p>Используйте email и пароль пользователя, созданного в Supabase. После входа программа загрузит доступные вам общие данные.</p>
+        </div>
+        <button class="btn icon" id="authModalCloseBtn" type="button" title="Закрыть">×</button>
+      </div>
+      <div class="auth-modal-body">
+        <section class="first-login-box">
+          <h4>Первый вход</h4>
+          <ol class="first-login-list">
+            <li>Получите у руководителя email и пароль.</li>
+            <li>Введите их справа и нажмите “Войти”.</li>
+            <li>Если вход успешен, программа сама подтянет доступные разделы и данные.</li>
+            <li>Если вход не проходит, попросите проверить пользователя в Supabase и права в разделе “Доступ”.</li>
+          </ol>
+          <p class="auth-note">Пароль хранится не в программе. Здесь сохраняется только текущая сессия входа, чтобы не вводить пароль каждый раз.</p>
+        </section>
+        <form class="auth-form" id="authForm">
+          <label>Email
+            <input id="authEmail" type="email" autocomplete="email" placeholder="manager@sportpro.kz" required>
+          </label>
+          <label>Пароль
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль пользователя" required>
+          </label>
+          <button class="btn primary" type="submit">Войти</button>
+          <button class="btn" id="authUseInfoBtn" type="button">Заполнить текущим email</button>
+          <div class="auth-status-line" id="authStatusLine">Введите данные пользователя для входа.</div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -5308,6 +5466,18 @@
     const memberStatus = document.querySelector("#memberStatus");
     const membersRows = document.querySelector("#membersRows");
     const membersEmpty = document.querySelector("#membersEmpty");
+    const accessCurrentUser = document.querySelector("#accessCurrentUser");
+    const accessAuthStatus = document.querySelector("#accessAuthStatus");
+    const accessOpenAuthBtn = document.querySelector("#accessOpenAuthBtn");
+    const accessOpenAuthCardBtn = document.querySelector("#accessOpenAuthCardBtn");
+    const accessLogoutBtn = document.querySelector("#accessLogoutBtn");
+    const authModal = document.querySelector("#authModal");
+    const authModalCloseBtn = document.querySelector("#authModalCloseBtn");
+    const authForm = document.querySelector("#authForm");
+    const authEmail = document.querySelector("#authEmail");
+    const authPassword = document.querySelector("#authPassword");
+    const authStatusLine = document.querySelector("#authStatusLine");
+    const authUseInfoBtn = document.querySelector("#authUseInfoBtn");
 
     const fields = {
       id: document.querySelector("#entryId"),
@@ -5994,6 +6164,28 @@
     document.querySelector("#cloudTestBtn").addEventListener("click", testCloudConnection);
     document.querySelector("#cloudLoginBtn").addEventListener("click", loginCloud);
     document.querySelector("#cloudLogoutBtn").addEventListener("click", logoutCloud);
+    accessOpenAuthBtn.addEventListener("click", openAuthModal);
+    accessOpenAuthCardBtn.addEventListener("click", openAuthModal);
+    accessLogoutBtn.addEventListener("click", logoutCloud);
+    authModalCloseBtn.addEventListener("click", closeAuthModal);
+    authModal.addEventListener("click", (event) => {
+      if (event.target === authModal) closeAuthModal();
+    });
+    authUseInfoBtn.addEventListener("click", () => {
+      authEmail.value = cloudSession.email || cloudEmail.value || "";
+      authPassword.focus();
+    });
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      authStatusLine.textContent = "Выполняется вход...";
+      await loginCloud({ email: authEmail.value.trim(), password: authPassword.value });
+      if (isCloudReady()) {
+        authPassword.value = "";
+        closeAuthModal();
+      } else {
+        authStatusLine.textContent = "Вход не выполнен. Проверьте email и пароль.";
+      }
+    });
     document.querySelector("#cloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
     document.querySelector("#membersRefreshBtn").addEventListener("click", () => loadWorkspaceMembers());
@@ -6869,10 +7061,31 @@
     function updateCloudAuthStatus() {
       if (!cloudAuthStatus) return;
       if (cloudSession.accessToken) {
-        cloudAuthStatus.textContent = `Вход выполнен: ${cloudSession.email || "пользователь Supabase"}`;
+        const email = cloudSession.email || "пользователь Supabase";
+        cloudAuthStatus.textContent = `Вход выполнен: ${email}`;
+        accessCurrentUser.textContent = email;
+        accessAuthStatus.textContent = "Вход выполнен. Можно работать с общими данными и управлять доступом согласно правам.";
+        accessLogoutBtn.disabled = false;
       } else {
         cloudAuthStatus.textContent = "Вход не выполнен";
+        accessCurrentUser.textContent = "Вход не выполнен";
+        accessAuthStatus.textContent = "Для работы с общими данными войдите под email и паролем, созданными в Supabase.";
+        accessLogoutBtn.disabled = true;
       }
+    }
+
+    function openAuthModal() {
+      authEmail.value = cloudSession.email || cloudEmail.value || "";
+      authPassword.value = "";
+      authStatusLine.textContent = cloudSession.accessToken
+        ? `Сейчас выполнен вход: ${cloudSession.email || "пользователь Supabase"}. Можно войти под другим пользователем.`
+        : "Введите данные пользователя для входа.";
+      authModal.classList.remove("hidden");
+      window.setTimeout(() => (authEmail.value ? authPassword.focus() : authEmail.focus()), 0);
+    }
+
+    function closeAuthModal() {
+      authModal.classList.add("hidden");
     }
 
     function saveCloudSession(session) {
@@ -6889,20 +7102,23 @@
       if (memoryProfileLabel) refreshMemoryProfile();
     }
 
-    async function loginCloud() {
+    async function loginCloud(options = {}) {
       saveCloudConfig();
       if (!isCloudConfigured()) {
         cloudPanel.classList.remove("hidden");
         updateCloudStatus("Заполни настройки облака");
+        if (authStatusLine) authStatusLine.textContent = "Сначала нужно настроить облако Supabase.";
         return;
       }
 
-      const email = cloudEmail.value.trim();
-      const password = cloudPassword.value;
+      const email = options.email || cloudEmail.value.trim();
+      const password = options.password || cloudPassword.value;
       if (!email || !password) {
         updateCloudStatus("Укажи email и пароль");
+        if (authStatusLine) authStatusLine.textContent = "Укажите email и пароль.";
         return;
       }
+      cloudEmail.value = email;
 
       try {
         updateCloudStatus("Выполняется вход...");
@@ -6918,12 +7134,14 @@
           email: session.user?.email || email,
         });
         cloudPassword.value = "";
+        if (authStatusLine) authStatusLine.textContent = "Вход выполнен.";
         updateCloudStatus("Вход выполнен");
         await loadWorkspaceMembers({ silent: true });
         await syncWithCloud({ silent: true });
       } catch (error) {
         clearCloudSession();
         updateCloudStatus("Вход не выполнен");
+        if (authStatusLine) authStatusLine.textContent = "Вход не выполнен. Проверьте email и пароль.";
         alert(`Не удалось войти: ${error.message}`);
       }
     }
@@ -6940,6 +7158,8 @@
         // Local logout still matters even if the remote session is already expired.
       }
       clearCloudSession();
+      if (authPassword) authPassword.value = "";
+      if (authStatusLine) authStatusLine.textContent = "Вы вышли из аккаунта.";
       updateCloudStatus("Вы вышли из облака");
     }
 
