@@ -5049,17 +5049,19 @@
               <input id="profileDisplayName" type="text" placeholder="Например: Юрий">
             </label>
             <label>Ссылка на аватар
-              <input id="profileAvatarUrl" type="url" placeholder="https://...">
+              <input id="profileAvatarUrl" type="text" placeholder="https://... или загруженный файл">
             </label>
             <label>Цвет аватарки
               <input id="profileAvatarColor" type="color" value="#0f766e">
             </label>
           </div>
           <div class="actions" style="margin-top: 12px;">
+            <button class="btn" id="profileUploadBtn" type="button">Загрузить файл</button>
+            <input class="hidden" id="profileAvatarFile" type="file" accept="image/*">
             <button class="btn primary" id="profileSaveBtn" type="button">Сохранить профиль</button>
             <button class="btn" id="profileResetBtn" type="button">Сбросить аватар</button>
           </div>
-          <div class="cloud-help" id="profileStatus">Можно оставить поле аватара пустым — тогда будут показываться инициалы.</div>
+          <div class="cloud-help" id="profileStatus">Можно вставить ссылку или загрузить файл с компьютера. Если аватар пустой, будут показываться инициалы.</div>
         </section>
 
         <section class="workspace">
@@ -5572,6 +5574,8 @@
     const profileDisplayName = document.querySelector("#profileDisplayName");
     const profileAvatarUrl = document.querySelector("#profileAvatarUrl");
     const profileAvatarColor = document.querySelector("#profileAvatarColor");
+    const profileUploadBtn = document.querySelector("#profileUploadBtn");
+    const profileAvatarFile = document.querySelector("#profileAvatarFile");
     const profileSaveBtn = document.querySelector("#profileSaveBtn");
     const profileResetBtn = document.querySelector("#profileResetBtn");
     const profileStatus = document.querySelector("#profileStatus");
@@ -6288,6 +6292,8 @@
       }
     });
     profileSaveBtn.addEventListener("click", saveUserProfile);
+    profileUploadBtn.addEventListener("click", () => profileAvatarFile.click());
+    profileAvatarFile.addEventListener("change", handleProfileAvatarUpload);
     profileResetBtn.addEventListener("click", resetUserProfileAvatar);
     document.querySelector("#cloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
@@ -7238,6 +7244,58 @@
       profileDisplayName.value = profile.displayName || "";
       profileAvatarUrl.value = profile.avatarUrl || "";
       profileAvatarColor.value = profile.avatarColor || "#0f766e";
+    }
+
+    async function handleProfileAvatarUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        alert("Выберите файл изображения: PNG, JPG или WEBP.");
+        event.target.value = "";
+        return;
+      }
+
+      try {
+        profileStatus.textContent = "Загружаем и уменьшаем аватар...";
+        const avatarDataUrl = await resizeAvatarFile(file, 256);
+        profileAvatarUrl.value = avatarDataUrl;
+        saveUserProfile();
+        profileStatus.textContent = "Аватар загружен и сохранен.";
+      } catch (error) {
+        profileStatus.textContent = "Не удалось загрузить аватар.";
+        alert(`Не удалось загрузить аватар: ${error.message}`);
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function resizeAvatarFile(file, size = 256) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("Не удалось открыть изображение."));
+          image.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext("2d");
+            if (!context) {
+              resolve(String(reader.result || ""));
+              return;
+            }
+            const side = Math.min(image.width, image.height);
+            const sourceX = Math.max(0, (image.width - side) / 2);
+            const sourceY = Math.max(0, (image.height - side) / 2);
+            context.clearRect(0, 0, size, size);
+            context.drawImage(image, sourceX, sourceY, side, side, 0, 0, size, size);
+            resolve(canvas.toDataURL("image/jpeg", 0.86));
+          };
+          image.src = String(reader.result || "");
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     function saveUserProfile() {
