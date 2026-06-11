@@ -1123,7 +1123,63 @@
     .global-sync-line {
       display: flex;
       justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 12px;
+    }
+
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      max-width: min(420px, 100%);
+      padding: 4px 10px 4px 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      color: var(--ink);
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      overflow: hidden;
+      flex: 0 0 auto;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      background-size: cover;
+      background-position: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--line));
+    }
+
+    .user-chip-text {
+      min-width: 0;
+      display: grid;
+      gap: 1px;
+      line-height: 1.1;
+    }
+
+    .user-chip-text strong,
+    .user-chip-text span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-chip-text strong {
+      font-size: 13px;
+    }
+
+    .user-chip-text span {
+      color: var(--muted);
+      font-size: 11px;
     }
 
     .wholesale-scope-action {
@@ -3169,6 +3225,13 @@
 
     <main class="main">
       <div class="global-sync-line">
+        <button class="user-chip" id="topUserChip" type="button" title="Открыть вход и профиль">
+          <span class="user-avatar" id="topUserAvatar">?</span>
+          <span class="user-chip-text">
+            <strong id="topUserName">Гость</strong>
+            <span id="topUserStatus">Вход не выполнен</span>
+          </span>
+        </button>
         <span class="cloud-status" id="globalCloudStatus">Облако не настроено</span>
       </div>
 
@@ -4976,6 +5039,29 @@
           </div>
         </section>
 
+        <section class="panel chart-panel">
+          <div class="chart-header">
+            <h3>Профиль пользователя</h3>
+            <span class="cloud-help">Эти настройки меняют только отображение в SPORTPRO Office.</span>
+          </div>
+          <div class="cloud-grid">
+            <label>Имя на экране
+              <input id="profileDisplayName" type="text" placeholder="Например: Юрий">
+            </label>
+            <label>Ссылка на аватар
+              <input id="profileAvatarUrl" type="url" placeholder="https://...">
+            </label>
+            <label>Цвет аватарки
+              <input id="profileAvatarColor" type="color" value="#0f766e">
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 12px;">
+            <button class="btn primary" id="profileSaveBtn" type="button">Сохранить профиль</button>
+            <button class="btn" id="profileResetBtn" type="button">Сбросить аватар</button>
+          </div>
+          <div class="cloud-help" id="profileStatus">Можно оставить поле аватара пустым — тогда будут показываться инициалы.</div>
+        </section>
+
         <section class="workspace">
           <aside class="panel form-panel">
             <h3>Добавить пользователя</h3>
@@ -5197,6 +5283,7 @@
     const installationProjectsStorageKey = "workspace-tables.installation.projects";
     const memoryStoragePrefix = "workspace-tables.memory.profile.";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
+    const userProfilesStorageKey = "workspace-tables.userProfiles";
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
     const defaultCloudConfig = {
@@ -5276,6 +5363,10 @@
     const cloudEmail = document.querySelector("#cloudEmail");
     const cloudPassword = document.querySelector("#cloudPassword");
     const cloudAuthStatus = document.querySelector("#cloudAuthStatus");
+    const topUserChip = document.querySelector("#topUserChip");
+    const topUserAvatar = document.querySelector("#topUserAvatar");
+    const topUserName = document.querySelector("#topUserName");
+    const topUserStatus = document.querySelector("#topUserStatus");
     const accountFollowersTotal = document.querySelector("#accountFollowersTotal");
     const followersBaseValue = document.querySelector("#followersBaseValue");
     const followersGrowthValue = document.querySelector("#followersGrowthValue");
@@ -5478,6 +5569,12 @@
     const authPassword = document.querySelector("#authPassword");
     const authStatusLine = document.querySelector("#authStatusLine");
     const authUseInfoBtn = document.querySelector("#authUseInfoBtn");
+    const profileDisplayName = document.querySelector("#profileDisplayName");
+    const profileAvatarUrl = document.querySelector("#profileAvatarUrl");
+    const profileAvatarColor = document.querySelector("#profileAvatarColor");
+    const profileSaveBtn = document.querySelector("#profileSaveBtn");
+    const profileResetBtn = document.querySelector("#profileResetBtn");
+    const profileStatus = document.querySelector("#profileStatus");
 
     const fields = {
       id: document.querySelector("#entryId"),
@@ -6175,6 +6272,10 @@
       authEmail.value = cloudSession.email || cloudEmail.value || "";
       authPassword.focus();
     });
+    topUserChip.addEventListener("click", () => {
+      document.querySelector('[data-view="access"]').click();
+      if (!cloudSession.accessToken) openAuthModal();
+    });
     authForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       authStatusLine.textContent = "Выполняется вход...";
@@ -6186,6 +6287,8 @@
         authStatusLine.textContent = "Вход не выполнен. Проверьте email и пароль.";
       }
     });
+    profileSaveBtn.addEventListener("click", saveUserProfile);
+    profileResetBtn.addEventListener("click", resetUserProfileAvatar);
     document.querySelector("#cloudSyncBtn").addEventListener("click", syncWithCloud);
     document.querySelector("#cloudPullBtn").addEventListener("click", pullFromCloud);
     document.querySelector("#membersRefreshBtn").addEventListener("click", () => loadWorkspaceMembers());
@@ -7072,6 +7175,91 @@
         accessAuthStatus.textContent = "Для работы с общими данными войдите под email и паролем, созданными в Supabase.";
         accessLogoutBtn.disabled = true;
       }
+      renderUserProfile();
+      renderUserProfileEditor();
+    }
+
+    function currentUserProfileKey() {
+      return normalizeEmail(cloudSession.email || cloudEmail.value || "guest");
+    }
+
+    function loadUserProfiles() {
+      const saved = readStorage(userProfilesStorageKey);
+      return saved && !Array.isArray(saved) && typeof saved === "object" ? saved : {};
+    }
+
+    function saveUserProfiles(profiles) {
+      localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles || {}));
+    }
+
+    function currentUserProfile() {
+      const profiles = loadUserProfiles();
+      return profiles[currentUserProfileKey()] || {};
+    }
+
+    function defaultUserDisplayName() {
+      const email = cloudSession.email || cloudEmail.value || "";
+      if (!email) return "Гость";
+      return email.split("@")[0] || email;
+    }
+
+    function userInitials(nameOrEmail) {
+      const value = String(nameOrEmail || "Гость").trim();
+      const parts = value.includes("@") ? [value.split("@")[0]] : value.split(/\s+/).filter(Boolean);
+      const letters = parts.length > 1 ? `${parts[0][0] || ""}${parts[1][0] || ""}` : (parts[0] || "?").slice(0, 2);
+      return letters.toUpperCase();
+    }
+
+    function renderUserProfile() {
+      const profile = currentUserProfile();
+      const email = cloudSession.email || "";
+      const displayName = profile.displayName || defaultUserDisplayName();
+      const avatarUrl = String(profile.avatarUrl || "").trim();
+      const avatarColor = profile.avatarColor || "#0f766e";
+
+      topUserName.textContent = displayName;
+      topUserStatus.textContent = email ? email : "Вход не выполнен";
+      topUserAvatar.style.backgroundColor = avatarColor;
+      if (avatarUrl) {
+        topUserAvatar.style.backgroundImage = `url("${avatarUrl.replace(/"/g, "%22")}")`;
+        topUserAvatar.textContent = "";
+      } else {
+        topUserAvatar.style.backgroundImage = "";
+        topUserAvatar.textContent = userInitials(displayName || email);
+      }
+
+      if (email && profile.displayName) {
+        accessCurrentUser.textContent = `${profile.displayName} · ${email}`;
+      }
+    }
+
+    function renderUserProfileEditor() {
+      const profile = currentUserProfile();
+      profileDisplayName.value = profile.displayName || "";
+      profileAvatarUrl.value = profile.avatarUrl || "";
+      profileAvatarColor.value = profile.avatarColor || "#0f766e";
+    }
+
+    function saveUserProfile() {
+      const key = currentUserProfileKey();
+      const profiles = loadUserProfiles();
+      profiles[key] = {
+        displayName: profileDisplayName.value.trim(),
+        avatarUrl: profileAvatarUrl.value.trim(),
+        avatarColor: profileAvatarColor.value || "#0f766e",
+        updatedAt: new Date().toISOString(),
+      };
+      saveUserProfiles(profiles);
+      renderUserProfile();
+      renderUserProfileEditor();
+      profileStatus.textContent = "Профиль сохранен.";
+    }
+
+    function resetUserProfileAvatar() {
+      profileAvatarUrl.value = "";
+      profileAvatarColor.value = "#0f766e";
+      saveUserProfile();
+      profileStatus.textContent = "Аватар сброшен. Будут показываться инициалы.";
     }
 
     function openAuthModal() {
