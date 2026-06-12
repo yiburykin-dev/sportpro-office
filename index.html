@@ -5336,7 +5336,7 @@
         </section>
         <form class="auth-form" id="dashboardSettingsForm">
           <div class="dashboard-settings-grid" id="dashboardSettingsGrid"></div>
-          <button class="btn primary" type="submit">Сохранить</button>
+          <button class="btn primary" id="dashboardSettingsSaveBtn" type="button">Сохранить</button>
           <button class="btn" id="dashboardSettingsShowAllBtn" type="button">Показать все</button>
           <button class="btn" id="dashboardSettingsCancelBtn" type="button">Отмена</button>
           <div class="auth-status-line" id="dashboardSettingsStatus">Выберите минимум один показатель.</div>
@@ -5661,6 +5661,7 @@
     const dashboardSettingsGrid = document.querySelector("#dashboardSettingsGrid");
     const dashboardSettingsCloseBtn = document.querySelector("#dashboardSettingsCloseBtn");
     const dashboardSettingsCancelBtn = document.querySelector("#dashboardSettingsCancelBtn");
+    const dashboardSettingsSaveBtn = document.querySelector("#dashboardSettingsSaveBtn");
     const dashboardSettingsShowAllBtn = document.querySelector("#dashboardSettingsShowAllBtn");
     const dashboardSettingsStatus = document.querySelector("#dashboardSettingsStatus");
     const profileDisplayName = document.querySelector("#profileDisplayName");
@@ -6377,6 +6378,7 @@
       if (event.target === dashboardSettingsModal) closeDashboardSettings();
     });
     dashboardSettingsForm.addEventListener("submit", saveDashboardSettingsFromForm);
+    dashboardSettingsSaveBtn.addEventListener("click", saveDashboardSettingsFromForm);
     dashboardSettingsShowAllBtn.addEventListener("click", resetActiveDashboardSettings);
     document.querySelectorAll("[data-dashboard-settings]").forEach((button) => {
       button.addEventListener("click", () => openDashboardSettings(button.dataset.dashboardSettings, button.dataset.dashboardTitle || "Дашборд"));
@@ -7360,12 +7362,21 @@
       return `${dashboardSettingsStoragePrefix}${currentUserProfileKey()}`;
     }
 
+    function dashboardSettingsFallbackKey() {
+      return `${dashboardSettingsStoragePrefix}local`;
+    }
+
     function loadDashboardSettings() {
-      return readStorage(dashboardSettingsStorageKey()) || {};
+      const userSettings = readStorage(dashboardSettingsStorageKey());
+      if (userSettings && !Array.isArray(userSettings) && typeof userSettings === "object") return userSettings;
+      const fallbackSettings = readStorage(dashboardSettingsFallbackKey());
+      return fallbackSettings && !Array.isArray(fallbackSettings) && typeof fallbackSettings === "object" ? fallbackSettings : {};
     }
 
     function saveDashboardSettings(settings) {
-      localStorage.setItem(dashboardSettingsStorageKey(), JSON.stringify(settings || {}));
+      const payload = JSON.stringify(settings || {});
+      localStorage.setItem(dashboardSettingsStorageKey(), payload);
+      localStorage.setItem(dashboardSettingsFallbackKey(), payload);
     }
 
     function dashboardCards(dashboardId) {
@@ -7380,16 +7391,18 @@
     function selectedDashboardKeys(dashboardId) {
       const cards = dashboardCards(dashboardId);
       const settings = loadDashboardSettings();
-      const selected = Array.isArray(settings[dashboardId]) ? settings[dashboardId] : cards.map((card) => card.key);
+      const hasSavedSelection = Array.isArray(settings[dashboardId]);
+      const selected = hasSavedSelection ? settings[dashboardId] : cards.map((card) => card.key);
       const validKeys = new Set(cards.map((card) => card.key));
-      return new Set(selected.filter((key) => validKeys.has(key)));
+      const result = new Set(selected.filter((key) => validKeys.has(key)));
+      if (hasSavedSelection) return result;
+      return new Set(cards.map((card) => card.key));
     }
 
     function applyDashboardSettings(dashboardId) {
       const cards = dashboardCards(dashboardId);
       if (!cards.length) return;
-      let selected = selectedDashboardKeys(dashboardId);
-      if (!selected.size) selected = new Set(cards.map((card) => card.key));
+      const selected = selectedDashboardKeys(dashboardId);
       cards.forEach(({ key, metric }) => metric.classList.toggle("dashboard-card-hidden", !selected.has(key)));
 
       if (dashboardId === "adsDashboard" && !selected.has(activeDashboardMetric)) {
@@ -7434,7 +7447,7 @@
     }
 
     function saveDashboardSettingsFromForm(event) {
-      event.preventDefault();
+      event?.preventDefault();
       if (!activeDashboardSettingsId) return;
       const selected = [...dashboardSettingsGrid.querySelectorAll("input:checked")].map((input) => input.value);
       if (!selected.length) {
@@ -7444,6 +7457,11 @@
       const settings = loadDashboardSettings();
       settings[activeDashboardSettingsId] = selected;
       saveDashboardSettings(settings);
+      const saved = loadDashboardSettings();
+      if (!Array.isArray(saved[activeDashboardSettingsId])) {
+        dashboardSettingsStatus.textContent = "Не удалось сохранить настройку. Проверьте, не запрещено ли хранилище браузера.";
+        return;
+      }
       if (activeDashboardSettingsId === "adsDashboard" && !selected.includes(activeDashboardMetric)) {
         activeDashboardMetric = selected[0] || "views";
         renderDashboard();
