@@ -713,12 +713,14 @@
       padding: 14px;
     }
 
-    .metric[data-dashboard-metric] {
+    .metric[data-dashboard-metric],
+    .metric[data-wholesale-metric] {
       cursor: pointer;
       transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
     }
 
-    .metric[data-dashboard-metric]:hover {
+    .metric[data-dashboard-metric]:hover,
+    .metric[data-wholesale-metric]:hover {
       border-color: var(--accent);
       transform: translateY(-1px);
     }
@@ -726,6 +728,39 @@
     .metric.active {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+    }
+
+    .metric.dashboard-card-hidden {
+      display: none;
+    }
+
+    .dashboard-settings-btn {
+      min-width: 42px;
+      padding: 9px 11px;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .dashboard-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .dashboard-settings-grid label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      cursor: pointer;
+    }
+
+    .dashboard-settings-grid input {
+      width: auto;
+      min-height: auto;
     }
 
     .metric span {
@@ -3113,6 +3148,7 @@
       .summary,
       .two,
       .cloud-grid,
+      .dashboard-settings-grid,
       .cloud-auth,
       .input-grid,
       .content-type-summary,
@@ -3324,6 +3360,7 @@
             <p>Обзор результатов рекламы по внесенным записям.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="adsDashboard" data-dashboard-title="Дашборд рекламы" title="Настроить показатели">⚙</button>
             <select id="dashboardPeriod" aria-label="Период дашборда">
               <option value="all">Все время</option>
               <option value="30">30 дней</option>
@@ -3332,20 +3369,20 @@
           </div>
         </div>
 
-        <section class="summary" aria-label="Итоги дашборда">
-          <div class="metric active" data-dashboard-metric="views"><span>Просмотры</span><strong id="dashViews">0</strong></div>
-          <div class="metric" data-dashboard-metric="rows"><span>Записей</span><strong id="dashRows">0</strong></div>
-          <div class="metric" data-dashboard-metric="saves"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
-          <div class="metric" data-dashboard-metric="messages"><span>Сообщения</span><strong id="dashMessages">0</strong></div>
-          <div class="metric" data-dashboard-metric="rate"><span>Отклик</span><strong id="dashRate">0%</strong></div>
+        <section class="summary" data-dashboard-panel="adsDashboard" aria-label="Итоги дашборда">
+          <div class="metric active" data-dashboard-metric="views" data-dashboard-card="views"><span>Просмотры</span><strong id="dashViews">0</strong></div>
+          <div class="metric" data-dashboard-metric="rows" data-dashboard-card="rows"><span>Записей</span><strong id="dashRows">0</strong></div>
+          <div class="metric" data-dashboard-metric="saves" data-dashboard-card="saves"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
+          <div class="metric" data-dashboard-metric="messages" data-dashboard-card="messages"><span>Сообщения</span><strong id="dashMessages">0</strong></div>
+          <div class="metric" data-dashboard-metric="rate" data-dashboard-card="rate"><span>Отклик</span><strong id="dashRate">0%</strong></div>
         </section>
 
-        <section class="summary" aria-label="Итоги воронки">
-          <div class="metric" data-dashboard-metric="followers"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
-          <div class="metric" data-dashboard-metric="reach"><span>Охват</span><strong id="dashReach">0</strong></div>
-          <div class="metric" data-dashboard-metric="adSpend"><span>Затраты</span><strong id="dashAdSpend">0</strong></div>
-          <div class="metric" data-dashboard-metric="leads"><span>Лиды</span><strong id="dashLeads">0</strong></div>
-          <div class="metric" data-dashboard-metric="revenue"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
+        <section class="summary" data-dashboard-panel="adsDashboard" aria-label="Итоги воронки">
+          <div class="metric" data-dashboard-metric="followers" data-dashboard-card="followers"><span>Подписчики</span><strong id="dashFollowers">0</strong></div>
+          <div class="metric" data-dashboard-metric="reach" data-dashboard-card="reach"><span>Охват</span><strong id="dashReach">0</strong></div>
+          <div class="metric" data-dashboard-metric="adSpend" data-dashboard-card="adSpend"><span>Затраты</span><strong id="dashAdSpend">0</strong></div>
+          <div class="metric" data-dashboard-metric="leads" data-dashboard-card="leads"><span>Лиды</span><strong id="dashLeads">0</strong></div>
+          <div class="metric" data-dashboard-metric="revenue" data-dashboard-card="revenue"><span>Выручка</span><strong id="dashRevenue">0</strong></div>
         </section>
 
         <section class="dashboard-grid">
@@ -3465,18 +3502,19 @@
             <p>Контент, показатели и выводы по каждому размещению.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="adsPublications" data-dashboard-title="Публикации" title="Настроить показатели">⚙</button>
             <button class="btn" id="exportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
             <button class="btn" id="exportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn danger hidden" id="clearBtn" type="button" title="Очистить все записи">Очистить</button>
           </div>
         </div>
 
-        <section class="summary" aria-label="Итоги">
-          <div class="metric"><span>Записей</span><strong id="totalRows">0</strong></div>
-          <div class="metric"><span>Просмотры</span><strong id="totalViews">0</strong></div>
-          <div class="metric"><span>Сохранения</span><strong id="totalSaves">0</strong></div>
-          <div class="metric"><span>Сообщения</span><strong id="totalMessages">0</strong></div>
-          <div class="metric"><span>Отклик</span><strong id="totalRate">0%</strong></div>
+        <section class="summary" data-dashboard-panel="adsPublications" aria-label="Итоги">
+          <div class="metric" data-dashboard-card="rows"><span>Записей</span><strong id="totalRows">0</strong></div>
+          <div class="metric" data-dashboard-card="views"><span>Просмотры</span><strong id="totalViews">0</strong></div>
+          <div class="metric" data-dashboard-card="saves"><span>Сохранения</span><strong id="totalSaves">0</strong></div>
+          <div class="metric" data-dashboard-card="messages"><span>Сообщения</span><strong id="totalMessages">0</strong></div>
+          <div class="metric" data-dashboard-card="rate"><span>Отклик</span><strong id="totalRate">0%</strong></div>
         </section>
 
         <section class="panel chart-panel">
@@ -3666,6 +3704,7 @@
             <p>Бизнес-показатели рекламы по дням или отчетным периодам.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="adsFunnel" data-dashboard-title="Лиды. Итоги дня" title="Настроить показатели">⚙</button>
             <button class="btn primary" id="funnelNewRecordBtn" type="button">Новый итог дня</button>
             <button class="btn" id="funnelExportBtn" type="button" title="Скачать таблицу для Excel">Excel</button>
             <button class="btn" id="funnelExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
@@ -3673,12 +3712,12 @@
           </div>
         </div>
 
-        <section class="summary" aria-label="Итоги воронки">
-          <div class="metric"><span>Лиды</span><strong id="funnelTotalLeads">0</strong></div>
-          <div class="metric"><span>КП</span><strong id="funnelTotalOffers">0</strong></div>
-          <div class="metric"><span>Сделки</span><strong id="funnelTotalDeals">0</strong></div>
-          <div class="metric"><span>Выручка</span><strong id="funnelTotalRevenue">0</strong></div>
-          <div class="metric"><span>ROMI</span><strong id="funnelTotalRomi">0%</strong></div>
+        <section class="summary" data-dashboard-panel="adsFunnel" aria-label="Итоги воронки">
+          <div class="metric" data-dashboard-card="leads"><span>Лиды</span><strong id="funnelTotalLeads">0</strong></div>
+          <div class="metric" data-dashboard-card="offers"><span>КП</span><strong id="funnelTotalOffers">0</strong></div>
+          <div class="metric" data-dashboard-card="deals"><span>Сделки</span><strong id="funnelTotalDeals">0</strong></div>
+          <div class="metric" data-dashboard-card="revenue"><span>Выручка</span><strong id="funnelTotalRevenue">0</strong></div>
+          <div class="metric" data-dashboard-card="romi"><span>ROMI</span><strong id="funnelTotalRomi">0%</strong></div>
         </section>
 
         <section class="workspace content-list-workspace" id="adsFunnelWorkspace">
@@ -4185,6 +4224,7 @@
             <label class="wholesale-scope-action"><span>Рабочая таблица</span>
               <select id="wholesaleScopeSelect"></select>
             </label>
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="wholesale" data-dashboard-title="Поставки и оплаты" title="Настроить показатели">⚙</button>
             <button class="btn primary" id="wholesaleCloudSyncBtn" type="button">Синхронизировать</button>
             <button class="btn" id="wholesaleBackupJsonBtn" type="button">Резерв JSON</button>
             <button class="btn" id="wholesaleExportExcelBtn" type="button">Excel</button>
@@ -4197,12 +4237,12 @@
           <span>Наведи, чтобы увидеть последние события</span>
         </div>
 
-        <section class="summary" id="wholesaleSummary" aria-label="Итоги поставок и оплат">
-          <div class="metric" data-dashboard-metric data-wholesale-metric="monthPaid"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
-          <div class="metric" data-dashboard-metric data-wholesale-metric="goodsDebt"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
-          <div class="metric" data-dashboard-metric data-wholesale-metric="overpayment"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
-          <div class="metric" data-dashboard-metric data-wholesale-metric="transportDebt"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
-          <div class="metric" data-dashboard-metric data-wholesale-metric="overdue"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
+        <section class="summary" id="wholesaleSummary" data-dashboard-panel="wholesale" aria-label="Итоги поставок и оплат">
+          <div class="metric" data-wholesale-metric="monthPaid" data-dashboard-card="monthPaid"><span>Оплачено в текущем месяце</span><strong id="wholesaleCurrentMonthPaid">0</strong></div>
+          <div class="metric" data-wholesale-metric="goodsDebt" data-dashboard-card="goodsDebt"><span>Долг по товару</span><strong id="wholesaleTotalDebt">0</strong></div>
+          <div class="metric" data-wholesale-metric="overpayment" data-dashboard-card="overpayment"><span>Переплата</span><strong id="wholesaleTotalOverpayment">0</strong></div>
+          <div class="metric" data-wholesale-metric="transportDebt" data-dashboard-card="transportDebt"><span>Долг по ТР</span><strong id="wholesaleTotalTransportDebt">0</strong></div>
+          <div class="metric" data-wholesale-metric="overdue" data-dashboard-card="overdue"><span>Просрочено</span><strong id="wholesaleOverdueDebt">0</strong></div>
         </section>
         <section class="panel metric-drilldown hidden" id="wholesaleMetricDetails"></section>
 
@@ -4475,6 +4515,7 @@
             <p class="sales-goal" id="sourcesHeaderUpdatedAt">Последнее обновление: пока нет.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="sources" data-dashboard-title="Источники клиентов" title="Настроить показатели">⚙</button>
             <button class="btn" id="sourcesExportExcelBtn" type="button" title="Скачать источники для Excel">Excel</button>
             <button class="btn" id="sourcesExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
             <button class="btn primary" id="sourcesRefreshBtn" type="button">Обновить данные</button>
@@ -4495,11 +4536,11 @@
           <div class="cloud-help" id="sourcesStatus">Ссылка готова. Нажмите “Обновить данные”.</div>
         </section>
 
-        <section class="summary" aria-label="Итоги источников клиентов">
-          <div class="metric"><span>Ответов</span><strong id="sourcesTotal">0</strong></div>
-          <div class="metric"><span>Источников</span><strong id="sourcesCount">0</strong></div>
-          <div class="metric"><span>Топ источник</span><strong id="sourcesTop">-</strong></div>
-          <div class="metric"><span>Доля топа</span><strong id="sourcesTopPercent">0%</strong></div>
+        <section class="summary" data-dashboard-panel="sources" aria-label="Итоги источников клиентов">
+          <div class="metric" data-dashboard-card="total"><span>Ответов</span><strong id="sourcesTotal">0</strong></div>
+          <div class="metric" data-dashboard-card="count"><span>Источников</span><strong id="sourcesCount">0</strong></div>
+          <div class="metric" data-dashboard-card="top"><span>Топ источник</span><strong id="sourcesTop">-</strong></div>
+          <div class="metric" data-dashboard-card="topPercent"><span>Доля топа</span><strong id="sourcesTopPercent">0%</strong></div>
         </section>
 
         <section class="dashboard-grid">
@@ -4539,6 +4580,7 @@
             <p>Проект монтажа, расходы по логистике, проживанию, работам и рабочему времени.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="installation" data-dashboard-title="Монтаж" title="Настроить показатели">⚙</button>
             <button class="btn" id="installationExportExcelBtn" type="button">Excel</button>
             <button class="btn" id="installationExportPdfBtn" type="button">PDF</button>
             <button class="btn" id="installationSaveProjectBtn" type="button">Сохранить проект</button>
@@ -4798,6 +4840,7 @@
             <p>Личный тренажер активного вспоминания, интервального повторения и мнемотехник.</p>
           </div>
           <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="memory" data-dashboard-title="Память" title="Настроить показатели">⚙</button>
             <button class="btn" id="memoryExportExcelBtn" type="button">Excel</button>
             <button class="btn" id="memoryExportPdfBtn" type="button">PDF</button>
           </div>
@@ -4819,24 +4862,24 @@
         </div>
 
         <section id="memoryTodayView">
-          <div class="summary">
-            <div class="metric">
+          <div class="summary" data-dashboard-panel="memory">
+            <div class="metric" data-dashboard-card="due">
               <span>К повторению</span>
               <strong id="memoryDueCount">0</strong>
             </div>
-            <div class="metric">
+            <div class="metric" data-dashboard-card="today">
               <span>Сегодня повторено</span>
               <strong id="memoryTodayReviews">0</strong>
             </div>
-            <div class="metric">
+            <div class="metric" data-dashboard-card="accuracy">
               <span>Точность сегодня</span>
               <strong id="memoryTodayAccuracy">0%</strong>
             </div>
-            <div class="metric">
+            <div class="metric" data-dashboard-card="total">
               <span>Карточек всего</span>
               <strong id="memoryCardsTotal">0</strong>
             </div>
-            <div class="metric">
+            <div class="metric" data-dashboard-card="streak">
               <span>Серия дней</span>
               <strong id="memoryStreak">0</strong>
             </div>
@@ -5277,6 +5320,31 @@
     </div>
   </div>
 
+  <div class="auth-modal hidden" id="dashboardSettingsModal" role="dialog" aria-modal="true" aria-labelledby="dashboardSettingsTitle">
+    <div class="auth-modal-card">
+      <div class="auth-modal-head">
+        <div>
+          <h3 id="dashboardSettingsTitle">Настройка дашборда</h3>
+          <p>Выберите показатели, которые нужно показывать именно в вашем профиле.</p>
+        </div>
+        <button class="btn icon" id="dashboardSettingsCloseBtn" type="button" title="Закрыть">×</button>
+      </div>
+      <div class="auth-modal-body">
+        <section class="first-login-box">
+          <h4>Персональный вид</h4>
+          <p class="auth-note">Настройка сохраняется для текущего пользователя. Другие пользователи могут выбрать свой набор показателей.</p>
+        </section>
+        <form class="auth-form" id="dashboardSettingsForm">
+          <div class="dashboard-settings-grid" id="dashboardSettingsGrid"></div>
+          <button class="btn primary" type="submit">Сохранить</button>
+          <button class="btn" id="dashboardSettingsShowAllBtn" type="button">Показать все</button>
+          <button class="btn" id="dashboardSettingsCancelBtn" type="button">Отмена</button>
+          <div class="auth-status-line" id="dashboardSettingsStatus">Выберите минимум один показатель.</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script>
     const storageKey = "workspace-tables.ads.records";
     const funnelStorageKey = "workspace-tables.ads.funnel";
@@ -5286,6 +5354,7 @@
     const contentPlanTableLayoutKey = "workspace-tables.contentPlan.tableLayout";
     const contentPlanDeadlineCleanupKey = "workspace-tables.contentPlan.deadlineDefaultsCleared";
     const contentPlanCloudDeadlineCleanupKey = "workspace-tables.contentPlan.cloudDeadlineDefaultsCleared";
+    const dashboardSettingsStoragePrefix = "workspace-tables.dashboardSettings.";
     const sidebarCollapsedKey = "workspace-tables.sidebar.collapsed";
     const clientSourcesUrlKey = "workspace-tables.clientSources.url";
     const clientSourcesDataKey = "workspace-tables.clientSources.data";
@@ -5586,6 +5655,14 @@
     const authPassword = document.querySelector("#authPassword");
     const authStatusLine = document.querySelector("#authStatusLine");
     const authUseInfoBtn = document.querySelector("#authUseInfoBtn");
+    const dashboardSettingsModal = document.querySelector("#dashboardSettingsModal");
+    const dashboardSettingsTitle = document.querySelector("#dashboardSettingsTitle");
+    const dashboardSettingsForm = document.querySelector("#dashboardSettingsForm");
+    const dashboardSettingsGrid = document.querySelector("#dashboardSettingsGrid");
+    const dashboardSettingsCloseBtn = document.querySelector("#dashboardSettingsCloseBtn");
+    const dashboardSettingsCancelBtn = document.querySelector("#dashboardSettingsCancelBtn");
+    const dashboardSettingsShowAllBtn = document.querySelector("#dashboardSettingsShowAllBtn");
+    const dashboardSettingsStatus = document.querySelector("#dashboardSettingsStatus");
     const profileDisplayName = document.querySelector("#profileDisplayName");
     const profileAvatarUrl = document.querySelector("#profileAvatarUrl");
     const profileAvatarColor = document.querySelector("#profileAvatarColor");
@@ -5810,6 +5887,7 @@
     let autoSyncTimer = null;
     let isApplyingCloudData = false;
     let isAutoSyncing = false;
+    let activeDashboardSettingsId = "";
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
     applySidebarState(localStorage.getItem(sidebarCollapsedKey) === "true");
@@ -6293,6 +6371,16 @@
     authModal.addEventListener("click", (event) => {
       if (event.target === authModal) closeAuthModal();
     });
+    dashboardSettingsCloseBtn.addEventListener("click", closeDashboardSettings);
+    dashboardSettingsCancelBtn.addEventListener("click", closeDashboardSettings);
+    dashboardSettingsModal.addEventListener("click", (event) => {
+      if (event.target === dashboardSettingsModal) closeDashboardSettings();
+    });
+    dashboardSettingsForm.addEventListener("submit", saveDashboardSettingsFromForm);
+    dashboardSettingsShowAllBtn.addEventListener("click", resetActiveDashboardSettings);
+    document.querySelectorAll("[data-dashboard-settings]").forEach((button) => {
+      button.addEventListener("click", () => openDashboardSettings(button.dataset.dashboardSettings, button.dataset.dashboardTitle || "Дашборд"));
+    });
     authUseInfoBtn.addEventListener("click", () => {
       authEmail.value = cloudSession.email || cloudEmail.value || "";
       authPassword.focus();
@@ -6657,6 +6745,7 @@
       renderContentPlan();
       renderWholesale();
       renderMemory();
+      applyAllDashboardSettings();
     }
 
     function applyTheme(theme) {
@@ -7265,6 +7354,115 @@
       profileDisplayName.value = profile.displayName || "";
       profileAvatarUrl.value = profile.avatarUrl || "";
       profileAvatarColor.value = profile.avatarColor || "#0f766e";
+    }
+
+    function dashboardSettingsStorageKey() {
+      return `${dashboardSettingsStoragePrefix}${currentUserProfileKey()}`;
+    }
+
+    function loadDashboardSettings() {
+      return readStorage(dashboardSettingsStorageKey()) || {};
+    }
+
+    function saveDashboardSettings(settings) {
+      localStorage.setItem(dashboardSettingsStorageKey(), JSON.stringify(settings || {}));
+    }
+
+    function dashboardCards(dashboardId) {
+      return [...document.querySelectorAll(`[data-dashboard-panel="${dashboardId}"] .metric`)].map((metric, index) => {
+        const label = metric.querySelector("span")?.textContent?.trim() || `Показатель ${index + 1}`;
+        const key = metric.dataset.dashboardCard || metric.dataset.dashboardMetric || metric.dataset.wholesaleMetric || normalizeMemoryText(label) || `card-${index}`;
+        metric.dataset.dashboardCard = key;
+        return { key, label, metric };
+      });
+    }
+
+    function selectedDashboardKeys(dashboardId) {
+      const cards = dashboardCards(dashboardId);
+      const settings = loadDashboardSettings();
+      const selected = Array.isArray(settings[dashboardId]) ? settings[dashboardId] : cards.map((card) => card.key);
+      const validKeys = new Set(cards.map((card) => card.key));
+      return new Set(selected.filter((key) => validKeys.has(key)));
+    }
+
+    function applyDashboardSettings(dashboardId) {
+      const cards = dashboardCards(dashboardId);
+      if (!cards.length) return;
+      let selected = selectedDashboardKeys(dashboardId);
+      if (!selected.size) selected = new Set(cards.map((card) => card.key));
+      cards.forEach(({ key, metric }) => metric.classList.toggle("dashboard-card-hidden", !selected.has(key)));
+
+      if (dashboardId === "adsDashboard" && !selected.has(activeDashboardMetric)) {
+        const firstVisibleMetric = cards.find(({ key, metric }) => selected.has(key) && metric.dataset.dashboardMetric);
+        if (firstVisibleMetric) activeDashboardMetric = firstVisibleMetric.metric.dataset.dashboardMetric;
+      }
+      if (dashboardId === "wholesale" && activeWholesaleMetric && !selected.has(activeWholesaleMetric)) {
+        activeWholesaleMetric = "";
+        wholesaleMetricDetails?.classList.add("hidden");
+        if (wholesaleMetricDetails) wholesaleMetricDetails.innerHTML = "";
+      }
+      updateDashboardMetricSelection();
+    }
+
+    function applyAllDashboardSettings() {
+      const ids = new Set([...document.querySelectorAll("[data-dashboard-panel]")].map((panel) => panel.dataset.dashboardPanel).filter(Boolean));
+      ids.forEach(applyDashboardSettings);
+    }
+
+    function openDashboardSettings(dashboardId, title = "Дашборд") {
+      const cards = dashboardCards(dashboardId);
+      if (!cards.length) {
+        alert("В этом дашборде пока нет настраиваемых показателей.");
+        return;
+      }
+      activeDashboardSettingsId = dashboardId;
+      const selected = selectedDashboardKeys(dashboardId);
+      dashboardSettingsTitle.textContent = `Настройка: ${title}`;
+      dashboardSettingsGrid.innerHTML = cards.map(({ key, label }) => `
+        <label>
+          <input type="checkbox" value="${escapeHtml(key)}" ${selected.has(key) ? "checked" : ""}>
+          <span>${escapeHtml(label)}</span>
+        </label>
+      `).join("");
+      dashboardSettingsStatus.textContent = "Выберите показатели, которые должны быть видны на дашборде.";
+      dashboardSettingsModal.classList.remove("hidden");
+    }
+
+    function closeDashboardSettings() {
+      dashboardSettingsModal.classList.add("hidden");
+      activeDashboardSettingsId = "";
+    }
+
+    function saveDashboardSettingsFromForm(event) {
+      event.preventDefault();
+      if (!activeDashboardSettingsId) return;
+      const selected = [...dashboardSettingsGrid.querySelectorAll("input:checked")].map((input) => input.value);
+      if (!selected.length) {
+        dashboardSettingsStatus.textContent = "Оставьте хотя бы один показатель.";
+        return;
+      }
+      const settings = loadDashboardSettings();
+      settings[activeDashboardSettingsId] = selected;
+      saveDashboardSettings(settings);
+      if (activeDashboardSettingsId === "adsDashboard" && !selected.includes(activeDashboardMetric)) {
+        activeDashboardMetric = selected[0] || "views";
+        renderDashboard();
+      } else {
+        applyDashboardSettings(activeDashboardSettingsId);
+      }
+      closeDashboardSettings();
+    }
+
+    function resetActiveDashboardSettings() {
+      if (!activeDashboardSettingsId) return;
+      const settings = loadDashboardSettings();
+      delete settings[activeDashboardSettingsId];
+      saveDashboardSettings(settings);
+      dashboardSettingsGrid.querySelectorAll("input").forEach((input) => {
+        input.checked = true;
+      });
+      applyDashboardSettings(activeDashboardSettingsId);
+      dashboardSettingsStatus.textContent = "Все показатели снова включены.";
     }
 
     async function handleProfileAvatarUpload(event) {
@@ -8079,6 +8277,11 @@
     }
 
     function renderDashboard() {
+      const selectedMetrics = selectedDashboardKeys("adsDashboard");
+      if (selectedMetrics.size && !selectedMetrics.has(activeDashboardMetric)) {
+        const nextMetric = dashboardCards("adsDashboard").find(({ key, metric }) => selectedMetrics.has(key) && metric.dataset.dashboardMetric);
+        if (nextMetric) activeDashboardMetric = nextMetric.metric.dataset.dashboardMetric;
+      }
       const scoped = getDashboardRecords();
       const funnelScoped = getDashboardFunnelRecords();
       const totalViews = sum(scoped, "views");
@@ -8107,6 +8310,7 @@
       renderGroupedBars("#topicBars", "#topicEmpty", groupBy(scoped, "topic"), "views", 5);
       renderFunnelBars(funnelScoped);
       renderInsights(scoped, funnelScoped);
+      applyDashboardSettings("adsDashboard");
     }
 
     function updateAdBudgetFields() {
@@ -8390,6 +8594,7 @@
           <td class="numeric">${formatNumber(source.percent)}%</td>
         </tr>
       `).join("");
+      applyDashboardSettings("sources");
     }
 
     function normalizeClientSourcesData(data) {
@@ -8452,6 +8657,7 @@
       document.querySelector("#totalSaves").textContent = formatNumber(saves);
       document.querySelector("#totalMessages").textContent = formatNumber(messages);
       document.querySelector("#totalRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
+      applyDashboardSettings("adsPublications");
     }
 
     function renderFunnelSummary() {
@@ -8467,6 +8673,7 @@
       document.querySelector("#funnelTotalDeals").textContent = formatNumber(deals);
       document.querySelector("#funnelTotalRevenue").textContent = formatMoney(revenue);
       document.querySelector("#funnelTotalRomi").textContent = spend ? `${(((revenue - spend) / spend) * 100).toFixed(1)}%` : "0%";
+      applyDashboardSettings("adsFunnel");
     }
 
     function renderFilters() {
@@ -8861,20 +9068,22 @@
       const totals = installationTotals();
       const projectDays = installationProjectDays();
       const cards = [
-        ["Общий бюджет", totals.total],
-        ["Транспорт", totals.block1],
-        ["Питание/проживание", totals.block2],
-        ["Технические", totals.block3],
-        ["Разные", totals.block4],
-        ["Работы", totals.block5 + totals.block6],
+        ["total", "Общий бюджет", totals.total],
+        ["transport", "Транспорт", totals.block1],
+        ["living", "Питание/проживание", totals.block2],
+        ["technical", "Технические", totals.block3],
+        ["other", "Разные", totals.block4],
+        ["works", "Работы", totals.block5 + totals.block6],
       ];
-      installationSummary.innerHTML = cards.map(([label, value]) => `
-        <div class="metric">
+      installationSummary.dataset.dashboardPanel = "installation";
+      installationSummary.innerHTML = cards.map(([key, label, value]) => `
+        <div class="metric" data-dashboard-card="${escapeHtml(key)}">
           <span>${escapeHtml(label)}</span>
           <strong>${formatMoney(value)}</strong>
         </div>
       `).join("");
       installationSaveStatus.textContent = `Автосохранено: ${formatDateTime(new Date(installationData.updatedAt || new Date().toISOString()))}. Дней проекта: ${projectDays}.`;
+      applyDashboardSettings("installation");
     }
 
     function renderInstallationBlocks() {
@@ -9216,6 +9425,7 @@
       memoryTodayAccuracy.textContent = todayReviews.length ? `${Math.round(success / todayReviews.length * 100)}%` : "0%";
       memoryCardsTotal.textContent = memoryData.cards.length;
       memoryStreak.textContent = memoryTrainingStreak();
+      applyDashboardSettings("memory");
     }
 
     function renderMemoryReviewCard() {
@@ -12048,6 +12258,7 @@
       setWholesaleMetricState("#wholesaleTotalTransportDebt", transportDebt, "debt");
       setWholesaleMetricState("#wholesaleOverdueDebt", invoices.reduce((total, invoice) => total + wholesaleOverdueAmount(invoice), 0), "debt");
       renderWholesaleMetricDetails(invoices);
+      applyDashboardSettings("wholesale");
     }
 
     function handleWholesaleSummaryClick(event) {
