@@ -730,8 +730,8 @@
       box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
     }
 
-    .metric.dashboard-card-hidden {
-      display: none;
+    .dashboard-card-hidden {
+      display: none !important;
     }
 
     .dashboard-settings-btn {
@@ -3387,7 +3387,7 @@
 
         <section class="dashboard-grid">
           <div class="dashboard-stack">
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="timeline" data-dashboard-label="Динамика">
               <div class="chart-header">
                 <h3 id="timelineTitle">Динамика просмотров</h3>
                 <select id="timelineScale" aria-label="Масштаб динамики">
@@ -3401,13 +3401,13 @@
               <div class="dashboard-empty hidden" id="timelineEmpty">Добавь записи в разделе рекламы, и здесь появится динамика.</div>
             </section>
 
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="contentTypes" data-dashboard-label="Типы контента">
               <h3>Типы контента</h3>
               <div class="bars" id="typeBars"></div>
               <div class="dashboard-empty hidden" id="typeEmpty">Пока недостаточно данных для сравнения типов.</div>
             </section>
 
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="adSpendPanel" data-dashboard-label="Расходы на рекламу">
               <div class="chart-header">
                 <h3>Расходы на рекламу</h3>
                 <div class="actions">
@@ -3431,7 +3431,7 @@
               <div class="dashboard-empty hidden" id="adSpendEmpty">За выбранный период рекламных расходов пока нет.</div>
             </section>
 
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="funnelPanel" data-dashboard-label="Воронка продаж">
               <h3>Воронка продаж</h3>
               <div class="bars" id="funnelBars"></div>
               <div class="dashboard-empty hidden" id="funnelEmpty">Добавь данные воронки, и здесь появятся этапы продаж.</div>
@@ -3439,13 +3439,13 @@
           </div>
 
           <div class="dashboard-stack">
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="topics" data-dashboard-label="Лучшие темы">
               <h3>Лучшие темы</h3>
               <div class="bars" id="topicBars"></div>
               <div class="dashboard-empty hidden" id="topicEmpty">Топ тем появится после первых записей.</div>
             </section>
 
-            <section class="panel chart-panel">
+            <section class="panel chart-panel" data-dashboard-panel="adsDashboard" data-dashboard-card="insights" data-dashboard-label="Выводы">
               <h3>Выводы</h3>
               <div class="insight-list" id="insights"></div>
             </section>
@@ -7380,11 +7380,15 @@
     }
 
     function dashboardCards(dashboardId) {
-      return [...document.querySelectorAll(`[data-dashboard-panel="${dashboardId}"] .metric`)].map((metric, index) => {
-        const label = metric.querySelector("span")?.textContent?.trim() || `Показатель ${index + 1}`;
-        const key = metric.dataset.dashboardCard || metric.dataset.dashboardMetric || metric.dataset.wholesaleMetric || normalizeMemoryText(label) || `card-${index}`;
-        metric.dataset.dashboardCard = key;
-        return { key, label, metric };
+      const selector = `[data-dashboard-panel="${dashboardId}"][data-dashboard-card], [data-dashboard-panel="${dashboardId}"] [data-dashboard-card]`;
+      return [...document.querySelectorAll(selector)].map((element, index) => {
+        const label = element.dataset.dashboardLabel
+          || element.querySelector("span")?.textContent?.trim()
+          || element.querySelector("h3")?.textContent?.trim()
+          || `Показатель ${index + 1}`;
+        const key = element.dataset.dashboardCard || element.dataset.dashboardMetric || element.dataset.wholesaleMetric || normalizeMemoryText(label) || `card-${index}`;
+        element.dataset.dashboardCard = key;
+        return { key, label, metric: element };
       });
     }
 
@@ -7392,9 +7396,21 @@
       const cards = dashboardCards(dashboardId);
       const settings = loadDashboardSettings();
       const hasSavedSelection = Array.isArray(settings[dashboardId]);
+      const knownKey = `${dashboardId}__knownKeys`;
+      const knownKeys = Array.isArray(settings[knownKey]) ? settings[knownKey] : [];
       const selected = hasSavedSelection ? settings[dashboardId] : cards.map((card) => card.key);
       const validKeys = new Set(cards.map((card) => card.key));
       const result = new Set(selected.filter((key) => validKeys.has(key)));
+      if (hasSavedSelection && !knownKeys.length) {
+        cards.forEach((card) => {
+          if (!selected.includes(card.key)) result.add(card.key);
+        });
+      }
+      if (hasSavedSelection && knownKeys.length) {
+        cards.forEach((card) => {
+          if (!knownKeys.includes(card.key)) result.add(card.key);
+        });
+      }
       if (hasSavedSelection) return result;
       return new Set(cards.map((card) => card.key));
     }
@@ -7456,6 +7472,7 @@
       }
       const settings = loadDashboardSettings();
       settings[activeDashboardSettingsId] = selected;
+      settings[`${activeDashboardSettingsId}__knownKeys`] = dashboardCards(activeDashboardSettingsId).map((card) => card.key);
       saveDashboardSettings(settings);
       const saved = loadDashboardSettings();
       if (!Array.isArray(saved[activeDashboardSettingsId])) {
@@ -7475,6 +7492,7 @@
       if (!activeDashboardSettingsId) return;
       const settings = loadDashboardSettings();
       delete settings[activeDashboardSettingsId];
+      delete settings[`${activeDashboardSettingsId}__knownKeys`];
       saveDashboardSettings(settings);
       dashboardSettingsGrid.querySelectorAll("input").forEach((input) => {
         input.checked = true;
