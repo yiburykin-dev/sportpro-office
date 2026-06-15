@@ -2182,7 +2182,7 @@
 
     .gym-layout {
       display: grid;
-      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       align-items: start;
     }
@@ -2190,6 +2190,8 @@
     .gym-panel {
       display: grid;
       gap: 12px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .gym-panel h3 {
@@ -2198,8 +2200,20 @@
 
     .gym-form-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(160px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
+    }
+
+    .gym-form-grid label,
+    .gym-ramp-grid label {
+      min-width: 0;
+    }
+
+    .gym-form-grid input,
+    .gym-ramp-grid input {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .gym-ramp-grid {
@@ -4637,6 +4651,7 @@
             <button class="btn" id="gymExportExcelBtn" type="button">Excel</button>
             <button class="btn" id="gymExportPdfBtn" type="button">PDF</button>
             <button class="btn" id="gymNewBtn" type="button">Новый расчет</button>
+            <button class="btn" id="gymClearBtn" type="button">Очистить поля</button>
             <button class="btn primary" id="gymSaveBtn" type="button">Сохранить расчет</button>
           </div>
         </div>
@@ -4652,9 +4667,9 @@
 
         <div class="module-tabs" aria-label="GYM-калькулятор">
           <button class="active" type="button" data-gym-mode="form">Расчет</button>
-          <button type="button" data-gym-mode="monthly">Помесячно</button>
-          <button type="button" data-gym-mode="scenarios">Сценарии</button>
-          <button type="button" data-gym-mode="history">История</button>
+          <button type="button" data-gym-mode="monthly">Прогноз по месяцам</button>
+          <button type="button" data-gym-mode="scenarios">Варианты</button>
+          <button type="button" data-gym-mode="history">История расчетов</button>
         </div>
 
         <section id="gymFormView">
@@ -4675,51 +4690,49 @@
             </section>
 
             <section class="panel gym-panel">
-              <h3>Клуб и монетизация</h3>
+              <h3>Доход клуба</h3>
               <div class="gym-form-grid">
                 <label>Площадь клуба, м²
                   <input data-gym-field="area" type="number" min="0" step="1">
                 </label>
-                <label>м² на 1 посетителя
-                  <input data-gym-field="sqmPerVisitor" type="number" min="0" step="0.1">
+                <label>План клиентов через 12 месяцев
+                  <input data-gym-field="targetMembers" type="number" min="0" step="1">
                 </label>
-                <label>Мультипликатор членов
-                  <input data-gym-field="memberMultiplier" type="number" min="0" step="0.1">
-                </label>
-                <label>Средний абонемент
+                <label>Средняя цена абонемента / мес.
                   <input data-gym-field="avgMembership" type="number" min="0" step="1000">
                 </label>
-                <label>PT penetration, %
+                <label>Клиентов с персональными тренировками, %
                   <input data-gym-field="ptPenetration" type="number" min="0" step="1">
                 </label>
-                <label>PT сессий на клиента / мес.
+                <label>Тренировок на такого клиента / мес.
                   <input data-gym-field="ptSessions" type="number" min="0" step="1">
                 </label>
-                <label>Цена 1 PT сессии
+                <label>Средняя цена тренировки
                   <input data-gym-field="ptSessionPrice" type="number" min="0" step="500">
                 </label>
-                <label>Доп. выручка на члена / мес.
+                <label>Дополнительный доход с клиента / мес.
                   <input data-gym-field="extraRevenuePerMember" type="number" min="0" step="500">
                 </label>
               </div>
             </section>
 
             <section class="panel gym-panel">
-              <h3>Проценты и ramp-up</h3>
+              <h3>Допущения расчета</h3>
               <div class="gym-form-grid">
-                <label>Выплата тренеру от PT, %
+                <label>Доля тренера от персональной тренировки, %
                   <input data-gym-field="trainerPayoutRate" type="number" min="0" step="1">
                 </label>
-                <label>Себестоимость доп. выручки, %
+                <label>Себестоимость доп. продаж, %
                   <input data-gym-field="extraCostRate" type="number" min="0" step="1">
                 </label>
-                <label>Комиссия платежей, %
+                <label>Комиссия банка / платежей, %
                   <input data-gym-field="acquiringRate" type="number" min="0" step="0.1">
                 </label>
                 <label>Налог на прибыль, %
                   <input data-gym-field="taxRate" type="number" min="0" step="1">
                 </label>
               </div>
+              <p class="sales-goal">Рост клиентов по месяцам: сколько процентов от плана клуб набирает в каждом месяце.</p>
               <div class="gym-ramp-grid" id="gymRampGrid"></div>
             </section>
 
@@ -4756,7 +4769,7 @@
                 <label>Оборудование
                   <input data-gym-field="equipment" type="number" min="0" step="1000">
                 </label>
-                <label>Ремонт / fit-out
+                <label>Ремонт и подготовка помещения
                   <input data-gym-field="fitout" type="number" min="0" step="1000">
                 </label>
                 <label>Доставка / монтаж
@@ -4768,7 +4781,7 @@
                 <label>Депозиты / оборотный капитал
                   <input data-gym-field="depositWorkingCapital" type="number" min="0" step="1000">
                 </label>
-                <label>Прочий capex
+                <label>Прочие стартовые затраты
                   <input data-gym-field="otherCapex" type="number" min="0" step="1000">
                 </label>
               </div>
@@ -4780,8 +4793,8 @@
           <section class="panel table-panel">
             <div class="toolbar">
               <div>
-                <h3>Помесячная модель</h3>
-                <p class="sales-goal">Выручка, расходы, EBITDA, чистая прибыль и накопленный денежный поток по 12 месяцам.</p>
+                <h3>Прогноз по месяцам</h3>
+                <p class="sales-goal">Выручка, расходы, прибыль и накопленный результат по 12 месяцам.</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -4797,8 +4810,8 @@
           <section class="panel table-panel">
             <div class="toolbar">
               <div>
-                <h3>Сценарии</h3>
-                <p class="sales-goal">Downside, Base и Upside по логике исходного Excel-калькулятора.</p>
+                <h3>Варианты развития</h3>
+                <p class="sales-goal">Осторожный, базовый и хороший вариант без сложных финансовых терминов.</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -4806,9 +4819,9 @@
                 <thead>
                   <tr>
                     <th>Параметр</th>
-                    <th>Downside</th>
-                    <th>Base</th>
-                    <th>Upside</th>
+                    <th>Осторожный</th>
+                    <th>Базовый</th>
+                    <th>Хороший</th>
                   </tr>
                 </thead>
                 <tbody id="gymScenarioRows"></tbody>
@@ -6302,6 +6315,7 @@
     gymForm.addEventListener("change", renderGymCalculator);
     document.querySelector("#gymSaveBtn").addEventListener("click", saveGymRecordFromForm);
     document.querySelector("#gymNewBtn").addEventListener("click", resetGymForm);
+    document.querySelector("#gymClearBtn").addEventListener("click", clearGymForm);
     document.querySelector("#gymExportExcelBtn").addEventListener("click", () => exportRowsToExcel("gym-calculator", gymExportRows()));
     document.querySelector("#gymExportPdfBtn").addEventListener("click", () => exportRowsToPdf("GYM-калькулятор", gymExportRows()));
     gymHistoryRows.addEventListener("click", handleGymHistoryAction);
@@ -8976,6 +8990,7 @@
         area: 500,
         sqmPerVisitor: 5,
         memberMultiplier: 4,
+        targetMembers: 400,
         avgMembership: 15000,
         ptPenetration: 15,
         ptSessions: 4,
@@ -9103,7 +9118,7 @@
       const n = (key) => Number(input[key]) || 0;
       const rate = (key) => (Number(input[key]) || 0) / 100;
       const simultaneousLoad = n("sqmPerVisitor") ? n("area") / n("sqmPerVisitor") : 0;
-      const targetMembers = Math.round(simultaneousLoad * n("memberMultiplier"));
+      const targetMembers = n("targetMembers") || Math.round(simultaneousLoad * n("memberMultiplier"));
       const fixedMonthly = n("rent") + n("payroll") + n("marketing") + n("utilities") + n("service") + n("software") + n("otherMonthly");
       const investment = n("equipment") + n("fitout") + n("deliveryInstall") + n("prelaunchMarketing") + n("depositWorkingCapital") + n("otherCapex");
       const avgRevenuePerMember = n("avgMembership") + (rate("ptPenetration") * n("ptSessions") * n("ptSessionPrice")) + n("extraRevenuePerMember");
@@ -9236,8 +9251,8 @@
         ["Активные члены", ...calc.monthly.map((item) => formatNumber(item.members))],
         ["Итого выручка", ...calc.monthly.map((item) => formatMoney(item.revenue))],
         ["Итого расходы", ...calc.monthly.map((item) => formatMoney(item.expenses))],
-        ["EBITDA", ...calc.monthly.map((item) => formatMoney(item.ebitda))],
-        ["EBITDA margin", ...calc.monthly.map((item) => `${(item.ebitdaMargin * 100).toFixed(1)}%`)],
+        ["Прибыль до налога", ...calc.monthly.map((item) => formatMoney(item.ebitda))],
+        ["Маржа до налога", ...calc.monthly.map((item) => `${(item.ebitdaMargin * 100).toFixed(1)}%`)],
         ["Чистая прибыль", ...calc.monthly.map((item) => formatMoney(item.netProfit))],
         ["Накопленный денежный поток", ...calc.monthly.map((item) => formatMoney(item.cumulative))],
       ];
@@ -9249,14 +9264,14 @@
       `).join("");
 
       const scenarioRows = [
-        ["Множитель активных членов", ...calc.scenarios.map((item) => `${Math.round(item.member * 100)}%`)],
-        ["Множитель среднего чека", ...calc.scenarios.map((item) => `${Math.round(item.avg * 100)}%`)],
-        ["Множитель аренды", ...calc.scenarios.map((item) => `${Math.round(item.rent * 100)}%`)],
-        ["Множитель ФОТ", ...calc.scenarios.map((item) => `${Math.round(item.payroll * 100)}%`)],
-        ["Множитель инвестиций", ...calc.scenarios.map((item) => `${Math.round(item.investment * 100)}%`)],
+        ["Клиентов относительно плана", ...calc.scenarios.map((item) => `${Math.round(item.member * 100)}%`)],
+        ["Средний абонемент относительно плана", ...calc.scenarios.map((item) => `${Math.round(item.avg * 100)}%`)],
+        ["Аренда относительно плана", ...calc.scenarios.map((item) => `${Math.round(item.rent * 100)}%`)],
+        ["Зарплаты относительно плана", ...calc.scenarios.map((item) => `${Math.round(item.payroll * 100)}%`)],
+        ["Стартовые вложения относительно плана", ...calc.scenarios.map((item) => `${Math.round(item.investment * 100)}%`)],
         ["Месячная выручка", ...calc.scenarios.map((item) => formatMoney(item.revenue))],
-        ["Месячная EBITDA", ...calc.scenarios.map((item) => formatMoney(item.ebitda))],
-        ["EBITDA margin", ...calc.scenarios.map((item) => `${(item.margin * 100).toFixed(1)}%`)],
+        ["Прибыль до налога / мес.", ...calc.scenarios.map((item) => formatMoney(item.ebitda))],
+        ["Маржа до налога", ...calc.scenarios.map((item) => `${(item.margin * 100).toFixed(1)}%`)],
         ["Окупаемость, мес.", ...calc.scenarios.map((item) => item.payback ? item.payback.toFixed(1) : "нет")],
       ];
       gymScenarioRows.innerHTML = scenarioRows.map((row) => `
@@ -9302,6 +9317,46 @@
     function resetGymForm() {
       fillGymForm(defaultGymInput());
       setGymMode("form");
+      renderGymCalculator();
+    }
+
+    function clearGymForm() {
+      if (!confirm("Очистить поля текущего расчета? Сохраненная история не удалится.")) return;
+      const empty = {
+        ...defaultGymInput(),
+        id: "",
+        clubName: "",
+        city: "",
+        date: formatIsoDate(new Date()),
+        area: 0,
+        sqmPerVisitor: 0,
+        memberMultiplier: 0,
+        targetMembers: 0,
+        avgMembership: 0,
+        ptPenetration: 0,
+        ptSessions: 0,
+        ptSessionPrice: 0,
+        extraRevenuePerMember: 0,
+        trainerPayoutRate: 0,
+        extraCostRate: 0,
+        acquiringRate: 0,
+        taxRate: 0,
+        ramp: Array(12).fill(0),
+        rent: 0,
+        payroll: 0,
+        marketing: 0,
+        utilities: 0,
+        service: 0,
+        software: 0,
+        otherMonthly: 0,
+        equipment: 0,
+        fitout: 0,
+        deliveryInstall: 0,
+        prelaunchMarketing: 0,
+        depositWorkingCapital: 0,
+        otherCapex: 0,
+      };
+      fillGymForm(empty);
       renderGymCalculator();
     }
 
@@ -9360,11 +9415,11 @@
         ["Целевые активные члены", formatNumber(calc.targetMembers)],
         ["Итого инвестиции", formatMoney(calc.investment)],
         ["Выручка в месяц 12", formatMoney(calc.summary.revenue12)],
-        ["EBITDA в месяц 12", formatMoney(calc.summary.ebitda12)],
-        ["EBITDA margin в месяц 12", `${(calc.summary.ebitdaMargin12 * 100).toFixed(1)}%`],
+        ["Прибыль до налога в месяц 12", formatMoney(calc.summary.ebitda12)],
+        ["Маржа до налога в месяц 12", `${(calc.summary.ebitdaMargin12 * 100).toFixed(1)}%`],
         ["Чистая прибыль в месяц 12", formatMoney(calc.summary.netProfit12)],
         ["Выручка за 12 мес.", formatMoney(calc.summary.totalRevenue)],
-        ["EBITDA за 12 мес.", formatMoney(calc.summary.totalEbitda)],
+        ["Прибыль до налога за 12 мес.", formatMoney(calc.summary.totalEbitda)],
         ["Чистая прибыль за 12 мес.", formatMoney(calc.summary.totalNetProfit)],
         ["Фиксированные расходы / мес.", formatMoney(calc.fixedMonthly)],
         ["Средняя выручка на 1 члена / мес.", formatMoney(calc.avgRevenuePerMember)],
@@ -9379,7 +9434,7 @@
         ["Активные члены", ...calc.monthly.map((item) => item.members)],
         ["Итого выручка", ...calc.monthly.map((item) => Math.round(item.revenue))],
         ["Итого расходы", ...calc.monthly.map((item) => Math.round(item.expenses))],
-        ["EBITDA", ...calc.monthly.map((item) => Math.round(item.ebitda))],
+        ["Прибыль до налога", ...calc.monthly.map((item) => Math.round(item.ebitda))],
         ["Чистая прибыль", ...calc.monthly.map((item) => Math.round(item.netProfit))],
         ["Накопленный денежный поток", ...calc.monthly.map((item) => Math.round(item.cumulative))],
       ];
