@@ -2180,6 +2180,46 @@
       font-size: 13px;
     }
 
+    .gym-layout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .gym-panel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .gym-panel h3 {
+      margin: 0;
+    }
+
+    .gym-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .gym-ramp-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(86px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .gym-ramp-grid label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .gym-ramp-grid input {
+      padding: 8px 9px;
+      font-size: 13px;
+    }
+
     .money-overpay strong,
     .money-overpay small,
     .money-overpay span {
@@ -3123,6 +3163,15 @@
         grid-template-columns: 1fr;
       }
 
+      .gym-layout,
+      .gym-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .gym-ramp-grid {
+        grid-template-columns: repeat(3, minmax(80px, 1fr));
+      }
+
       .auth-modal-body {
         grid-template-columns: 1fr;
       }
@@ -3229,6 +3278,10 @@
         <button type="button" data-view="clientSources" title="Источники клиентов">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 1 0-8 8v2A10 10 0 0 1 12 2Zm1 5v6l5 3-.9 1.6-6.1-3.6V7h2Zm6 10h3v2h-3v3h-2v-3h-3v-2h3v-3h2v3Z"/></svg>
           <span class="nav-label">Источники</span>
+        </button>
+        <button type="button" data-view="gymCalculator" title="GYM-калькулятор">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v4h16V5H4Zm0 6v8h16v-8H4Zm2 2h3v2H6v-2Zm5 0h3v2h-3v-2Zm5 0h2v4h-2v-4ZM6 16h8v1.5H6V16Z"/></svg>
+          <span class="nav-label">GYM-калькулятор</span>
         </button>
         <button type="button" data-view="installation" title="Монтаж">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m21.7 18.3-6.4-6.4a6 6 0 0 0-7.2-7.2l3.6 3.6-3.4 3.4-3.6-3.6a6 6 0 0 0 7.2 7.2l6.4 6.4a1 1 0 0 0 1.4 0l2-2a1 1 0 0 0 0-1.4ZM9 14a4 4 0 0 1-4-4c0-.4.1-.8.2-1.2l3.1 3.1 5.6-5.6-3.1-3.1c.4-.1.8-.2 1.2-.2a4 4 0 0 1 2.7 6.9l-.7.7 6 6-1.4 1.4-6-6-.7.7A4 4 0 0 1 9 14Z"/></svg>
@@ -4573,6 +4626,227 @@
         </section>
       </section>
 
+      <section id="gymCalculatorView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>GYM-калькулятор</h2>
+            <p>Расчет инвестиций, выручки, расходов, прибыли и окупаемости фитнес-клуба.</p>
+          </div>
+          <div class="actions">
+            <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="gymCalculator" data-dashboard-title="GYM-калькулятор" title="Настроить показатели">⚙</button>
+            <button class="btn" id="gymExportExcelBtn" type="button">Excel</button>
+            <button class="btn" id="gymExportPdfBtn" type="button">PDF</button>
+            <button class="btn" id="gymNewBtn" type="button">Новый расчет</button>
+            <button class="btn primary" id="gymSaveBtn" type="button">Сохранить расчет</button>
+          </div>
+        </div>
+
+        <section class="summary" data-dashboard-panel="gymCalculator" aria-label="Итоги GYM-калькулятора">
+          <div class="metric" data-dashboard-card="investment"><span>Инвестиции</span><strong id="gymKpiInvestment">0</strong></div>
+          <div class="metric" data-dashboard-card="revenue12"><span>Выручка в 12 месяц</span><strong id="gymKpiRevenue12">0</strong></div>
+          <div class="metric" data-dashboard-card="profit12"><span>Чистая прибыль в 12 месяц</span><strong id="gymKpiProfit12">0</strong></div>
+          <div class="metric" data-dashboard-card="breakEven"><span>Точка безубыточности</span><strong id="gymKpiBreakEven">0</strong></div>
+          <div class="metric" data-dashboard-card="roi"><span>ROI за 12 мес.</span><strong id="gymKpiRoi">0%</strong></div>
+          <div class="metric" data-dashboard-card="payback"><span>Окупаемость</span><strong id="gymKpiPayback">>12 мес.</strong></div>
+        </section>
+
+        <div class="module-tabs" aria-label="GYM-калькулятор">
+          <button class="active" type="button" data-gym-mode="form">Расчет</button>
+          <button type="button" data-gym-mode="monthly">Помесячно</button>
+          <button type="button" data-gym-mode="scenarios">Сценарии</button>
+          <button type="button" data-gym-mode="history">История</button>
+        </div>
+
+        <section id="gymFormView">
+          <form class="gym-layout" id="gymForm">
+            <section class="panel gym-panel">
+              <h3>Проект</h3>
+              <div class="gym-form-grid">
+                <label>Клиент / название зала
+                  <input data-gym-field="clubName" type="text" placeholder="Например: S89 Fitness">
+                </label>
+                <label>Город
+                  <input data-gym-field="city" type="text" placeholder="Алматы">
+                </label>
+                <label>Дата расчета
+                  <input data-gym-field="date" type="date">
+                </label>
+              </div>
+            </section>
+
+            <section class="panel gym-panel">
+              <h3>Клуб и монетизация</h3>
+              <div class="gym-form-grid">
+                <label>Площадь клуба, м²
+                  <input data-gym-field="area" type="number" min="0" step="1">
+                </label>
+                <label>м² на 1 посетителя
+                  <input data-gym-field="sqmPerVisitor" type="number" min="0" step="0.1">
+                </label>
+                <label>Мультипликатор членов
+                  <input data-gym-field="memberMultiplier" type="number" min="0" step="0.1">
+                </label>
+                <label>Средний абонемент
+                  <input data-gym-field="avgMembership" type="number" min="0" step="1000">
+                </label>
+                <label>PT penetration, %
+                  <input data-gym-field="ptPenetration" type="number" min="0" step="1">
+                </label>
+                <label>PT сессий на клиента / мес.
+                  <input data-gym-field="ptSessions" type="number" min="0" step="1">
+                </label>
+                <label>Цена 1 PT сессии
+                  <input data-gym-field="ptSessionPrice" type="number" min="0" step="500">
+                </label>
+                <label>Доп. выручка на члена / мес.
+                  <input data-gym-field="extraRevenuePerMember" type="number" min="0" step="500">
+                </label>
+              </div>
+            </section>
+
+            <section class="panel gym-panel">
+              <h3>Проценты и ramp-up</h3>
+              <div class="gym-form-grid">
+                <label>Выплата тренеру от PT, %
+                  <input data-gym-field="trainerPayoutRate" type="number" min="0" step="1">
+                </label>
+                <label>Себестоимость доп. выручки, %
+                  <input data-gym-field="extraCostRate" type="number" min="0" step="1">
+                </label>
+                <label>Комиссия платежей, %
+                  <input data-gym-field="acquiringRate" type="number" min="0" step="0.1">
+                </label>
+                <label>Налог на прибыль, %
+                  <input data-gym-field="taxRate" type="number" min="0" step="1">
+                </label>
+              </div>
+              <div class="gym-ramp-grid" id="gymRampGrid"></div>
+            </section>
+
+            <section class="panel gym-panel">
+              <h3>Ежемесячные расходы</h3>
+              <div class="gym-form-grid">
+                <label>Аренда / мес.
+                  <input data-gym-field="rent" type="number" min="0" step="1000">
+                </label>
+                <label>ФОТ / мес.
+                  <input data-gym-field="payroll" type="number" min="0" step="1000">
+                </label>
+                <label>Маркетинг / мес.
+                  <input data-gym-field="marketing" type="number" min="0" step="1000">
+                </label>
+                <label>Коммунальные / мес.
+                  <input data-gym-field="utilities" type="number" min="0" step="1000">
+                </label>
+                <label>Сервис / ремонт / мес.
+                  <input data-gym-field="service" type="number" min="0" step="1000">
+                </label>
+                <label>ПО / админ / мес.
+                  <input data-gym-field="software" type="number" min="0" step="1000">
+                </label>
+                <label>Прочие / мес.
+                  <input data-gym-field="otherMonthly" type="number" min="0" step="1000">
+                </label>
+              </div>
+            </section>
+
+            <section class="panel gym-panel">
+              <h3>Инвестиции</h3>
+              <div class="gym-form-grid">
+                <label>Оборудование
+                  <input data-gym-field="equipment" type="number" min="0" step="1000">
+                </label>
+                <label>Ремонт / fit-out
+                  <input data-gym-field="fitout" type="number" min="0" step="1000">
+                </label>
+                <label>Доставка / монтаж
+                  <input data-gym-field="deliveryInstall" type="number" min="0" step="1000">
+                </label>
+                <label>Предстартовый маркетинг
+                  <input data-gym-field="prelaunchMarketing" type="number" min="0" step="1000">
+                </label>
+                <label>Депозиты / оборотный капитал
+                  <input data-gym-field="depositWorkingCapital" type="number" min="0" step="1000">
+                </label>
+                <label>Прочий capex
+                  <input data-gym-field="otherCapex" type="number" min="0" step="1000">
+                </label>
+              </div>
+            </section>
+          </form>
+        </section>
+
+        <section id="gymMonthlyView" class="hidden">
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Помесячная модель</h3>
+                <p class="sales-goal">Выручка, расходы, EBITDA, чистая прибыль и накопленный денежный поток по 12 месяцам.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="gymMonthlyHead"></thead>
+                <tbody id="gymMonthlyRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="gymScenariosView" class="hidden">
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Сценарии</h3>
+                <p class="sales-goal">Downside, Base и Upside по логике исходного Excel-калькулятора.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Параметр</th>
+                    <th>Downside</th>
+                    <th>Base</th>
+                    <th>Upside</th>
+                  </tr>
+                </thead>
+                <tbody id="gymScenarioRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="gymHistoryView" class="hidden">
+          <section class="panel table-panel">
+            <div class="toolbar">
+              <div>
+                <h3>История расчетов</h3>
+                <p class="sales-goal">Сохраненные расчеты можно открыть, обновить и выгрузить в Excel или PDF.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Клиент / зал</th>
+                    <th>Город</th>
+                    <th class="numeric">Инвестиции</th>
+                    <th class="numeric">Выручка M12</th>
+                    <th class="numeric">Прибыль M12</th>
+                    <th>Окупаемость</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody id="gymHistoryRows"></tbody>
+              </table>
+            </div>
+            <div class="empty hidden" id="gymHistoryEmpty">Сохраненных расчетов пока нет.</div>
+          </section>
+        </section>
+      </section>
+
       <section id="installationView" class="hidden">
         <div class="topbar">
           <div class="title">
@@ -5367,6 +5641,7 @@
     const wholesaleSafetySnapshotsKey = "workspace-tables.wholesale.safetySnapshots";
     const installationStorageKey = "workspace-tables.installation.data";
     const installationProjectsStorageKey = "workspace-tables.installation.projects";
+    const gymCalculatorStorageKey = "workspace-tables.gymCalculator.records";
     const memoryStoragePrefix = "workspace-tables.memory.profile.";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const userProfilesStorageKey = "workspace-tables.userProfiles";
@@ -5488,6 +5763,13 @@
     const installationBars = document.querySelector("#installationBars");
     const installationTotalsList = document.querySelector("#installationTotalsList");
     const installationSaveStatus = document.querySelector("#installationSaveStatus");
+    const gymForm = document.querySelector("#gymForm");
+    const gymRampGrid = document.querySelector("#gymRampGrid");
+    const gymMonthlyHead = document.querySelector("#gymMonthlyHead");
+    const gymMonthlyRows = document.querySelector("#gymMonthlyRows");
+    const gymScenarioRows = document.querySelector("#gymScenarioRows");
+    const gymHistoryRows = document.querySelector("#gymHistoryRows");
+    const gymHistoryEmpty = document.querySelector("#gymHistoryEmpty");
     const memoryProfileLabel = document.querySelector("#memoryProfileLabel");
     const memorySaveStatus = document.querySelector("#memorySaveStatus");
     const memoryDueCount = document.querySelector("#memoryDueCount");
@@ -5525,6 +5807,7 @@
       sales: document.querySelector("#salesView"),
       wholesale: document.querySelector("#wholesaleView"),
       clientSources: document.querySelector("#clientSourcesView"),
+      gymCalculator: document.querySelector("#gymCalculatorView"),
       installation: document.querySelector("#installationView"),
       memory: document.querySelector("#memoryView"),
       guide: document.querySelector("#guideView"),
@@ -5564,6 +5847,12 @@
       block4: document.querySelector("#installationBlock4View"),
       block5: document.querySelector("#installationBlock5View"),
       block6: document.querySelector("#installationBlock6View"),
+    };
+    const gymModeViews = {
+      form: document.querySelector("#gymFormView"),
+      monthly: document.querySelector("#gymMonthlyView"),
+      scenarios: document.querySelector("#gymScenariosView"),
+      history: document.querySelector("#gymHistoryView"),
     };
     const memoryModeViews = {
       today: document.querySelector("#memoryTodayView"),
@@ -5796,6 +6085,7 @@
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
       { key: "wholesale", label: "Поставки и оплаты", details: "Клиенты, предприятия, накладные, оплаты" },
       { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
+      { key: "gymCalculator", label: "GYM-калькулятор", details: "Расчеты рентабельности, инвестиции, сценарии, история" },
       { key: "installation", label: "Монтаж", details: "Проекты, расходы, рабочее время, дашборд" },
       { key: "memory", label: "Память", details: "Личные карточки, повторения, тренировки и статистика" },
       { key: "guide", label: "Гайд", details: "Шпаргалка и руководство пользователя" },
@@ -5806,31 +6096,31 @@
     const accessPresets = {
       marketer: {
         label: "Маркетолог",
-        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
       },
       sales: {
         label: "Менеджер продаж",
-        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", gymCalculator: "write", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
       },
       manager: {
         label: "Менеджер",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", gymCalculator: "write", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
       },
       wholesaleHead: {
         label: "Руководитель оптового отдела",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "write" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "write" },
       },
       wholesaleManager: {
         label: "Менеджер оптового отдела",
-        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", gymCalculator: "none", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
       },
       viewer: {
         label: "Только просмотр",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "none" },
       },
       owner: {
         label: "Владелец",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", installation: "write", memory: "write", guide: "write", templates: "write", access: "write" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", gymCalculator: "write", installation: "write", memory: "write", guide: "write", templates: "write", access: "write" },
       },
       custom: {
         label: "Индивидуально",
@@ -5850,6 +6140,8 @@
     let wholesaleSyncHistory = loadWholesaleSyncHistory();
     let clientSourcesData = loadClientSourcesData();
     let clientSourcesLoadStarted = false;
+    let gymRecords = loadGymRecords();
+    let activeGymRecordId = "";
     let adsSettings = loadAdsSettings();
     let workspaceMembers = [];
     let activeSalesStage = salesScript.stages[0].id;
@@ -5912,6 +6204,7 @@
     renderSalesClients();
     renderWholesale();
     renderInstallation();
+    renderGymCalculator();
     renderMemory();
     tryDailyWholesaleExcelBackup();
     applyClientSourcesConfig();
@@ -5927,6 +6220,7 @@
         document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
         Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== view));
         if (view === "clientSources") ensureClientSourcesLoaded();
+        if (view === "gymCalculator") renderGymCalculator();
         if (view === "installation") renderInstallation();
         if (view === "memory") renderMemory();
       });
@@ -5982,6 +6276,10 @@
       button.addEventListener("click", () => setInstallationMode(button.dataset.installationMode));
     });
 
+    document.querySelectorAll("[data-gym-mode]").forEach((button) => {
+      button.addEventListener("click", () => setGymMode(button.dataset.gymMode));
+    });
+
     document.querySelectorAll("[data-memory-mode]").forEach((button) => {
       button.addEventListener("click", () => setMemoryMode(button.dataset.memoryMode));
     });
@@ -5998,6 +6296,14 @@
       section.addEventListener("click", handleInstallationClick);
       section.addEventListener("change", handleInstallationInput);
     });
+
+    gymForm.addEventListener("input", renderGymCalculator);
+    gymForm.addEventListener("change", renderGymCalculator);
+    document.querySelector("#gymSaveBtn").addEventListener("click", saveGymRecordFromForm);
+    document.querySelector("#gymNewBtn").addEventListener("click", resetGymForm);
+    document.querySelector("#gymExportExcelBtn").addEventListener("click", () => exportRowsToExcel("gym-calculator", gymExportRows()));
+    document.querySelector("#gymExportPdfBtn").addEventListener("click", () => exportRowsToPdf("GYM-калькулятор", gymExportRows()));
+    gymHistoryRows.addEventListener("click", handleGymHistoryAction);
 
     memoryQuickCardForm.addEventListener("submit", handleMemoryQuickCardSubmit);
     memoryCardForm.addEventListener("submit", handleMemoryCardSubmit);
@@ -6746,6 +7052,7 @@
       renderFunnelRows();
       renderContentPlan();
       renderWholesale();
+      renderGymCalculator();
       renderMemory();
       applyAllDashboardSettings();
     }
@@ -8047,6 +8354,7 @@
       await pushRowsToCloud(salesClientsCloudTable, salesClients, deletedSalesClients, normalizeSalesClient);
       await pushRowsToCloud(salesSettingsCloudTable, [salesScriptCloudRecord()], {}, normalizeSalesScript);
       await pushRowsToCloud(salesSettingsCloudTable, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
+      await pushRowsToCloud(salesSettingsCloudTable, [gymCloudRecord()], {}, normalizeGymCloudRecord);
       await pushRowsToCloud(wholesaleCloudTable, [wholesaleCloudRecord()], {}, normalizeWholesaleCloudRecord);
       await pushMemoryToCloud();
     }
@@ -8141,6 +8449,7 @@
         const salesClientRows = await cloudRequest(`${cloudEndpoint(salesClientsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&select=id,record,deleted_at,updated_at`);
         const salesScriptRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.main&select=id,record,deleted_at,updated_at`);
         const adsSettingsRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.ads-followers&select=id,record,deleted_at,updated_at`);
+        const gymRows = await cloudRequest(`${cloudEndpoint(salesSettingsCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.gym-calculator-records&select=id,record,deleted_at,updated_at`);
         const wholesaleRows = await cloudRequest(`${cloudEndpoint(wholesaleCloudTable)}?workspace_id=eq.${encodeURIComponent(cloudConfig.workspace)}&id=eq.main&select=id,record,deleted_at,updated_at`);
         const memoryRows = await pullMemoryRowsFromCloud();
         records = mergeCloudRows(cloudRows, records, deletedRecords, normalizeRecord);
@@ -8153,6 +8462,7 @@
         salesScript = normalizeSalesScript(mergedScripts.find((item) => item.id === "main") || salesScript);
         const mergedAdsSettings = mergeCloudRows(adsSettingsRows, [adsSettingsCloudRecord()], {}, normalizeAdsSettings);
         adsSettings = normalizeAdsSettings(mergedAdsSettings.find((item) => item.id === "ads-followers") || adsSettings);
+        gymRecords = mergeGymCloudRows(gymRows);
         createWholesaleSafetySnapshot("before-cloud-pull");
         wholesaleData = mergeWholesaleCloudRows(wholesaleRows);
         memoryData = mergeMemoryCloudRows(memoryRows);
@@ -8168,6 +8478,7 @@
         saveDeletedRecords(deletedSalesClientsKey, deletedSalesClients);
         saveSalesScript({ touch: false });
         saveAdsSettings();
+        saveGymRecords({ sync: false });
         saveWholesaleData({ touch: false });
         saveMemoryData({ touch: false, sync: false });
         render();
@@ -8653,6 +8964,426 @@
 
     function loadClientSourcesData() {
       return normalizeClientSourcesData(readStorage(clientSourcesDataKey) || {});
+    }
+
+    const gymRampDefaults = [20, 30, 40, 50, 60, 70, 78, 85, 90, 95, 98, 100];
+
+    function defaultGymInput() {
+      return {
+        id: "",
+        clubName: "",
+        city: "",
+        date: formatIsoDate(new Date()),
+        area: 500,
+        sqmPerVisitor: 5,
+        memberMultiplier: 4,
+        avgMembership: 15000,
+        ptPenetration: 15,
+        ptSessions: 4,
+        ptSessionPrice: 8000,
+        extraRevenuePerMember: 1000,
+        trainerPayoutRate: 35,
+        extraCostRate: 20,
+        acquiringRate: 2,
+        taxRate: 20,
+        ramp: [...gymRampDefaults],
+        rent: 1500000,
+        payroll: 1500000,
+        marketing: 300000,
+        utilities: 250000,
+        service: 150000,
+        software: 100000,
+        otherMonthly: 200000,
+        equipment: 50000000,
+        fitout: 20000000,
+        deliveryInstall: 3000000,
+        prelaunchMarketing: 1500000,
+        depositWorkingCapital: 5000000,
+        otherCapex: 1000000,
+      };
+    }
+
+    function setupGymRampGrid() {
+      if (gymRampGrid.children.length) return;
+      gymRampGrid.innerHTML = gymRampDefaults.map((value, index) => `
+        <label>M${index + 1}, %
+          <input data-gym-ramp="${index}" type="number" min="0" max="200" step="1" value="${value}">
+        </label>
+      `).join("");
+    }
+
+    function normalizeGymRecord(record) {
+      const defaults = defaultGymInput();
+      const source = record || {};
+      const normalized = { ...defaults, ...source };
+      normalized.id = source.id || createId();
+      normalized.ramp = Array.from({ length: 12 }, (_, index) => Number(source.ramp?.[index] ?? defaults.ramp[index]) || 0);
+      Object.keys(defaults).forEach((key) => {
+        if (["id", "clubName", "city", "date", "ramp"].includes(key)) return;
+        normalized[key] = Number(source[key] ?? defaults[key]) || 0;
+      });
+      normalized.clubName = String(source.clubName || "").trim();
+      normalized.city = String(source.city || "").trim();
+      normalized.date = source.date || defaults.date;
+      normalized.createdAt = source.createdAt || new Date().toISOString();
+      normalized.updatedAt = source.updatedAt || new Date().toISOString();
+      return normalized;
+    }
+
+    function loadGymRecords() {
+      const saved = readStorage(gymCalculatorStorageKey);
+      return Array.isArray(saved) ? saved.map(normalizeGymRecord) : [];
+    }
+
+    function saveGymRecords(options = {}) {
+      gymRecords = uniqueRecordsById(gymRecords, normalizeGymRecord);
+      localStorage.setItem(gymCalculatorStorageKey, JSON.stringify(gymRecords));
+      if (options.sync !== false) queueCloudSync("GYM-калькулятор");
+    }
+
+    function latestGymUpdatedAt(items = gymRecords) {
+      return items.reduce((latest, item) => (item.updatedAt || "") > latest ? item.updatedAt : latest, "1970-01-01T00:00:00.000Z");
+    }
+
+    function gymCloudRecord() {
+      return normalizeGymCloudRecord({
+        id: "gym-calculator-records",
+        records: gymRecords,
+        updatedAt: latestGymUpdatedAt(),
+      });
+    }
+
+    function normalizeGymCloudRecord(record) {
+      const items = Array.isArray(record.records) ? record.records.map(normalizeGymRecord) : [];
+      return {
+        id: "gym-calculator-records",
+        records: items,
+        updatedAt: record.updatedAt || latestGymUpdatedAt(items),
+      };
+    }
+
+    function mergeGymCloudRows(cloudRows = []) {
+      let merged = uniqueRecordsById(gymRecords, normalizeGymRecord);
+      cloudRows.forEach((row) => {
+        if (row.deleted_at || !row.record) return;
+        const cloudRecord = normalizeGymCloudRecord({ ...row.record, id: row.id, updatedAt: row.updated_at || row.record.updatedAt });
+        merged = uniqueRecordsById([...merged, ...cloudRecord.records], normalizeGymRecord);
+      });
+      return merged;
+    }
+
+    function fillGymForm(record = defaultGymInput()) {
+      setupGymRampGrid();
+      const data = { ...defaultGymInput(), ...record };
+      activeGymRecordId = data.id || "";
+      gymForm.querySelectorAll("[data-gym-field]").forEach((field) => {
+        const key = field.dataset.gymField;
+        field.value = data[key] ?? "";
+      });
+      gymForm.querySelectorAll("[data-gym-ramp]").forEach((field) => {
+        const index = Number(field.dataset.gymRamp);
+        field.value = Number(data.ramp?.[index] ?? gymRampDefaults[index]) || 0;
+      });
+      gymForm.dataset.ready = "true";
+    }
+
+    function readGymForm() {
+      setupGymRampGrid();
+      if (!gymForm.dataset.ready) fillGymForm(defaultGymInput());
+      const data = defaultGymInput();
+      gymForm.querySelectorAll("[data-gym-field]").forEach((field) => {
+        const key = field.dataset.gymField;
+        data[key] = field.type === "number" ? Number(field.value) || 0 : field.value.trim();
+      });
+      data.ramp = [...gymForm.querySelectorAll("[data-gym-ramp]")].map((field) => Number(field.value) || 0);
+      data.id = activeGymRecordId || "";
+      return data;
+    }
+
+    function calculateGym(input) {
+      const n = (key) => Number(input[key]) || 0;
+      const rate = (key) => (Number(input[key]) || 0) / 100;
+      const simultaneousLoad = n("sqmPerVisitor") ? n("area") / n("sqmPerVisitor") : 0;
+      const targetMembers = Math.round(simultaneousLoad * n("memberMultiplier"));
+      const fixedMonthly = n("rent") + n("payroll") + n("marketing") + n("utilities") + n("service") + n("software") + n("otherMonthly");
+      const investment = n("equipment") + n("fitout") + n("deliveryInstall") + n("prelaunchMarketing") + n("depositWorkingCapital") + n("otherCapex");
+      const avgRevenuePerMember = n("avgMembership") + (rate("ptPenetration") * n("ptSessions") * n("ptSessionPrice")) + n("extraRevenuePerMember");
+      const variablePerMember = (rate("ptPenetration") * n("ptSessions") * n("ptSessionPrice") * rate("trainerPayoutRate"))
+        + (n("extraRevenuePerMember") * rate("extraCostRate"))
+        + (avgRevenuePerMember * rate("acquiringRate"));
+      const contributionPerMember = avgRevenuePerMember - variablePerMember;
+      const breakEvenMembers = contributionPerMember > 0 ? Math.ceil(fixedMonthly / contributionPerMember) : 0;
+      let cumulative = -investment;
+      const monthly = Array.from({ length: 12 }, (_, index) => {
+        const ramp = (Number(input.ramp?.[index]) || 0) / 100;
+        const members = Math.round(targetMembers * ramp);
+        const membershipRevenue = members * n("avgMembership");
+        const ptClients = members * rate("ptPenetration");
+        const ptSessionsTotal = ptClients * n("ptSessions");
+        const ptRevenue = ptSessionsTotal * n("ptSessionPrice");
+        const extraRevenue = members * n("extraRevenuePerMember");
+        const revenue = membershipRevenue + ptRevenue + extraRevenue;
+        const trainerPayout = ptRevenue * rate("trainerPayoutRate");
+        const extraCost = extraRevenue * rate("extraCostRate");
+        const acquiring = revenue * rate("acquiringRate");
+        const expenses = trainerPayout + extraCost + acquiring + fixedMonthly;
+        const ebitda = revenue - expenses;
+        const tax = ebitda > 0 ? ebitda * rate("taxRate") : 0;
+        const netProfit = ebitda - tax;
+        cumulative += netProfit;
+        return {
+          month: index + 1,
+          ramp: Math.round(ramp * 100),
+          members,
+          membershipRevenue,
+          ptClients,
+          ptSessionsTotal,
+          ptRevenue,
+          extraRevenue,
+          revenue,
+          expenses,
+          ebitda,
+          ebitdaMargin: revenue ? ebitda / revenue : 0,
+          tax,
+          netProfit,
+          cashflow: netProfit,
+          cumulative,
+        };
+      });
+      const month12 = monthly[11] || {};
+      const totalRevenue = monthly.reduce((total, item) => total + item.revenue, 0);
+      const totalEbitda = monthly.reduce((total, item) => total + item.ebitda, 0);
+      const totalNetProfit = monthly.reduce((total, item) => total + item.netProfit, 0);
+      const paybackIndex = monthly.findIndex((item) => item.cumulative >= 0);
+      const scenarios = buildGymScenarios(input, { targetMembers, investment });
+      return {
+        simultaneousLoad,
+        targetMembers,
+        fixedMonthly,
+        investment,
+        avgRevenuePerMember,
+        variablePerMember,
+        contributionPerMember,
+        breakEvenMembers,
+        monthly,
+        scenarios,
+        summary: {
+          revenue12: month12.revenue || 0,
+          ebitda12: month12.ebitda || 0,
+          ebitdaMargin12: month12.ebitdaMargin || 0,
+          netProfit12: month12.netProfit || 0,
+          totalRevenue,
+          totalEbitda,
+          totalNetProfit,
+          roi12: investment ? totalNetProfit / investment : 0,
+          payback: paybackIndex === -1 ? ">12" : `${paybackIndex + 1}`,
+        },
+      };
+    }
+
+    function buildGymScenarios(input, base) {
+      const scenarios = [
+        { key: "Downside", member: 0.85, avg: 0.95, rent: 1.05, payroll: 1.05, investment: 1.1 },
+        { key: "Base", member: 1, avg: 1, rent: 1, payroll: 1, investment: 1 },
+        { key: "Upside", member: 1.15, avg: 1.05, rent: 0.95, payroll: 0.95, investment: 0.9 },
+      ];
+      const rateValue = (key) => (Number(input[key]) || 0) / 100;
+      return scenarios.map((scenario) => {
+        const members = base.targetMembers * scenario.member;
+        const avgCheck = (Number(input.avgMembership) || 0) * scenario.avg;
+        const revenuePerMember = avgCheck + (rateValue("ptPenetration") * (Number(input.ptSessions) || 0) * (Number(input.ptSessionPrice) || 0)) + (Number(input.extraRevenuePerMember) || 0);
+        const revenue = members * revenuePerMember;
+        const variable = members * (
+          rateValue("ptPenetration") * (Number(input.ptSessions) || 0) * (Number(input.ptSessionPrice) || 0) * rateValue("trainerPayoutRate")
+          + (Number(input.extraRevenuePerMember) || 0) * rateValue("extraCostRate")
+          + revenuePerMember * rateValue("acquiringRate")
+        );
+        const fixed = (Number(input.rent) || 0) * scenario.rent
+          + (Number(input.payroll) || 0) * scenario.payroll
+          + (Number(input.marketing) || 0)
+          + (Number(input.utilities) || 0)
+          + (Number(input.service) || 0)
+          + (Number(input.software) || 0)
+          + (Number(input.otherMonthly) || 0);
+        const ebitda = revenue - variable - fixed;
+        const net = ebitda * (1 - rateValue("taxRate"));
+        return {
+          ...scenario,
+          revenue,
+          ebitda,
+          margin: revenue ? ebitda / revenue : 0,
+          payback: net > 0 ? (base.investment * scenario.investment) / net : 0,
+        };
+      });
+    }
+
+    function renderGymCalculator() {
+      if (!gymForm || !gymMonthlyRows || !gymScenarioRows) return;
+      setupGymRampGrid();
+      if (!gymForm.dataset.ready) fillGymForm(defaultGymInput());
+      const input = readGymForm();
+      const calc = calculateGym(input);
+
+      document.querySelector("#gymKpiInvestment").textContent = formatMoney(calc.investment);
+      document.querySelector("#gymKpiRevenue12").textContent = formatMoney(calc.summary.revenue12);
+      document.querySelector("#gymKpiProfit12").textContent = formatMoney(calc.summary.netProfit12);
+      document.querySelector("#gymKpiBreakEven").textContent = `${formatNumber(calc.breakEvenMembers)} членов`;
+      document.querySelector("#gymKpiRoi").textContent = `${(calc.summary.roi12 * 100).toFixed(1)}%`;
+      document.querySelector("#gymKpiPayback").textContent = calc.summary.payback === ">12" ? ">12 мес." : `${calc.summary.payback} мес.`;
+
+      gymMonthlyHead.innerHTML = `<tr><th>Показатель</th>${calc.monthly.map((item) => `<th class="numeric">М${item.month}</th>`).join("")}</tr>`;
+      const monthlyRows = [
+        ["Ramp-up %", ...calc.monthly.map((item) => `${item.ramp}%`)],
+        ["Активные члены", ...calc.monthly.map((item) => formatNumber(item.members))],
+        ["Итого выручка", ...calc.monthly.map((item) => formatMoney(item.revenue))],
+        ["Итого расходы", ...calc.monthly.map((item) => formatMoney(item.expenses))],
+        ["EBITDA", ...calc.monthly.map((item) => formatMoney(item.ebitda))],
+        ["EBITDA margin", ...calc.monthly.map((item) => `${(item.ebitdaMargin * 100).toFixed(1)}%`)],
+        ["Чистая прибыль", ...calc.monthly.map((item) => formatMoney(item.netProfit))],
+        ["Накопленный денежный поток", ...calc.monthly.map((item) => formatMoney(item.cumulative))],
+      ];
+      gymMonthlyRows.innerHTML = monthlyRows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row[0])}</td>
+          ${row.slice(1).map((value) => `<td class="numeric">${escapeHtml(value)}</td>`).join("")}
+        </tr>
+      `).join("");
+
+      const scenarioRows = [
+        ["Множитель активных членов", ...calc.scenarios.map((item) => `${Math.round(item.member * 100)}%`)],
+        ["Множитель среднего чека", ...calc.scenarios.map((item) => `${Math.round(item.avg * 100)}%`)],
+        ["Множитель аренды", ...calc.scenarios.map((item) => `${Math.round(item.rent * 100)}%`)],
+        ["Множитель ФОТ", ...calc.scenarios.map((item) => `${Math.round(item.payroll * 100)}%`)],
+        ["Множитель инвестиций", ...calc.scenarios.map((item) => `${Math.round(item.investment * 100)}%`)],
+        ["Месячная выручка", ...calc.scenarios.map((item) => formatMoney(item.revenue))],
+        ["Месячная EBITDA", ...calc.scenarios.map((item) => formatMoney(item.ebitda))],
+        ["EBITDA margin", ...calc.scenarios.map((item) => `${(item.margin * 100).toFixed(1)}%`)],
+        ["Окупаемость, мес.", ...calc.scenarios.map((item) => item.payback ? item.payback.toFixed(1) : "нет")],
+      ];
+      gymScenarioRows.innerHTML = scenarioRows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row[0])}</td>
+          ${row.slice(1).map((value) => `<td class="numeric">${escapeHtml(value)}</td>`).join("")}
+        </tr>
+      `).join("");
+
+      renderGymHistory();
+      applyDashboardSettings("gymCalculator");
+    }
+
+    function setGymMode(mode) {
+      const nextMode = gymModeViews[mode] ? mode : "form";
+      document.querySelectorAll("[data-gym-mode]").forEach((item) => item.classList.toggle("active", item.dataset.gymMode === nextMode));
+      Object.entries(gymModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+      renderGymCalculator();
+    }
+
+    function saveGymRecordFromForm() {
+      const input = readGymForm();
+      if (!input.clubName) {
+        alert("Укажите клиента или название зала.");
+        return;
+      }
+      const now = new Date().toISOString();
+      const record = normalizeGymRecord({
+        ...input,
+        id: activeGymRecordId || createId(),
+        createdAt: gymRecords.find((item) => item.id === activeGymRecordId)?.createdAt || now,
+        updatedAt: now,
+      });
+      const index = gymRecords.findIndex((item) => item.id === record.id);
+      if (index === -1) gymRecords.unshift(record);
+      else gymRecords[index] = record;
+      activeGymRecordId = record.id;
+      saveGymRecords();
+      renderGymCalculator();
+      alert("Расчет сохранен в историю.");
+    }
+
+    function resetGymForm() {
+      fillGymForm(defaultGymInput());
+      setGymMode("form");
+      renderGymCalculator();
+    }
+
+    function renderGymHistory() {
+      const rows = [...gymRecords].sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+      gymHistoryEmpty.classList.toggle("hidden", rows.length > 0);
+      gymHistoryRows.innerHTML = rows.map((record) => {
+        const calc = calculateGym(record);
+        return `
+          <tr>
+            <td>${formatDate(record.date)}</td>
+            <td><strong>${escapeHtml(record.clubName || "Без названия")}</strong></td>
+            <td>${escapeHtml(record.city || "-")}</td>
+            <td class="numeric">${formatMoney(calc.investment)}</td>
+            <td class="numeric">${formatMoney(calc.summary.revenue12)}</td>
+            <td class="numeric">${formatMoney(calc.summary.netProfit12)}</td>
+            <td>${calc.summary.payback === ">12" ? ">12 мес." : `${calc.summary.payback} мес.`}</td>
+            <td>
+              <button class="btn small" type="button" data-gym-action="open" data-id="${record.id}">Открыть</button>
+              <button class="btn small danger" type="button" data-gym-action="delete" data-id="${record.id}">Удалить</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function handleGymHistoryAction(event) {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const record = gymRecords.find((item) => item.id === button.dataset.id);
+      if (!record) return;
+      if (button.dataset.gymAction === "open") {
+        fillGymForm(record);
+        setGymMode("form");
+      }
+      if (button.dataset.gymAction === "delete" && confirm("Удалить расчет из истории?")) {
+        gymRecords = gymRecords.filter((item) => item.id !== record.id);
+        if (activeGymRecordId === record.id) activeGymRecordId = "";
+        saveGymRecords();
+        renderGymCalculator();
+      }
+    }
+
+    function gymExportRows() {
+      const input = readGymForm();
+      const calc = calculateGym(input);
+      const rows = [
+        ["GYM-калькулятор"],
+        ["Клиент / зал", input.clubName || ""],
+        ["Город", input.city || ""],
+        ["Дата", formatDate(input.date)],
+        [],
+        ["Ключевые KPI", "Значение"],
+        ["Площадь клуба, м²", formatNumber(input.area)],
+        ["Целевые активные члены", formatNumber(calc.targetMembers)],
+        ["Итого инвестиции", formatMoney(calc.investment)],
+        ["Выручка в месяц 12", formatMoney(calc.summary.revenue12)],
+        ["EBITDA в месяц 12", formatMoney(calc.summary.ebitda12)],
+        ["EBITDA margin в месяц 12", `${(calc.summary.ebitdaMargin12 * 100).toFixed(1)}%`],
+        ["Чистая прибыль в месяц 12", formatMoney(calc.summary.netProfit12)],
+        ["Выручка за 12 мес.", formatMoney(calc.summary.totalRevenue)],
+        ["EBITDA за 12 мес.", formatMoney(calc.summary.totalEbitda)],
+        ["Чистая прибыль за 12 мес.", formatMoney(calc.summary.totalNetProfit)],
+        ["Фиксированные расходы / мес.", formatMoney(calc.fixedMonthly)],
+        ["Средняя выручка на 1 члена / мес.", formatMoney(calc.avgRevenuePerMember)],
+        ["Переменные затраты на 1 члена / мес.", formatMoney(calc.variablePerMember)],
+        ["Вклад на 1 члена / мес.", formatMoney(calc.contributionPerMember)],
+        ["Точка безубыточности, члены", formatNumber(calc.breakEvenMembers)],
+        ["ROI за 12 мес.", `${(calc.summary.roi12 * 100).toFixed(1)}%`],
+        ["Окупаемость, мес.", calc.summary.payback],
+        [],
+        ["Помесячная модель", ...calc.monthly.map((item) => `М${item.month}`)],
+        ["Ramp-up %", ...calc.monthly.map((item) => `${item.ramp}%`)],
+        ["Активные члены", ...calc.monthly.map((item) => item.members)],
+        ["Итого выручка", ...calc.monthly.map((item) => Math.round(item.revenue))],
+        ["Итого расходы", ...calc.monthly.map((item) => Math.round(item.expenses))],
+        ["EBITDA", ...calc.monthly.map((item) => Math.round(item.ebitda))],
+        ["Чистая прибыль", ...calc.monthly.map((item) => Math.round(item.netProfit))],
+        ["Накопленный денежный поток", ...calc.monthly.map((item) => Math.round(item.cumulative))],
+      ];
+      return rows;
     }
 
     function isPublishedAdRecord(record) {
