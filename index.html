@@ -5667,6 +5667,7 @@
     const salesSettingsCloudTable = "sportpro_sales_settings";
     const wholesaleCloudTable = "sportpro_wholesale_records";
     const memoryCloudTable = "sportpro_memory_profiles";
+    const gymRampDefaults = [20, 30, 40, 50, 60, 70, 78, 85, 90, 95, 98, 100];
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
     const adsPublicationsWorkspace = document.querySelector("#adsPublicationsWorkspace");
@@ -8966,8 +8967,6 @@
       return normalizeClientSourcesData(readStorage(clientSourcesDataKey) || {});
     }
 
-    const gymRampDefaults = [20, 30, 40, 50, 60, 70, 78, 85, 90, 95, 98, 100];
-
     function defaultGymInput() {
       return {
         id: "",
@@ -9311,6 +9310,7 @@
       gymHistoryEmpty.classList.toggle("hidden", rows.length > 0);
       gymHistoryRows.innerHTML = rows.map((record) => {
         const calc = calculateGym(record);
+        const paybackLabel = calc.summary.payback === ">12" ? ">12 мес." : `${calc.summary.payback} мес.`;
         return `
           <tr>
             <td>${formatDate(record.date)}</td>
@@ -9319,7 +9319,7 @@
             <td class="numeric">${formatMoney(calc.investment)}</td>
             <td class="numeric">${formatMoney(calc.summary.revenue12)}</td>
             <td class="numeric">${formatMoney(calc.summary.netProfit12)}</td>
-            <td>${calc.summary.payback === ">12" ? ">12 мес." : `${calc.summary.payback} мес.`}</td>
+            <td>${paybackLabel}</td>
             <td>
               <button class="btn small" type="button" data-gym-action="open" data-id="${record.id}">Открыть</button>
               <button class="btn small danger" type="button" data-gym-action="delete" data-id="${record.id}">Удалить</button>
