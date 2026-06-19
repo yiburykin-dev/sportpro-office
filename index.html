@@ -7554,8 +7554,8 @@
     function readProposalHeaderFromForm() {
       proposalData = normalizeProposalData({
         ...proposalData,
-        from: proposalFrom.value.trim(),
-        to: proposalTo.value.trim(),
+        from: proposalFrom.value,
+        to: proposalTo.value,
         company: proposalCompany.value,
         date: proposalDate.value || todayIsoDate(),
         manager: proposalManager.value,
@@ -7677,6 +7677,20 @@
       scrollProposalEditorIntoView();
     }
 
+    function deleteProposalFromArchive(id) {
+      const saved = proposalArchive.find((item) => item.id === id);
+      if (!saved) return;
+      const label = `${proposalDocumentNumber(saved)} · ${saved.to || "Без клиента"}`;
+      if (!confirm(`Удалить коммерческое предложение "${label}" из архива?`)) return;
+      proposalArchive = proposalArchive.filter((item) => item.id !== id);
+      saveProposalArchive();
+      if (proposalData.id === id) {
+        proposalData = normalizeProposalData({ ...proposalData, id: "", updatedAt: new Date().toISOString() });
+        saveProposalData();
+        renderProposal();
+      }
+    }
+
     function closeProposalEditor() {
       proposalEditorOpen = false;
       renderProposal();
@@ -7693,6 +7707,7 @@
       const id = button.dataset.proposalId;
       if (button.dataset.proposalAction === "open") openProposalFromArchive(id);
       if (button.dataset.proposalAction === "copy") copyProposalFromArchive(id);
+      if (button.dataset.proposalAction === "delete") deleteProposalFromArchive(id);
     }
 
     function renderProposal() {
@@ -7741,6 +7756,7 @@
             <div class="actions">
               <button class="btn" type="button" data-proposal-action="open" data-proposal-id="${escapeHtml(item.id)}">Открыть</button>
               <button class="btn" type="button" data-proposal-action="copy" data-proposal-id="${escapeHtml(item.id)}">Копировать</button>
+              <button class="btn danger" type="button" data-proposal-action="delete" data-proposal-id="${escapeHtml(item.id)}">Удалить</button>
             </div>
           </article>
         `;
@@ -7833,72 +7849,100 @@
       ];
     }
 
-    function exportProposalExcel() {
+    async function exportProposalExcel() {
       proposalData = normalizeProposalData(proposalData);
-      downloadBlob(proposalExcelBlob(), "kommercheskoe-predlozhenie.xlsx");
+      downloadBlob(await proposalExcelBlob(), "kommercheskoe-predlozhenie.xlsx");
     }
 
-    function proposalExcelBlob() {
+    async function proposalExcelBlob() {
       const company = proposalCompanies[proposalData.company] || proposalCompanies.sportpro;
       const rows = proposalActiveRows();
       const totals = proposalTotals();
-      const tableStart = 8;
+      const tableStart = 12;
       const totalRow = tableStart + rows.length + 1;
       const footerPriceRow = totalRow + 2;
-      const preparedRow = footerPriceRow + 1;
-      const signRow = preparedRow + 2;
+      const preparedRow = footerPriceRow + 2;
+      const signRow = preparedRow + 3;
       const cells = [];
 
       const addCell = (ref, value, style = 0) => cells.push({ ref, value, style });
-      addCell("B2", "Дата", 3);
-      addCell("C2", formatDate(proposalData.date), 2);
-      addCell("B3", "Номер", 3);
-      addCell("C3", `${proposalDocumentNumber(proposalData)} от ${formatProposalLongDate(proposalData.date)}`, 2);
-      addCell("B4", "Телефон", 3);
-      addCell("C4", company.phone, 2);
-      addCell("B5", "От кого", 3);
-      addCell("C5", proposalData.from, 2);
-      addCell("B6", "Для кого", 3);
-      addCell("C6", proposalData.to, 2);
-      addCell("E5", "КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ", 4);
-      addCell("E6", "предлагаем вам рассмотреть наше коммерческое предложение на запрашиваемый вами товар", 5);
+      addCell("B4", "Дата", 0);
+      addCell("C4", formatDate(proposalData.date), 14);
+      addCell("D4", "", 14);
+      addCell("B5", "Номер", 0);
+      addCell("C5", `${proposalDocumentNumber(proposalData)} от ${formatProposalLongDate(proposalData.date)}`, 14);
+      addCell("D5", "", 14);
+      addCell("E5", "КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ", 15);
+      ["F", "G", "H", "I", "J", "K"].forEach((column) => addCell(`${column}5`, "", 15));
+      addCell("B6", "Телефон", 0);
+      addCell("C6", company.phone, 14);
+      addCell("D6", "", 14);
+      addCell("E6", "предлагаем вам рассмотреть наше коммерческое предложение на запрашиваемый вами товар", 13);
+      ["F", "G", "H", "I", "J", "K"].forEach((column) => addCell(`${column}6`, "", 14));
+      addCell("E7", "", 4);
+      addCell("B8", "Для кого", 0);
+      addCell("C8", proposalData.to, 16);
+      addCell("D8", "", 16);
+      addCell("E8", "", 16);
+      ["E", "F", "G", "H", "I", "J", "K"].forEach((column) => addCell(`${column}9`, "", 2));
+      addCell("B10", "От кого", 0);
+      addCell("C10", proposalData.from, 16);
+      addCell("D10", "", 16);
+      addCell("E10", "", 16);
 
       ["№", "Фото", "Артикул", "Наименование", "Описание", "Кол-во", "Ед.", "Цена РЦ", "Цена со скидкой", "Сумма РЦ", "Сумма со скидкой"]
-        .forEach((title, index) => addCell(`${excelColumnName(index + 1)}${tableStart}`, title, 1));
+        .forEach((title, index) => addCell(`${excelColumnName(index + 1)}${tableStart}`, title, 6));
 
       rows.forEach((row, index) => {
         const rowIndex = tableStart + index + 1;
         const rowTotals = proposalRowTotals(row);
         [
-          index + 1,
-          row.photo,
-          row.article,
-          row.name,
-          row.description,
-          row.qty,
-          row.unit,
-          proposalMoney(row.retailPrice),
-          proposalMoney(row.discountPrice),
-          proposalMoney(rowTotals.retail),
-          proposalMoney(rowTotals.discount),
-        ].forEach((value, cellIndex) => addCell(`${excelColumnName(cellIndex + 1)}${rowIndex}`, value, 2));
+          { value: index + 1, style: 7 },
+          { value: row.photo, style: 7 },
+          { value: row.article, style: 7 },
+          { value: row.name, style: 7 },
+          { value: row.description, style: 7 },
+          { value: row.qty, style: 8 },
+          { value: row.unit, style: 7 },
+          { value: proposalMoney(row.retailPrice), style: 9 },
+          { value: proposalMoney(row.discountPrice), style: 9 },
+          { value: proposalMoney(rowTotals.retail), style: 9 },
+          { value: proposalMoney(rowTotals.discount), style: 9 },
+        ].forEach((cell, cellIndex) => addCell(`${excelColumnName(cellIndex + 1)}${rowIndex}`, cell.value, cell.style));
       });
 
-      addCell(`I${totalRow}`, "Итого", 1);
-      addCell(`J${totalRow}`, proposalMoney(totals.retail), 2);
-      addCell(`K${totalRow}`, proposalMoney(totals.discount), 2);
-      addCell(`B${footerPriceRow}`, "Цена с НДС со склада в г. Петропавловск.", 2);
-      addCell(`B${preparedRow}`, "Коммерческое предложение подготовил(а)", 2);
-      addCell(`D${preparedRow}`, proposalData.manager, 2);
-      addCell(`B${signRow}`, "С уважением", 2);
-      addCell(`C${signRow}`, company.label, 2);
+      addCell(`I${totalRow}`, "Итого", 6);
+      addCell(`J${totalRow}`, proposalMoney(totals.retail), 1);
+      addCell(`K${totalRow}`, proposalMoney(totals.discount), 1);
+      addCell(`B${footerPriceRow}`, "Цена с НДС со склада в г. Петропавловск.", 14);
+      ["C", "D", "E", "F", "G", "H", "I", "J", "K"].forEach((column) => addCell(`${column}${footerPriceRow}`, "", 14));
+      addCell(`B${preparedRow}`, "Коммерческое предложение подготовил(а)", 12);
+      addCell(`C${preparedRow}`, "", 10);
+      addCell(`D${preparedRow}`, "", 10);
+      addCell(`E${preparedRow}`, proposalData.manager, 10);
+      addCell(`B${signRow}`, "С уважением", 0);
+      addCell(`C${signRow}`, company.label, 0);
+      const logoBytes = await proposalLogoBytes(company.logo);
 
       const worksheet = proposalWorksheetXml(cells, {
         maxRow: signRow,
-        merges: ["C2:D2", "C3:D3", "C4:D4", "C5:D5", "C6:D6", "E5:G5", "E6:K6", `B${footerPriceRow}:K${footerPriceRow}`],
+        merges: ["E6:K6", `B${footerPriceRow}:K${footerPriceRow}`, "E5:K5", "C4:D4", "C5:D5", "C6:D6", "C8:E8", "C10:E10"],
         cols: [3.75, 19.375, 11.25, 15.125, 31.875, 7.125, 4.5, 9.875, 9.875, 9.875, 9.875],
+        rowHeights: {
+          5: 18,
+          7: 6.75,
+          8: 14.25,
+          9: 9,
+          [tableStart]: 30,
+          [totalRow]: 15,
+          [footerPriceRow]: 14.25,
+          [preparedRow]: 14.25,
+        },
+        bodyStart: tableStart + 1,
+        bodyEnd: totalRow - 1,
+        hasDrawing: Boolean(logoBytes),
       });
-      return singleSheetXlsxBlob("Данные", worksheet, proposalExcelStylesXml());
+      return singleSheetXlsxBlob("Данные", worksheet, proposalExcelStylesXml(), { logoBytes });
     }
 
     function formatProposalLongDate(value) {
@@ -7906,15 +7950,18 @@
       return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T00:00:00`)) + " г.";
     }
 
-    function singleSheetXlsxBlob(sheetName, worksheetXmlText, stylesXmlText = excelStylesXml()) {
+    function singleSheetXlsxBlob(sheetName, worksheetXmlText, stylesXmlText = excelStylesXml(), options = {}) {
+      const hasLogo = Boolean(options.logoBytes);
       const files = {
         "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
           <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
             <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
             <Default Extension="xml" ContentType="application/xml"/>
+            ${hasLogo ? '<Default Extension="png" ContentType="image/png"/>' : ""}
             <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
             <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
             <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+            ${hasLogo ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : ""}
           </Types>`,
         "_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
           <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -7932,6 +7979,18 @@
         "xl/styles.xml": stylesXmlText,
         "xl/worksheets/sheet1.xml": worksheetXmlText,
       };
+      if (hasLogo) {
+        files["xl/worksheets/_rels/sheet1.xml.rels"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+            <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>
+          </Relationships>`;
+        files["xl/drawings/drawing1.xml"] = proposalDrawingXml();
+        files["xl/drawings/_rels/drawing1.xml.rels"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+            <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/>
+          </Relationships>`;
+        files["xl/media/image1.png"] = options.logoBytes;
+      }
       return zipBlob(files, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
@@ -7948,7 +8007,8 @@
       for (let rowNumber = 1; rowNumber <= maxRow; rowNumber += 1) {
         const rowCells = (rowsByNumber.get(rowNumber) || [])
           .sort((a, b) => excelColumnIndex(a.ref) - excelColumnIndex(b.ref));
-        const height = rowNumber === 6 ? ' ht="30" customHeight="1"' : "";
+        const configuredHeight = options.rowHeights?.[rowNumber] || (rowNumber >= options.bodyStart && rowNumber <= options.bodyEnd ? 42.75 : "");
+        const height = configuredHeight ? ` ht="${configuredHeight}" customHeight="1"` : "";
         rowXml.push(`<row r="${rowNumber}"${height}>${rowCells.map((cell) =>
           `<c r="${cell.ref}" t="inlineStr" s="${cell.style || 0}"><is><t>${escapeXml(cell.value)}</t></is></c>`
         ).join("")}</row>`);
@@ -7956,11 +8016,14 @@
       const merges = (options.merges || []).length
         ? `<mergeCells count="${options.merges.length}">${options.merges.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}</mergeCells>`
         : "";
+      const drawing = options.hasDrawing ? '<drawing r:id="rId1"/>' : "";
+      const relationNamespace = options.hasDrawing ? ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' : "";
       return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+        <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"${relationNamespace}>
           <cols>${cols}</cols>
           <sheetData>${rowXml.join("")}</sheetData>
           ${merges}
+          ${drawing}
         </worksheet>`;
     }
 
@@ -7969,31 +8032,100 @@
       return [...letters].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0);
     }
 
+    async function proposalLogoBytes(src) {
+      if (!src) return null;
+      try {
+        const response = await fetch(src);
+        if (response.ok) return new Uint8Array(await response.arrayBuffer());
+      } catch (error) {
+        // Local file mode can block fetch; canvas fallback keeps export usable offline.
+      }
+      try {
+        return await imageToPngBytes(src);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function imageToPngBytes(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth || image.width;
+            canvas.height = image.naturalHeight || image.height;
+            const context = canvas.getContext("2d");
+            context.drawImage(image, 0, 0);
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                reject(new Error("Logo conversion failed"));
+                return;
+              }
+              resolve(new Uint8Array(await blob.arrayBuffer()));
+            }, "image/png");
+          } catch (error) {
+            reject(error);
+          }
+        };
+        image.onerror = () => reject(new Error("Logo load failed"));
+        image.src = src;
+      });
+    }
+
+    function proposalDrawingXml() {
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+          <xdr:twoCellAnchor editAs="oneCell">
+            <xdr:from><xdr:col>8</xdr:col><xdr:colOff>561975</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>28575</xdr:rowOff></xdr:from>
+            <xdr:to><xdr:col>10</xdr:col><xdr:colOff>702948</xdr:colOff><xdr:row>2</xdr:row><xdr:rowOff>15240</xdr:rowOff></xdr:to>
+            <xdr:pic>
+              <xdr:nvPicPr><xdr:cNvPr id="3" name="Logo"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>
+              <xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId1" cstate="print"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>
+              <xdr:spPr><a:xfrm><a:off x="8401050" y="209550"/><a:ext cx="1645923" cy="167640"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>
+            </xdr:pic>
+            <xdr:clientData/>
+          </xdr:twoCellAnchor>
+        </xdr:wsDr>`;
+    }
+
     function proposalExcelStylesXml() {
       return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-          <fonts count="4">
+          <fonts count="5">
             <font><sz val="11"/><name val="Arial"/></font>
             <font><b/><sz val="11"/><name val="Arial"/></font>
             <font><b/><sz val="14"/><name val="Arial"/></font>
             <font><i/><sz val="10"/><name val="Arial"/></font>
+            <font><sz val="9"/><name val="Arial"/></font>
           </fonts>
           <fills count="2">
             <fill><patternFill patternType="none"/></fill>
-            <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/><bgColor indexed="64"/></patternFill></fill>
+            <fill><patternFill patternType="gray125"/></fill>
           </fills>
           <borders count="2">
-            <border><left/><right/><top/><bottom/></border>
+            <border><left/><right/><top/><bottom/><diagonal/></border>
             <border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom></border>
           </borders>
           <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-          <cellXfs count="6">
+          <cellXfs count="17">
             <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-            <xf numFmtId="0" fontId="1" fillId="1" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
             <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
-            <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>
             <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
             <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+            <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment wrapText="0"/></xf>
+            <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+            <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left" wrapText="0"/></xf>
           </cellXfs>
         </styleSheet>`;
     }
@@ -16056,7 +16188,7 @@
       const fileEntries = Object.entries(files).map(([name, content]) => ({
         name,
         nameBytes: encoder.encode(name),
-        data: encoder.encode(String(content).replace(/>\s+</g, "><").trim()),
+        data: zipEntryData(content, encoder),
       }));
       const chunks = [];
       const central = [];
@@ -16072,6 +16204,12 @@
       const centralOffset = offset;
       const end = zipEndRecord(fileEntries.length, centralSize, centralOffset);
       return new Blob([...chunks, ...central, end], { type });
+    }
+
+    function zipEntryData(content, encoder) {
+      if (content instanceof Uint8Array) return content;
+      if (content instanceof ArrayBuffer) return new Uint8Array(content);
+      return encoder.encode(String(content).replace(/>\s+</g, "><").trim());
     }
 
     function zipLocalHeader(nameBytes, size, crc) {
