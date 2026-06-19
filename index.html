@@ -6677,7 +6677,7 @@
     document.querySelector("#proposalNewBtn").addEventListener("click", createNewProposal);
     proposalBackToListBtn.addEventListener("click", closeProposalEditor);
     document.querySelector("#proposalSaveBtn").addEventListener("click", saveCurrentProposalToArchive);
-    document.querySelector("#proposalExportExcelBtn").addEventListener("click", () => exportRowsToExcel("kommercheskoe-predlozhenie", proposalExportRows()));
+    document.querySelector("#proposalExportExcelBtn").addEventListener("click", exportProposalExcel);
     document.querySelector("#proposalExportPdfBtn").addEventListener("click", exportProposalPdf);
     proposalArchiveList.addEventListener("click", handleProposalArchiveAction);
 
@@ -7798,13 +7798,14 @@
       const rows = proposalActiveRows();
       const totals = proposalTotals();
       return [
-        ["Коммерческое предложение"],
-        ["Номер", proposalDocumentNumber(proposalData), "Дата", formatDate(proposalData.date)],
-        ["Компания", company.label, "Телефон", company.phone],
-        ["От кого", proposalData.from, "Для кого", proposalData.to],
-        ["Менеджер", proposalData.manager, "Валюта", proposalData.currency === "KZT" ? "Тенге" : "Доллар"],
-        [],
-        ["№", "Фото", "Артикул", "Наименование", "Описание", "Количество", "Ед.", "Цена РЦ", "Цена со скидкой", "Сумма РЦ", "Сумма со скидкой"],
+        ["Дата", formatDate(proposalData.date)],
+        ["Номер", `${proposalDocumentNumber(proposalData)} от ${formatProposalLongDate(proposalData.date)}`],
+        ["Телефон", company.phone],
+        ["От кого", proposalData.from],
+        ["Для кого", proposalData.to],
+        ["КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ"],
+        ["предлагаем вам рассмотреть наше коммерческое предложение на запрашиваемый вами товар"],
+        ["№", "Фото", "Артикул", "Наименование", "Описание", "Кол-во", "Ед.", "Цена РЦ", "Цена со скидкой", "Сумма РЦ", "Сумма со скидкой"],
         ...rows.map((row, index) => {
           const rowTotals = proposalRowTotals(row);
           return [
@@ -7830,6 +7831,171 @@
         [],
         ["С уважением", company.label],
       ];
+    }
+
+    function exportProposalExcel() {
+      proposalData = normalizeProposalData(proposalData);
+      downloadBlob(proposalExcelBlob(), "kommercheskoe-predlozhenie.xlsx");
+    }
+
+    function proposalExcelBlob() {
+      const company = proposalCompanies[proposalData.company] || proposalCompanies.sportpro;
+      const rows = proposalActiveRows();
+      const totals = proposalTotals();
+      const tableStart = 8;
+      const totalRow = tableStart + rows.length + 1;
+      const footerPriceRow = totalRow + 2;
+      const preparedRow = footerPriceRow + 1;
+      const signRow = preparedRow + 2;
+      const cells = [];
+
+      const addCell = (ref, value, style = 0) => cells.push({ ref, value, style });
+      addCell("B2", "Дата", 3);
+      addCell("C2", formatDate(proposalData.date), 2);
+      addCell("B3", "Номер", 3);
+      addCell("C3", `${proposalDocumentNumber(proposalData)} от ${formatProposalLongDate(proposalData.date)}`, 2);
+      addCell("B4", "Телефон", 3);
+      addCell("C4", company.phone, 2);
+      addCell("B5", "От кого", 3);
+      addCell("C5", proposalData.from, 2);
+      addCell("B6", "Для кого", 3);
+      addCell("C6", proposalData.to, 2);
+      addCell("E5", "КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ", 4);
+      addCell("E6", "предлагаем вам рассмотреть наше коммерческое предложение на запрашиваемый вами товар", 5);
+
+      ["№", "Фото", "Артикул", "Наименование", "Описание", "Кол-во", "Ед.", "Цена РЦ", "Цена со скидкой", "Сумма РЦ", "Сумма со скидкой"]
+        .forEach((title, index) => addCell(`${excelColumnName(index + 1)}${tableStart}`, title, 1));
+
+      rows.forEach((row, index) => {
+        const rowIndex = tableStart + index + 1;
+        const rowTotals = proposalRowTotals(row);
+        [
+          index + 1,
+          row.photo,
+          row.article,
+          row.name,
+          row.description,
+          row.qty,
+          row.unit,
+          proposalMoney(row.retailPrice),
+          proposalMoney(row.discountPrice),
+          proposalMoney(rowTotals.retail),
+          proposalMoney(rowTotals.discount),
+        ].forEach((value, cellIndex) => addCell(`${excelColumnName(cellIndex + 1)}${rowIndex}`, value, 2));
+      });
+
+      addCell(`I${totalRow}`, "Итого", 1);
+      addCell(`J${totalRow}`, proposalMoney(totals.retail), 2);
+      addCell(`K${totalRow}`, proposalMoney(totals.discount), 2);
+      addCell(`B${footerPriceRow}`, "Цена с НДС со склада в г. Петропавловск.", 2);
+      addCell(`B${preparedRow}`, "Коммерческое предложение подготовил(а)", 2);
+      addCell(`D${preparedRow}`, proposalData.manager, 2);
+      addCell(`B${signRow}`, "С уважением", 2);
+      addCell(`C${signRow}`, company.label, 2);
+
+      const worksheet = proposalWorksheetXml(cells, {
+        maxRow: signRow,
+        merges: ["C2:D2", "C3:D3", "C4:D4", "C5:D5", "C6:D6", "E5:G5", "E6:K6", `B${footerPriceRow}:K${footerPriceRow}`],
+        cols: [3.75, 19.375, 11.25, 15.125, 31.875, 7.125, 4.5, 9.875, 9.875, 9.875, 9.875],
+      });
+      return singleSheetXlsxBlob("Данные", worksheet, proposalExcelStylesXml());
+    }
+
+    function formatProposalLongDate(value) {
+      if (!value) return "";
+      return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T00:00:00`)) + " г.";
+    }
+
+    function singleSheetXlsxBlob(sheetName, worksheetXmlText, stylesXmlText = excelStylesXml()) {
+      const files = {
+        "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+            <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+            <Default Extension="xml" ContentType="application/xml"/>
+            <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+            <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+            <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+          </Types>`,
+        "_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+            <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+          </Relationships>`,
+        "xl/workbook.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+            <sheets><sheet name="${escapeXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets>
+          </workbook>`,
+        "xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+            <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+            <Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+          </Relationships>`,
+        "xl/styles.xml": stylesXmlText,
+        "xl/worksheets/sheet1.xml": worksheetXmlText,
+      };
+      return zipBlob(files, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }
+
+    function proposalWorksheetXml(cells, options = {}) {
+      const cols = (options.cols || []).map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`).join("");
+      const rowsByNumber = new Map();
+      cells.forEach((cell) => {
+        const rowNumber = Number(String(cell.ref).match(/\d+/)?.[0]) || 1;
+        if (!rowsByNumber.has(rowNumber)) rowsByNumber.set(rowNumber, []);
+        rowsByNumber.get(rowNumber).push(cell);
+      });
+      const maxRow = options.maxRow || Math.max(...rowsByNumber.keys(), 1);
+      const rowXml = [];
+      for (let rowNumber = 1; rowNumber <= maxRow; rowNumber += 1) {
+        const rowCells = (rowsByNumber.get(rowNumber) || [])
+          .sort((a, b) => excelColumnIndex(a.ref) - excelColumnIndex(b.ref));
+        const height = rowNumber === 6 ? ' ht="30" customHeight="1"' : "";
+        rowXml.push(`<row r="${rowNumber}"${height}>${rowCells.map((cell) =>
+          `<c r="${cell.ref}" t="inlineStr" s="${cell.style || 0}"><is><t>${escapeXml(cell.value)}</t></is></c>`
+        ).join("")}</row>`);
+      }
+      const merges = (options.merges || []).length
+        ? `<mergeCells count="${options.merges.length}">${options.merges.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}</mergeCells>`
+        : "";
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <cols>${cols}</cols>
+          <sheetData>${rowXml.join("")}</sheetData>
+          ${merges}
+        </worksheet>`;
+    }
+
+    function excelColumnIndex(ref) {
+      const letters = String(ref || "").match(/[A-Z]+/)?.[0] || "A";
+      return [...letters].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0);
+    }
+
+    function proposalExcelStylesXml() {
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <fonts count="4">
+            <font><sz val="11"/><name val="Arial"/></font>
+            <font><b/><sz val="11"/><name val="Arial"/></font>
+            <font><b/><sz val="14"/><name val="Arial"/></font>
+            <font><i/><sz val="10"/><name val="Arial"/></font>
+          </fonts>
+          <fills count="2">
+            <fill><patternFill patternType="none"/></fill>
+            <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/><bgColor indexed="64"/></patternFill></fill>
+          </fills>
+          <borders count="2">
+            <border><left/><right/><top/><bottom/></border>
+            <border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom></border>
+          </borders>
+          <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+          <cellXfs count="6">
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+            <xf numFmtId="0" fontId="1" fillId="1" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf>
+            <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+            <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+          </cellXfs>
+        </styleSheet>`;
     }
 
     function exportProposalPdf() {
@@ -7880,7 +8046,6 @@
               <div class="meta">
                 <strong>${escapeHtml(proposalDocumentNumber(proposalData))}</strong><br>
                 Дата: ${escapeHtml(formatDate(proposalData.date))}<br>
-                ${escapeHtml(company.label)}<br>
                 Тел. ${escapeHtml(company.phone)}
               </div>
             </div>
@@ -7889,8 +8054,6 @@
             <div class="intro">
               <div><strong>От кого:</strong> ${escapeHtml(proposalData.from)}</div>
               <div><strong>Для кого:</strong> ${escapeHtml(proposalData.to)}</div>
-              <div><strong>Менеджер:</strong> ${escapeHtml(proposalData.manager)}</div>
-              <div><strong>Валюта:</strong> ${escapeHtml(proposalData.currency === "KZT" ? "Тенге" : "Доллар")}</div>
             </div>
             <table>
               <thead>
