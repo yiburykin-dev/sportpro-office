@@ -2192,10 +2192,11 @@
       gap: 12px;
       min-width: 0;
       overflow: hidden;
+      padding: 16px;
     }
 
     .gym-panel h3 {
-      margin: 0;
+      margin: 0 0 2px;
     }
 
     .gym-form-grid {
@@ -2207,6 +2208,8 @@
     .gym-form-grid label,
     .gym-ramp-grid label {
       min-width: 0;
+      font-size: 13px;
+      line-height: 1.35;
     }
 
     .gym-form-grid input,
@@ -2214,6 +2217,9 @@
       width: 100%;
       min-width: 0;
       box-sizing: border-box;
+      min-height: 38px;
+      padding: 8px 12px;
+      font-size: 14px;
     }
 
     .gym-ramp-grid {
@@ -2230,8 +2236,141 @@
     }
 
     .gym-ramp-grid input {
-      padding: 8px 9px;
       font-size: 13px;
+    }
+
+    .proposal-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, .6fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .proposal-panel,
+    .proposal-preview-panel,
+    .proposal-table-panel,
+    .proposal-print-preview {
+      font-family: Arial, sans-serif;
+    }
+
+    .proposal-form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .proposal-form-grid label {
+      min-width: 0;
+      font-size: 13px;
+    }
+
+    .proposal-form-grid input,
+    .proposal-form-grid select,
+    .proposal-table input,
+    .proposal-table textarea,
+    .proposal-table select {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    .proposal-number {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .proposal-logo-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 116px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+
+    .proposal-logo-box img {
+      display: block;
+      max-width: 230px;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    .proposal-logo-box img.is-hidden,
+    .proposal-logo-box strong.is-hidden {
+      display: none;
+    }
+
+    .proposal-logo-box strong {
+      font-size: 24px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .proposal-company-contacts {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .proposal-table {
+      font-family: Arial, sans-serif;
+      border-collapse: collapse;
+      min-width: 1320px;
+    }
+
+    .proposal-table th,
+    .proposal-table td {
+      border: 1px solid var(--line);
+      padding: 0;
+      vertical-align: top;
+    }
+
+    .proposal-table th {
+      background: var(--surface-2);
+      font-size: 12px;
+      text-align: left;
+      padding: 8px;
+    }
+
+    .proposal-table input,
+    .proposal-table textarea,
+    .proposal-table select {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      padding: 8px;
+      font-size: 13px;
+    }
+
+    .proposal-table textarea {
+      min-height: 46px;
+      resize: vertical;
+    }
+
+    .proposal-table .proposal-row-number {
+      width: 42px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .proposal-table .numeric {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .proposal-signature {
+      margin-top: 42px;
     }
 
     .money-overpay strong,
@@ -3178,8 +3317,13 @@
       }
 
       .gym-layout,
+      .proposal-layout,
       .gym-form-grid {
         grid-template-columns: 1fr;
+      }
+
+      .proposal-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .gym-ramp-grid {
@@ -3222,6 +3366,7 @@
       .calendar-grid.year,
       .guide-layout,
       .guide-grid,
+      .proposal-form-grid,
       .sales-layout,
       .ledger-card-grid,
       .wholesale-detail-grid,
@@ -3280,6 +3425,10 @@
         <button type="button" data-view="sales" title="Продажи">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16v2H4V4Zm1 4h14v12H5V8Zm2 2v8h10v-8H7Zm2 2h6v2H9v-2Zm0 3h4v2H9v-2Z"/></svg>
           <span class="nav-label">Продажи</span>
+        </button>
+        <button type="button" data-view="proposal" title="Коммерческое предложение">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 2H6v16h12V8h-4V4Zm-6 7h8v2H8v-2Zm0 4h8v2H8v-2Zm0-8h4v2H8V7Z"/></svg>
+          <span class="nav-label">КП</span>
         </button>
         <button type="button" data-view="wholesale" title="Поставки и оплаты">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v4H3V5Zm2 2h14V7H5Zm-1 5h6v7H4v-7Zm2 2v3h2v-3H6Zm7-2h7v2h-7v-2Zm0 4h7v2h-7v-2Zm0 4h7v2h-7v-2Z"/></svg>
@@ -4278,6 +4427,126 @@
               <button class="btn" id="leadClearBtn" type="button">Очистить</button>
             </div>
           </section>
+        </section>
+      </section>
+
+      <section id="proposalView" class="hidden">
+        <div class="topbar">
+          <div class="title">
+            <h2>Коммерческое предложение</h2>
+            <p>Форма подготовки КП с автонумерацией, логотипом компании, расчетом сумм и экспортом в Excel/PDF.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="proposalNewBtn" type="button">Новое КП</button>
+            <button class="btn" id="proposalExportExcelBtn" type="button">Excel</button>
+            <button class="btn primary" id="proposalExportPdfBtn" type="button">PDF</button>
+          </div>
+        </div>
+
+        <section class="proposal-layout">
+          <section class="panel proposal-panel">
+            <div class="toolbar">
+              <div>
+                <h3>Шапка КП</h3>
+                <p class="sales-goal">Выберите компанию, менеджера, валюту и количество строк. Номер КП присваивается автоматически.</p>
+              </div>
+              <div class="proposal-number" id="proposalNumberPreview">КП № 001S</div>
+            </div>
+            <div class="proposal-form-grid">
+              <label>От кого
+                <input id="proposalFrom" type="text" placeholder="Компания / отдел / контакт">
+              </label>
+              <label>Для кого
+                <input id="proposalTo" type="text" placeholder="Клиент или компания клиента">
+              </label>
+              <label>Компания
+                <select id="proposalCompany">
+                  <option value="sportpro">Sportpro</option>
+                  <option value="megasport">Megasport</option>
+                  <option value="sportcity">Sportcity</option>
+                </select>
+              </label>
+              <label>Дата
+                <input id="proposalDate" type="date">
+              </label>
+              <label>Менеджер
+                <select id="proposalManager">
+                  <option value="Прилуцкая Ю.">Прилуцкая Ю.</option>
+                  <option value="Дубина Ю.">Дубина Ю.</option>
+                  <option value="Баранникова И.">Баранникова И.</option>
+                  <option value="Дуброва Ю.">Дуброва Ю.</option>
+                </select>
+              </label>
+              <label>Валюта
+                <select id="proposalCurrency">
+                  <option value="USD">Доллар</option>
+                  <option value="KZT">Тенге</option>
+                </select>
+              </label>
+              <label>Количество строк
+                <input id="proposalLineCount" type="number" min="1" max="80" step="1" value="5">
+              </label>
+              <label>Регистрационный номер
+                <input id="proposalNumber" type="text" readonly>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel proposal-preview-panel">
+            <div class="proposal-logo-box">
+              <img id="proposalLogo" alt="Логотип компании">
+              <strong id="proposalLogoFallback">SPORTPRO</strong>
+            </div>
+            <div class="proposal-company-contacts" id="proposalCompanyContacts"></div>
+          </section>
+        </section>
+
+        <section class="panel table-panel proposal-table-panel">
+          <div class="toolbar">
+            <div>
+              <h3>Позиции</h3>
+              <p class="sales-goal">Фото можно указать ссылкой. Суммы считаются автоматически: количество × цена.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="proposal-table">
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <th>Фото URL</th>
+                  <th>Артикул</th>
+                  <th>Наименование</th>
+                  <th>Описание</th>
+                  <th>Кол-во</th>
+                  <th>Ед.</th>
+                  <th>Цена РЦ</th>
+                  <th>Цена со скидкой</th>
+                  <th>Сумма РЦ</th>
+                  <th>Сумма со скидкой</th>
+                </tr>
+              </thead>
+              <tbody id="proposalRows"></tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="9">Итого</th>
+                  <th class="numeric" id="proposalTotalRetail">0</th>
+                  <th class="numeric" id="proposalTotalDiscount">0</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel proposal-print-preview">
+          <div class="toolbar">
+            <div>
+              <h3>Текст под таблицей</h3>
+              <p class="sales-goal">Эти строки попадут в PDF и Excel.</p>
+            </div>
+          </div>
+          <p>Цена с НДС со склада в г. Петропавловск.</p>
+          <p>Коммерческое предложение подготовил: <strong id="proposalPreparedBy">Прилуцкая Ю.</strong></p>
+          <p class="proposal-signature">С уважением, <strong id="proposalSignatureCompany">Sportpro</strong></p>
         </section>
       </section>
 
@@ -5655,6 +5924,8 @@
     const installationStorageKey = "workspace-tables.installation.data";
     const installationProjectsStorageKey = "workspace-tables.installation.projects";
     const gymCalculatorStorageKey = "workspace-tables.gymCalculator.records";
+    const proposalStorageKey = "workspace-tables.proposal.current";
+    const proposalCounterStorageKey = "workspace-tables.proposal.counter";
     const memoryStoragePrefix = "workspace-tables.memory.profile.";
     const adsSettingsStorageKey = "workspace-tables.ads.settings";
     const userProfilesStorageKey = "workspace-tables.userProfiles";
@@ -5681,6 +5952,11 @@
     const wholesaleCloudTable = "sportpro_wholesale_records";
     const memoryCloudTable = "sportpro_memory_profiles";
     const gymRampDefaults = [20, 30, 40, 50, 60, 70, 78, 85, 90, 95, 98, 100];
+    const proposalCompanies = {
+      sportpro: { label: "Sportpro", code: "S", phone: "+77057563938", logo: "assets/kp-sportpro.png" },
+      megasport: { label: "Megasport", code: "M", phone: "+77710297979", logo: "assets/kp-megasport.png" },
+      sportcity: { label: "Sportcity", code: "CS", phone: "+77057359991", logo: "assets/kp-sportcity.png" },
+    };
     const form = document.querySelector("#entryForm");
     const measurementForm = document.querySelector("#measurementForm");
     const adsPublicationsWorkspace = document.querySelector("#adsPublicationsWorkspace");
@@ -5810,6 +6086,23 @@
     const memoryStatsBars = document.querySelector("#memoryStatsBars");
     const memoryStatsPeriod = document.querySelector("#memoryStatsPeriod");
     const memoryAttemptsRows = document.querySelector("#memoryAttemptsRows");
+    const proposalFrom = document.querySelector("#proposalFrom");
+    const proposalTo = document.querySelector("#proposalTo");
+    const proposalCompany = document.querySelector("#proposalCompany");
+    const proposalDate = document.querySelector("#proposalDate");
+    const proposalManager = document.querySelector("#proposalManager");
+    const proposalCurrency = document.querySelector("#proposalCurrency");
+    const proposalLineCount = document.querySelector("#proposalLineCount");
+    const proposalNumber = document.querySelector("#proposalNumber");
+    const proposalNumberPreview = document.querySelector("#proposalNumberPreview");
+    const proposalLogo = document.querySelector("#proposalLogo");
+    const proposalLogoFallback = document.querySelector("#proposalLogoFallback");
+    const proposalCompanyContacts = document.querySelector("#proposalCompanyContacts");
+    const proposalRows = document.querySelector("#proposalRows");
+    const proposalTotalRetail = document.querySelector("#proposalTotalRetail");
+    const proposalTotalDiscount = document.querySelector("#proposalTotalDiscount");
+    const proposalPreparedBy = document.querySelector("#proposalPreparedBy");
+    const proposalSignatureCompany = document.querySelector("#proposalSignatureCompany");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
     const contentFormTitle = document.querySelector("#contentFormTitle");
@@ -5819,6 +6112,7 @@
       ads: document.querySelector("#adsView"),
       contentPlan: document.querySelector("#contentPlanView"),
       sales: document.querySelector("#salesView"),
+      proposal: document.querySelector("#proposalView"),
       wholesale: document.querySelector("#wholesaleView"),
       clientSources: document.querySelector("#clientSourcesView"),
       gymCalculator: document.querySelector("#gymCalculatorView"),
@@ -6097,6 +6391,7 @@
       { key: "ads", label: "Реклама", details: "Дашборд, публикации, замеры, лиды и итоги дня" },
       { key: "contentPlan", label: "Контент-план", details: "Календарь, список, идеи, архив" },
       { key: "sales", label: "Продажи", details: "Скрипт, клиенты, возражения, анкета" },
+      { key: "proposal", label: "Коммерческое предложение", details: "Создание КП, позиции, Excel/PDF" },
       { key: "wholesale", label: "Поставки и оплаты", details: "Клиенты, предприятия, накладные, оплаты" },
       { key: "sources", label: "Источники", details: "Google Forms, график, таблица источников" },
       { key: "gymCalculator", label: "GYM-калькулятор", details: "Расчеты рентабельности, инвестиции, сценарии, история" },
@@ -6110,31 +6405,31 @@
     const accessPresets = {
       marketer: {
         label: "Маркетолог",
-        permissions: { ads: "write", contentPlan: "write", sales: "read", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "read", proposal: "write", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
       },
       sales: {
         label: "Менеджер продаж",
-        permissions: { ads: "read", contentPlan: "read", sales: "write", wholesale: "none", sources: "read", gymCalculator: "write", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "write", proposal: "write", wholesale: "none", sources: "read", gymCalculator: "write", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
       },
       manager: {
         label: "Менеджер",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "read", sources: "read", gymCalculator: "write", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", proposal: "write", wholesale: "read", sources: "read", gymCalculator: "write", installation: "read", memory: "write", guide: "read", templates: "read", access: "none" },
       },
       wholesaleHead: {
         label: "Руководитель оптового отдела",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "write", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "write" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", proposal: "write", wholesale: "write", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "write" },
       },
       wholesaleManager: {
         label: "Менеджер оптового отдела",
-        permissions: { ads: "none", contentPlan: "none", sales: "read", wholesale: "write", sources: "none", gymCalculator: "none", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
+        permissions: { ads: "none", contentPlan: "none", sales: "read", proposal: "write", wholesale: "write", sources: "none", gymCalculator: "none", installation: "none", memory: "write", guide: "read", templates: "none", access: "none" },
       },
       viewer: {
         label: "Только просмотр",
-        permissions: { ads: "read", contentPlan: "read", sales: "read", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "none" },
+        permissions: { ads: "read", contentPlan: "read", sales: "read", proposal: "read", wholesale: "read", sources: "read", gymCalculator: "read", installation: "read", memory: "read", guide: "read", templates: "read", access: "none" },
       },
       owner: {
         label: "Владелец",
-        permissions: { ads: "write", contentPlan: "write", sales: "write", wholesale: "write", sources: "write", gymCalculator: "write", installation: "write", memory: "write", guide: "write", templates: "write", access: "write" },
+        permissions: { ads: "write", contentPlan: "write", sales: "write", proposal: "write", wholesale: "write", sources: "write", gymCalculator: "write", installation: "write", memory: "write", guide: "write", templates: "write", access: "write" },
       },
       custom: {
         label: "Индивидуально",
@@ -6155,6 +6450,7 @@
     let clientSourcesData = loadClientSourcesData();
     let clientSourcesLoadStarted = false;
     let gymRecords = loadGymRecords();
+    let proposalData = loadProposalData();
     let activeGymRecordId = "";
     let adsSettings = loadAdsSettings();
     let workspaceMembers = [];
@@ -6219,6 +6515,7 @@
     renderWholesale();
     renderInstallation();
     renderGymCalculator();
+    renderProposal();
     renderMemory();
     tryDailyWholesaleExcelBackup();
     applyClientSourcesConfig();
@@ -6237,6 +6534,7 @@
         if (view === "gymCalculator") renderGymCalculator();
         if (view === "installation") renderInstallation();
         if (view === "memory") renderMemory();
+        if (view === "proposal") renderProposal();
       });
     });
 
@@ -6319,6 +6617,16 @@
     document.querySelector("#gymExportExcelBtn").addEventListener("click", () => exportRowsToExcel("gym-calculator", gymExportRows()));
     document.querySelector("#gymExportPdfBtn").addEventListener("click", () => exportRowsToPdf("GYM-калькулятор", gymExportRows()));
     gymHistoryRows.addEventListener("click", handleGymHistoryAction);
+
+    [proposalFrom, proposalTo, proposalCompany, proposalDate, proposalManager, proposalCurrency, proposalLineCount].forEach((field) => {
+      field.addEventListener("input", handleProposalHeaderInput);
+      field.addEventListener("change", handleProposalHeaderInput);
+    });
+    proposalRows.addEventListener("input", handleProposalRowsInput);
+    proposalRows.addEventListener("change", handleProposalRowsInput);
+    document.querySelector("#proposalNewBtn").addEventListener("click", createNewProposal);
+    document.querySelector("#proposalExportExcelBtn").addEventListener("click", () => exportRowsToExcel("kommercheskoe-predlozhenie", proposalExportRows()));
+    document.querySelector("#proposalExportPdfBtn").addEventListener("click", exportProposalPdf);
 
     memoryQuickCardForm.addEventListener("submit", handleMemoryQuickCardSubmit);
     memoryCardForm.addEventListener("submit", handleMemoryCardSubmit);
@@ -7068,6 +7376,7 @@
       renderContentPlan();
       renderWholesale();
       renderGymCalculator();
+      renderProposal();
       renderMemory();
       applyAllDashboardSettings();
     }
@@ -7086,6 +7395,365 @@
       localStorage.setItem(sidebarCollapsedKey, collapsed ? "true" : "false");
       sidebarToggle.setAttribute("aria-label", collapsed ? "Развернуть боковую панель" : "Свернуть боковую панель");
       sidebarToggle.title = collapsed ? "Развернуть боковую панель" : "Свернуть боковую панель";
+    }
+
+    function todayIsoDate() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function defaultProposalRow(row = {}) {
+      return {
+        photo: row.photo || "",
+        article: row.article || "",
+        name: row.name || "",
+        description: row.description || "",
+        qty: proposalNumberValue(row.qty, 0),
+        unit: row.unit || "шт.",
+        retailPrice: proposalNumberValue(row.retailPrice, 0),
+        discountPrice: proposalNumberValue(row.discountPrice, 0),
+      };
+    }
+
+    function defaultProposalData(counter = proposalCurrentCounter()) {
+      return {
+        from: "",
+        to: "",
+        company: "sportpro",
+        date: todayIsoDate(),
+        manager: "Прилуцкая Ю.",
+        currency: "USD",
+        lineCount: 5,
+        counter,
+        rows: Array.from({ length: 5 }, () => defaultProposalRow()),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    function loadProposalData() {
+      return normalizeProposalData(readStorage(proposalStorageKey) || defaultProposalData());
+    }
+
+    function normalizeProposalData(data = {}) {
+      const lineCount = Math.min(80, Math.max(1, Number(data.lineCount) || 5));
+      const rows = Array.isArray(data.rows) ? data.rows.map(defaultProposalRow) : [];
+      while (rows.length < lineCount) rows.push(defaultProposalRow());
+      return {
+        from: data.from || "",
+        to: data.to || "",
+        company: proposalCompanies[data.company] ? data.company : "sportpro",
+        date: data.date || todayIsoDate(),
+        manager: data.manager || "Прилуцкая Ю.",
+        currency: ["USD", "KZT"].includes(data.currency) ? data.currency : "USD",
+        lineCount,
+        counter: Math.max(1, Number(data.counter) || proposalCurrentCounter()),
+        rows: rows.slice(0, lineCount),
+        updatedAt: data.updatedAt || new Date().toISOString(),
+      };
+    }
+
+    function saveProposalData() {
+      proposalData = normalizeProposalData({ ...proposalData, updatedAt: new Date().toISOString() });
+      localStorage.setItem(proposalStorageKey, JSON.stringify(proposalData));
+      const nextCounter = proposalData.counter + 1;
+      if (nextCounter > proposalCurrentCounter()) {
+        localStorage.setItem(proposalCounterStorageKey, String(nextCounter));
+      }
+    }
+
+    function proposalCurrentCounter() {
+      return Math.max(1, Number(localStorage.getItem(proposalCounterStorageKey)) || 1);
+    }
+
+    function proposalNumberValue(value, fallback = 0) {
+      const prepared = String(value ?? "").replace(/\s+/g, "").replace(",", ".");
+      const parsed = Number(prepared);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function proposalDocumentNumber(data = proposalData) {
+      const company = proposalCompanies[data.company] || proposalCompanies.sportpro;
+      return `КП № ${String(Math.max(1, Number(data.counter) || 1)).padStart(3, "0")}${company.code}`;
+    }
+
+    function proposalCurrencySymbol(data = proposalData) {
+      return data.currency === "KZT" ? "тг" : "$";
+    }
+
+    function proposalMoney(value, data = proposalData) {
+      const suffix = proposalCurrencySymbol(data);
+      return `${formatMoney(Math.round(Number(value) || 0))} ${suffix}`;
+    }
+
+    function readProposalHeaderFromForm() {
+      proposalData = normalizeProposalData({
+        ...proposalData,
+        from: proposalFrom.value.trim(),
+        to: proposalTo.value.trim(),
+        company: proposalCompany.value,
+        date: proposalDate.value || todayIsoDate(),
+        manager: proposalManager.value,
+        currency: proposalCurrency.value,
+        lineCount: Number(proposalLineCount.value) || 1,
+      });
+    }
+
+    function readProposalRowsFromForm() {
+      const rows = [...proposalRows.querySelectorAll("tr")].map((row) => {
+        const pick = (field) => row.querySelector(`[data-proposal-field="${field}"]`)?.value || "";
+        return defaultProposalRow({
+          photo: pick("photo").trim(),
+          article: pick("article").trim(),
+          name: pick("name").trim(),
+          description: pick("description").trim(),
+          qty: pick("qty"),
+          unit: pick("unit").trim() || "шт.",
+          retailPrice: pick("retailPrice"),
+          discountPrice: pick("discountPrice"),
+        });
+      });
+      proposalData.rows = rows.slice(0, proposalData.lineCount);
+      saveProposalData();
+    }
+
+    function proposalRowTotals(row) {
+      const qty = proposalNumberValue(row.qty);
+      return {
+        retail: qty * proposalNumberValue(row.retailPrice),
+        discount: qty * proposalNumberValue(row.discountPrice),
+      };
+    }
+
+    function proposalTotals() {
+      return proposalData.rows.reduce((totals, row) => {
+        const rowTotals = proposalRowTotals(row);
+        totals.retail += rowTotals.retail;
+        totals.discount += rowTotals.discount;
+        return totals;
+      }, { retail: 0, discount: 0 });
+    }
+
+    function handleProposalHeaderInput() {
+      readProposalHeaderFromForm();
+      saveProposalData();
+      renderProposal();
+    }
+
+    function handleProposalRowsInput() {
+      readProposalRowsFromForm();
+      renderProposalTotals();
+    }
+
+    function createNewProposal() {
+      const nextCounter = proposalCurrentCounter();
+      proposalData = defaultProposalData(nextCounter);
+      localStorage.setItem(proposalCounterStorageKey, String(nextCounter + 1));
+      saveProposalData();
+      renderProposal();
+    }
+
+    function renderProposal() {
+      proposalData = normalizeProposalData(proposalData);
+      const company = proposalCompanies[proposalData.company] || proposalCompanies.sportpro;
+      proposalFrom.value = proposalData.from;
+      proposalTo.value = proposalData.to;
+      proposalCompany.value = proposalData.company;
+      proposalDate.value = proposalData.date;
+      proposalManager.value = proposalData.manager;
+      proposalCurrency.value = proposalData.currency;
+      proposalLineCount.value = proposalData.lineCount;
+      proposalNumber.value = proposalDocumentNumber(proposalData);
+      proposalNumberPreview.textContent = proposalDocumentNumber(proposalData);
+      proposalLogo.src = company.logo;
+      proposalLogo.classList.remove("is-hidden");
+      proposalLogoFallback.classList.add("is-hidden");
+      proposalLogoFallback.textContent = company.label.toUpperCase();
+      proposalLogo.onerror = () => {
+        proposalLogo.classList.add("is-hidden");
+        proposalLogoFallback.classList.remove("is-hidden");
+      };
+      proposalCompanyContacts.textContent = `${company.label}. Тел. ${company.phone}`;
+      proposalPreparedBy.textContent = proposalData.manager;
+      proposalSignatureCompany.textContent = company.label;
+      proposalRows.innerHTML = proposalData.rows.map((row, index) => proposalRowHtml(row, index)).join("");
+      renderProposalTotals();
+    }
+
+    function renderProposalTotals() {
+      const totals = proposalTotals();
+      proposalTotalRetail.textContent = proposalMoney(totals.retail);
+      proposalTotalDiscount.textContent = proposalMoney(totals.discount);
+      proposalData.rows.forEach((row, index) => {
+        const tr = proposalRows.querySelector(`tr[data-proposal-index="${index}"]`);
+        if (!tr) return;
+        const rowTotals = proposalRowTotals(row);
+        tr.querySelector('[data-proposal-sum="retail"]').textContent = proposalMoney(rowTotals.retail);
+        tr.querySelector('[data-proposal-sum="discount"]').textContent = proposalMoney(rowTotals.discount);
+      });
+    }
+
+    function proposalRowHtml(row, index) {
+      const totals = proposalRowTotals(row);
+      return `
+        <tr data-proposal-index="${index}">
+          <td class="proposal-row-number">${index + 1}</td>
+          <td><input data-proposal-field="photo" type="text" value="${escapeHtml(row.photo)}" placeholder="https://..."></td>
+          <td><input data-proposal-field="article" type="text" value="${escapeHtml(row.article)}"></td>
+          <td><textarea data-proposal-field="name">${escapeHtml(row.name)}</textarea></td>
+          <td><textarea data-proposal-field="description">${escapeHtml(row.description)}</textarea></td>
+          <td><input data-proposal-field="qty" type="number" min="0" step="1" value="${escapeHtml(row.qty)}"></td>
+          <td><input data-proposal-field="unit" type="text" value="${escapeHtml(row.unit || "шт.")}"></td>
+          <td><input data-proposal-field="retailPrice" type="number" min="0" step="1" value="${escapeHtml(row.retailPrice)}"></td>
+          <td><input data-proposal-field="discountPrice" type="number" min="0" step="1" value="${escapeHtml(row.discountPrice)}"></td>
+          <td class="numeric" data-proposal-sum="retail">${proposalMoney(totals.retail)}</td>
+          <td class="numeric" data-proposal-sum="discount">${proposalMoney(totals.discount)}</td>
+        </tr>
+      `;
+    }
+
+    function proposalActiveRows() {
+      return proposalData.rows.filter((row) => row.article || row.name || row.description || row.photo || proposalNumberValue(row.qty) || proposalNumberValue(row.retailPrice) || proposalNumberValue(row.discountPrice));
+    }
+
+    function proposalExportRows() {
+      proposalData = normalizeProposalData(proposalData);
+      const company = proposalCompanies[proposalData.company] || proposalCompanies.sportpro;
+      const rows = proposalActiveRows();
+      const totals = proposalTotals();
+      return [
+        ["Коммерческое предложение"],
+        ["Номер", proposalDocumentNumber(proposalData), "Дата", formatDate(proposalData.date)],
+        ["Компания", company.label, "Телефон", company.phone],
+        ["От кого", proposalData.from, "Для кого", proposalData.to],
+        ["Менеджер", proposalData.manager, "Валюта", proposalData.currency === "KZT" ? "Тенге" : "Доллар"],
+        [],
+        ["№", "Фото", "Артикул", "Наименование", "Описание", "Количество", "Ед.", "Цена РЦ", "Цена со скидкой", "Сумма РЦ", "Сумма со скидкой"],
+        ...rows.map((row, index) => {
+          const rowTotals = proposalRowTotals(row);
+          return [
+            index + 1,
+            row.photo,
+            row.article,
+            row.name,
+            row.description,
+            row.qty,
+            row.unit,
+            proposalMoney(row.retailPrice),
+            proposalMoney(row.discountPrice),
+            proposalMoney(rowTotals.retail),
+            proposalMoney(rowTotals.discount),
+          ];
+        }),
+        ["", "", "", "", "", "", "", "", "Итого", proposalMoney(totals.retail), proposalMoney(totals.discount)],
+        [],
+        ["Цена с НДС со склада в г. Петропавловск."],
+        ["Коммерческое предложение подготовил", proposalData.manager],
+        [],
+        [],
+        [],
+        ["С уважением", company.label],
+      ];
+    }
+
+    function exportProposalPdf() {
+      proposalData = normalizeProposalData(proposalData);
+      const rows = proposalActiveRows();
+      if (!rows.length) {
+        alert("Добавьте хотя бы одну позицию в КП.");
+        return;
+      }
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("Браузер заблокировал открытие окна. Разрешите всплывающие окна и повторите экспорт PDF.");
+        return;
+      }
+      const company = proposalCompanies[proposalData.company] || proposalCompanies.sportpro;
+      const totals = proposalTotals();
+      printWindow.document.write(`<!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${escapeHtml(proposalDocumentNumber(proposalData))}</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111827; margin: 22px; }
+              .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+              .logo { max-width: 190px; max-height: 70px; object-fit: contain; }
+              .fallback-logo { font-size: 26px; font-weight: 800; letter-spacing: .04em; }
+              .meta { text-align: right; font-size: 12px; line-height: 1.5; }
+              h1 { text-align: center; font-size: 22px; margin: 18px 0 6px; letter-spacing: .03em; }
+              .lead { text-align: center; font-size: 12px; margin: 0 0 18px; }
+              .intro { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin: 10px 0 16px; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+              th, td { border: 1px solid #1f2937; padding: 6px; vertical-align: top; }
+              th { background: #eef3f8; font-weight: 700; text-align: center; }
+              td.num { text-align: right; white-space: nowrap; }
+              td.center { text-align: center; }
+              .item-photo { max-width: 70px; max-height: 54px; object-fit: contain; }
+              .footer { margin-top: 18px; font-size: 13px; line-height: 1.5; }
+              .signature { margin-top: 42px; }
+              @page { size: A4 landscape; margin: 10mm; }
+            </style>
+          </head>
+          <body>
+            <div class="head">
+              <div>
+                <img class="logo" src="${escapeHtml(company.logo)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <div class="fallback-logo" style="display:none">${escapeHtml(company.label)}</div>
+              </div>
+              <div class="meta">
+                <strong>${escapeHtml(proposalDocumentNumber(proposalData))}</strong><br>
+                Дата: ${escapeHtml(formatDate(proposalData.date))}<br>
+                ${escapeHtml(company.label)}<br>
+                Тел. ${escapeHtml(company.phone)}
+              </div>
+            </div>
+            <h1>КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ</h1>
+            <p class="lead">предлагаем вам рассмотреть наше коммерческое предложение на запрашиваемый вами товар</p>
+            <div class="intro">
+              <div><strong>От кого:</strong> ${escapeHtml(proposalData.from)}</div>
+              <div><strong>Для кого:</strong> ${escapeHtml(proposalData.to)}</div>
+              <div><strong>Менеджер:</strong> ${escapeHtml(proposalData.manager)}</div>
+              <div><strong>Валюта:</strong> ${escapeHtml(proposalData.currency === "KZT" ? "Тенге" : "Доллар")}</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>№</th><th>Фото</th><th>Артикул</th><th>Наименование</th><th>Описание</th><th>Количество</th><th>Ед.</th><th>Цена РЦ</th><th>Цена со скидкой</th><th>Сумма РЦ</th><th>Сумма со скидкой</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row, index) => {
+                  const rowTotals = proposalRowTotals(row);
+                  const photo = row.photo ? `<img class="item-photo" src="${escapeHtml(row.photo)}" onerror="this.style.display='none';">` : "";
+                  return `<tr>
+                    <td class="center">${index + 1}</td>
+                    <td class="center">${photo}</td>
+                    <td>${escapeHtml(row.article)}</td>
+                    <td>${escapeHtml(row.name)}</td>
+                    <td>${escapeHtml(row.description)}</td>
+                    <td class="num">${escapeHtml(row.qty)}</td>
+                    <td class="center">${escapeHtml(row.unit)}</td>
+                    <td class="num">${escapeHtml(proposalMoney(row.retailPrice))}</td>
+                    <td class="num">${escapeHtml(proposalMoney(row.discountPrice))}</td>
+                    <td class="num">${escapeHtml(proposalMoney(rowTotals.retail))}</td>
+                    <td class="num">${escapeHtml(proposalMoney(rowTotals.discount))}</td>
+                  </tr>`;
+                }).join("")}
+                <tr>
+                  <th colspan="9">Итого</th>
+                  <th class="num">${escapeHtml(proposalMoney(totals.retail))}</th>
+                  <th class="num">${escapeHtml(proposalMoney(totals.discount))}</th>
+                </tr>
+              </tbody>
+            </table>
+            <div class="footer">
+              <p>Цена с НДС со склада в г. Петропавловск.</p>
+              <p>Коммерческое предложение подготовил: <strong>${escapeHtml(proposalData.manager)}</strong></p>
+              <p class="signature">С уважением, <strong>${escapeHtml(company.label)}</strong></p>
+            </div>
+            <script>window.onload = () => { window.print(); };<\/script>
+          </body>
+        </html>`);
+      printWindow.document.close();
     }
 
     function defaultSalesScript() {
