@@ -3399,6 +3399,7 @@
     }
 
     .floor-form input,
+    .floor-form select,
     .floor-form textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -3411,6 +3412,25 @@
 
     .floor-tool-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .floor-project-details {
+      display: grid;
+      gap: 10px;
+    }
+
+    .floor-project-details summary {
+      cursor: pointer;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .checkbox-line.compact {
+      min-height: 38px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
     }
 
     .floor-equipment-list button {
@@ -3461,9 +3481,9 @@
       fill: color-mix(in srgb, var(--accent) 16%, var(--surface));
     }
 
-    .floor-object-door .floor-object-shape { fill: color-mix(in srgb, #f59e0b 20%, var(--surface)); }
-    .floor-object-window .floor-object-shape { fill: color-mix(in srgb, #38bdf8 22%, var(--surface)); }
-    .floor-object-column .floor-object-shape { fill: color-mix(in srgb, #64748b 24%, var(--surface)); }
+    .floor-object-door .floor-object-shape { fill: color-mix(in srgb, #f97316 56%, var(--surface)); stroke: #fb923c; }
+    .floor-object-window .floor-object-shape { fill: color-mix(in srgb, #38bdf8 58%, var(--surface)); stroke: #22d3ee; }
+    .floor-object-column .floor-object-shape { fill: color-mix(in srgb, #a855f7 34%, var(--surface)); stroke: #a855f7; }
     .floor-object-zone .floor-object-shape {
       fill: color-mix(in srgb, #22c55e 14%, transparent);
       stroke-dasharray: 8 5;
@@ -3472,6 +3492,47 @@
     .floor-object-perimeter .floor-object-shape {
       fill: color-mix(in srgb, #38bdf8 6%, transparent);
       stroke-width: 8;
+    }
+
+    .floor-door-swing {
+      fill: none;
+      stroke: #f97316;
+      stroke-width: 3;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .floor-text-object {
+      fill: var(--ink);
+      font-weight: 700;
+      pointer-events: none;
+    }
+
+    .floor-text-hitbox {
+      fill: transparent;
+      stroke: transparent;
+    }
+
+    .floor-measure {
+      stroke: #f59e0b;
+      stroke-width: 3;
+      stroke-dasharray: 8 5;
+      stroke-linecap: round;
+      cursor: move;
+    }
+
+    .floor-measure.floor-selected {
+      stroke: var(--accent);
+    }
+
+    .floor-measure-label {
+      fill: #f59e0b;
+      stroke: color-mix(in srgb, var(--surface) 80%, transparent);
+      stroke-width: 5;
+      paint-order: stroke;
+      font-size: 14px;
+      font-weight: 800;
+      pointer-events: none;
     }
 
     .floor-object text {
@@ -3488,9 +3549,18 @@
       cursor: nwse-resize;
     }
 
-    .floor-selected .floor-object-shape,
-    .floor-selected.floor-wall {
+    .floor-selection-box {
+      fill: color-mix(in srgb, var(--accent) 14%, transparent);
       stroke: var(--accent);
+      stroke-width: 2;
+      stroke-dasharray: 8 5;
+      pointer-events: none;
+    }
+
+    .floor-selected .floor-object-shape,
+    .floor-selected.floor-wall,
+    .floor-measure.floor-selected {
+      stroke: var(--accent) !important;
     }
 
     @media (max-width: 680px) {
@@ -5430,39 +5500,44 @@
 
         <section class="floor-planner hidden" id="floorEditorPanel">
           <aside class="panel floor-side-panel">
-            <h3>Проект</h3>
-            <div class="floor-form">
-              <label>Название клуба
-                <input id="floorProjectName" type="text" placeholder="Например: S89 Fitness">
-              </label>
-              <label>Город
-                <input id="floorProjectCity" type="text" placeholder="Алматы">
-              </label>
-              <label>Масштаб, м / клетка
-                <input id="floorProjectScale" type="number" min="0.1" step="0.1" value="1">
-              </label>
-              <label>Ширина поля, м
-                <input id="floorProjectWidth" type="number" min="5" step="1" value="30">
-              </label>
-              <label>Глубина поля, м
-                <input id="floorProjectHeight" type="number" min="5" step="1" value="19">
-              </label>
-              <label class="checkbox-line">
-                <input id="floorSnapToGrid" type="checkbox" checked>
-                Привязка к сетке
-              </label>
-            </div>
+            <details class="floor-project-details" id="floorProjectDetails" open>
+              <summary>Данные проекта</summary>
+              <div class="floor-form">
+                <label>Название клуба
+                  <input id="floorProjectName" type="text" placeholder="Например: S89 Fitness">
+                </label>
+                <label>Город
+                  <input id="floorProjectCity" type="text" placeholder="Алматы">
+                </label>
+                <label>Масштаб, м / клетка
+                  <input id="floorProjectScale" type="number" min="0.1" step="0.1" value="1">
+                </label>
+                <label>Ширина поля, м
+                  <input id="floorProjectWidth" type="number" min="5" step="1" value="30">
+                </label>
+                <label>Глубина поля, м
+                  <input id="floorProjectHeight" type="number" min="5" step="1" value="19">
+                </label>
+                <label>Толщина новой стены, мм
+                  <input id="floorDefaultWallThickness" type="number" min="20" step="10" value="200">
+                </label>
+              </div>
+            </details>
 
             <h3>Инструменты</h3>
-            <div class="floor-tool-grid">
-              <button class="btn primary" type="button" data-floor-tool="select">Выбор</button>
-              <button class="btn" type="button" data-floor-tool="wall">Стена</button>
-              <button class="btn" type="button" data-floor-add="perimeter">Периметр</button>
-              <button class="btn" type="button" data-floor-add="door">Дверь</button>
-              <button class="btn" type="button" data-floor-add="window">Окно</button>
-              <button class="btn" type="button" data-floor-add="column">Колонна</button>
-              <button class="btn" type="button" data-floor-add="zone">Зона</button>
-            </div>
+            <label class="floor-form">Выбрать инструмент
+              <select id="floorToolSelect">
+                <option value="select">Выбор / выделение</option>
+                <option value="wall">Стена</option>
+                <option value="measure">Линейка</option>
+                <option value="add:perimeter">Добавить периметр</option>
+                <option value="add:text">Добавить текст</option>
+                <option value="add:door">Добавить дверь</option>
+                <option value="add:window">Добавить окно</option>
+                <option value="add:column">Добавить колонну</option>
+                <option value="add:zone">Добавить зону</option>
+              </select>
+            </label>
 
             <h3>Тренажеры</h3>
             <div class="floor-equipment-list" id="floorEquipmentList"></div>
@@ -5475,10 +5550,19 @@
                 <p class="sales-goal" id="floorEditorMeta">Перетаскивайте объекты, стены рисуйте кликом и протяжкой.</p>
               </div>
               <div class="actions">
+                <label class="checkbox-line compact">
+                  <input id="floorSnapToGrid" type="checkbox" checked>
+                  Сетка
+                </label>
+                <button class="btn icon" id="floorZoomOutBtn" type="button" title="Уменьшить">−</button>
+                <button class="btn icon" id="floorZoomInBtn" type="button" title="Увеличить">+</button>
                 <button class="btn icon" id="floorUndoBtn" type="button" title="Отменить">↶</button>
                 <button class="btn icon" id="floorRedoBtn" type="button" title="Вернуть">↷</button>
+                <button class="btn" id="floorGroupBtn" type="button" disabled>Объединить</button>
                 <button class="btn" id="floorDuplicateBtn" type="button">Копировать</button>
                 <button class="btn" id="floorRotateBtn" type="button">Повернуть</button>
+                <button class="btn" id="floorClearBtn" type="button">Очистить все</button>
+                <button class="btn" id="floorExitNoSaveBtn" type="button">Выйти без сохранения</button>
                 <button class="btn danger" id="floorDeleteSelectedBtn" type="button">Удалить объект</button>
                 <button class="btn primary" id="floorSaveBtn" type="button">Сохранить</button>
               </div>
@@ -5503,6 +5587,34 @@
               </label>
               <label>Поворот, °
                 <input id="floorObjectRotation" type="number" step="15">
+              </label>
+              <label>Толщина стены, мм
+                <input id="floorWallThickness" type="number" min="20" step="10">
+              </label>
+              <label>Размер текста
+                <input id="floorTextSize" type="number" min="8" step="1">
+              </label>
+              <label>Цвет заливки
+                <input id="floorFillColor" type="color">
+              </label>
+              <label>Цвет обводки
+                <input id="floorStrokeColor" type="color">
+              </label>
+              <label class="checkbox-line">
+                <input id="floorObjectRounded" type="checkbox">
+                Скругление
+              </label>
+              <label>Петля двери
+                <select id="floorDoorHinge">
+                  <option value="left">Слева</option>
+                  <option value="right">Справа</option>
+                </select>
+              </label>
+              <label>Открывание двери
+                <select id="floorDoorSwing">
+                  <option value="in">Внутрь</option>
+                  <option value="out">Наружу</option>
+                </select>
               </label>
               <label>Примечание
                 <textarea id="floorObjectNote" rows="3" placeholder="Например: оставить проход 1,2 м"></textarea>
@@ -6396,10 +6508,13 @@
     const floorProjectsEmpty = document.querySelector("#floorProjectsEmpty");
     const floorCanvas = document.querySelector("#floorCanvas");
     const floorProjectName = document.querySelector("#floorProjectName");
+    const floorProjectDetails = document.querySelector("#floorProjectDetails");
+    const floorToolSelect = document.querySelector("#floorToolSelect");
     const floorProjectCity = document.querySelector("#floorProjectCity");
     const floorProjectScale = document.querySelector("#floorProjectScale");
     const floorProjectWidth = document.querySelector("#floorProjectWidth");
     const floorProjectHeight = document.querySelector("#floorProjectHeight");
+    const floorDefaultWallThickness = document.querySelector("#floorDefaultWallThickness");
     const floorSnapToGrid = document.querySelector("#floorSnapToGrid");
     const floorEquipmentList = document.querySelector("#floorEquipmentList");
     const floorEditorTitle = document.querySelector("#floorEditorTitle");
@@ -6409,6 +6524,13 @@
     const floorObjectWidth = document.querySelector("#floorObjectWidth");
     const floorObjectHeight = document.querySelector("#floorObjectHeight");
     const floorObjectRotation = document.querySelector("#floorObjectRotation");
+    const floorWallThickness = document.querySelector("#floorWallThickness");
+    const floorTextSize = document.querySelector("#floorTextSize");
+    const floorFillColor = document.querySelector("#floorFillColor");
+    const floorStrokeColor = document.querySelector("#floorStrokeColor");
+    const floorObjectRounded = document.querySelector("#floorObjectRounded");
+    const floorDoorHinge = document.querySelector("#floorDoorHinge");
+    const floorDoorSwing = document.querySelector("#floorDoorSwing");
     const floorObjectNote = document.querySelector("#floorObjectNote");
     const funnelCancelEditBtn = document.querySelector("#funnelCancelEditBtn");
     const formTitle = document.querySelector("#formTitle");
@@ -6765,10 +6887,15 @@
     let activeFloorProjectId = "";
     let activeFloorTool = "select";
     let selectedFloorObjectId = "";
+    let selectedFloorObjectIds = new Set();
     let floorDragState = null;
     let floorWallDraft = null;
+    let floorMeasureDraft = null;
+    let floorSelectionDraft = null;
+    let floorZoom = 1;
     let floorUndoStack = [];
     let floorRedoStack = [];
+    let floorEditorInitialSnapshot = "";
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let wholesaleData = loadWholesaleData();
@@ -6946,6 +7073,11 @@
     document.querySelector("#floorSaveBtn").addEventListener("click", saveActiveFloorProject);
     document.querySelector("#floorUndoBtn").addEventListener("click", undoFloorAction);
     document.querySelector("#floorRedoBtn").addEventListener("click", redoFloorAction);
+    document.querySelector("#floorZoomOutBtn").addEventListener("click", () => setFloorZoom(floorZoom - 0.1));
+    document.querySelector("#floorZoomInBtn").addEventListener("click", () => setFloorZoom(floorZoom + 0.1));
+    document.querySelector("#floorGroupBtn").addEventListener("click", groupSelectedFloorItems);
+    document.querySelector("#floorClearBtn").addEventListener("click", clearActiveFloorProject);
+    document.querySelector("#floorExitNoSaveBtn").addEventListener("click", exitFloorWithoutSaving);
     document.querySelector("#floorDuplicateBtn").addEventListener("click", duplicateSelectedFloorObject);
     document.querySelector("#floorRotateBtn").addEventListener("click", rotateSelectedFloorObject);
     document.querySelector("#floorDeleteSelectedBtn").addEventListener("click", deleteSelectedFloorObject);
@@ -6957,11 +7089,14 @@
     floorProjectScale.addEventListener("input", handleFloorProjectMetaInput);
     floorProjectWidth.addEventListener("input", handleFloorProjectMetaInput);
     floorProjectHeight.addEventListener("input", handleFloorProjectMetaInput);
+    floorDefaultWallThickness.addEventListener("input", handleFloorProjectMetaInput);
     floorSnapToGrid.addEventListener("change", handleFloorProjectMetaInput);
+    floorToolSelect.addEventListener("change", handleFloorToolSelect);
     floorCanvas.addEventListener("pointerdown", handleFloorPointerDown);
     floorCanvas.addEventListener("pointermove", handleFloorPointerMove);
     floorCanvas.addEventListener("pointerup", handleFloorPointerUp);
     floorCanvas.addEventListener("pointerleave", handleFloorPointerUp);
+    document.addEventListener("keydown", handleFloorKeyboard);
     document.querySelectorAll("[data-floor-tool]").forEach((button) => {
       button.addEventListener("click", () => setFloorTool(button.dataset.floorTool));
     });
@@ -7854,9 +7989,11 @@
         scale: Math.max(0.1, Number(project.scale) || 1),
         widthMeters: Math.max(5, Number(project.widthMeters) || 30),
         heightMeters: Math.max(5, Number(project.heightMeters) || 19),
+        defaultWallThicknessMm: Math.max(20, Number(project.defaultWallThicknessMm) || 200),
         snapToGrid: project.snapToGrid !== false,
         objects: Array.isArray(project.objects) ? project.objects.map(normalizeFloorObject) : [],
         walls: Array.isArray(project.walls) ? project.walls.map(normalizeFloorWall) : [],
+        measurements: Array.isArray(project.measurements) ? project.measurements.map(normalizeFloorMeasurement) : [],
         createdAt: project.createdAt || new Date().toISOString(),
         updatedAt: project.updatedAt || new Date().toISOString(),
       };
@@ -7872,6 +8009,13 @@
         width: Math.max(0.1, Number(item.width) || 2),
         height: Math.max(0.1, Number(item.height) || 1),
         rotation: Number(item.rotation) || 0,
+        textSize: Math.max(8, Number(item.textSize) || 16),
+        rounded: Boolean(item.rounded),
+        doorHinge: item.doorHinge === "right" ? "right" : "left",
+        doorSwing: item.doorSwing === "out" ? "out" : "in",
+        fillColor: item.fillColor || "",
+        strokeColor: item.strokeColor || "",
+        groupId: item.groupId || "",
         note: item.note || "",
       };
     }
@@ -7883,6 +8027,22 @@
         y1: Number(wall.y1) || 120,
         x2: Number(wall.x2) || 360,
         y2: Number(wall.y2) || 120,
+        thicknessMm: Math.max(20, Number(wall.thicknessMm) || 200),
+        strokeColor: wall.strokeColor || "",
+        groupId: wall.groupId || "",
+      };
+    }
+
+    function normalizeFloorMeasurement(measure = {}) {
+      return {
+        id: measure.id || createId(),
+        x1: Number(measure.x1) || 120,
+        y1: Number(measure.y1) || 120,
+        x2: Number(measure.x2) || 360,
+        y2: Number(measure.y2) || 120,
+        strokeColor: measure.strokeColor || "",
+        groupId: measure.groupId || "",
+        note: measure.note || "",
       };
     }
 
@@ -7935,6 +8095,20 @@
       return floorProjects.find((project) => project.id === activeFloorProjectId) || null;
     }
 
+    function isFloorSelected(id) {
+      return selectedFloorObjectIds.has(id) || selectedFloorObjectId === id;
+    }
+
+    function setFloorSelection(ids = []) {
+      selectedFloorObjectIds = new Set(ids.filter(Boolean));
+      selectedFloorObjectId = ids[ids.length - 1] || "";
+    }
+
+    function clearFloorSelection() {
+      selectedFloorObjectIds = new Set();
+      clearFloorSelection();
+    }
+
     function floorCanvasDimensions(project = activeFloorProject()) {
       const scale = Math.max(0.1, Number(project?.scale) || 1);
       return {
@@ -7962,9 +8136,10 @@
       const restored = normalizeFloorProject(JSON.parse(snapshot));
       floorProjects = floorProjects.map((project) => project.id === restored.id ? restored : project);
       activeFloorProjectId = restored.id;
-      selectedFloorObjectId = "";
+      clearFloorSelection();
       floorDragState = null;
       floorWallDraft = null;
+      floorMeasureDraft = null;
       saveFloorProjects();
       renderFloorPlanner();
     }
@@ -7997,11 +8172,13 @@
       floorProjectScale.value = project.scale;
       floorProjectWidth.value = project.widthMeters;
       floorProjectHeight.value = project.heightMeters;
+      floorDefaultWallThickness.value = project.defaultWallThicknessMm;
       floorSnapToGrid.checked = project.snapToGrid !== false;
       floorEditorTitle.textContent = project.name;
       floorEditorMeta.textContent = `${project.city || "Город не указан"} · поле ${project.widthMeters} × ${project.heightMeters} м · масштаб: ${project.scale} м / клетка`;
       document.querySelector("#floorUndoBtn").disabled = !floorUndoStack.length;
       document.querySelector("#floorRedoBtn").disabled = !floorRedoStack.length;
+      document.querySelector("#floorGroupBtn").disabled = selectedFloorObjectIds.size < 2;
       renderFloorCanvas();
       renderFloorSelectedProperties();
     }
@@ -8014,7 +8191,7 @@
           <article class="proposal-archive-card">
             <div>
               <strong>${escapeHtml(project.name)}</strong>
-              <p>${escapeHtml(project.city || "Город не указан")} · объектов: ${project.objects.length} · стен: ${project.walls.length} · обновлен: ${escapeHtml(formatDateTime(project.updatedAt))}</p>
+              <p>${escapeHtml(project.city || "Город не указан")} · объектов: ${project.objects.length} · стен: ${project.walls.length} · замеров: ${project.measurements.length} · обновлен: ${escapeHtml(formatDateTime(project.updatedAt))}</p>
             </div>
             <div class="actions">
               <button class="btn" type="button" data-floor-project-action="open" data-id="${escapeHtml(project.id)}">Открыть</button>
@@ -8049,18 +8226,22 @@
       });
       floorProjects.unshift(project);
       activeFloorProjectId = project.id;
-      selectedFloorObjectId = "";
+      clearFloorSelection();
       floorUndoStack = [];
       floorRedoStack = [];
       saveFloorProjects();
+      floorEditorInitialSnapshot = floorProjectSnapshot(project);
+      if (floorProjectDetails) floorProjectDetails.open = true;
       renderFloorPlanner();
     }
 
     function closeFloorEditor() {
       activeFloorProjectId = "";
-      selectedFloorObjectId = "";
+      clearFloorSelection();
       floorUndoStack = [];
       floorRedoStack = [];
+      floorMeasureDraft = null;
+      floorEditorInitialSnapshot = "";
       renderFloorPlanner();
     }
 
@@ -8069,6 +8250,8 @@
       if (!project) return;
       project.updatedAt = new Date().toISOString();
       saveFloorProjects();
+      floorEditorInitialSnapshot = floorProjectSnapshot(project);
+      if (floorProjectDetails) floorProjectDetails.open = false;
       renderFloorPlanner();
     }
 
@@ -8081,9 +8264,11 @@
       if (!project) return;
       if (action === "open") {
         activeFloorProjectId = id;
-        selectedFloorObjectId = "";
+        clearFloorSelection();
         floorUndoStack = [];
         floorRedoStack = [];
+        floorEditorInitialSnapshot = floorProjectSnapshot(project);
+        if (floorProjectDetails) floorProjectDetails.open = false;
       }
       if (action === "copy") {
         const copy = normalizeFloorProject({
@@ -8092,21 +8277,24 @@
           name: `${project.name} — копия`,
           objects: project.objects.map((item) => ({ ...item, id: createId(), x: item.x + 24, y: item.y + 24 })),
           walls: project.walls.map((wall) => ({ ...wall, id: createId(), x1: wall.x1 + 24, x2: wall.x2 + 24, y1: wall.y1 + 24, y2: wall.y2 + 24 })),
+          measurements: project.measurements.map((measure) => ({ ...measure, id: createId(), x1: measure.x1 + 24, x2: measure.x2 + 24, y1: measure.y1 + 24, y2: measure.y2 + 24 })),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
         floorProjects.unshift(copy);
         activeFloorProjectId = copy.id;
-        selectedFloorObjectId = "";
+        clearFloorSelection();
         floorUndoStack = [];
         floorRedoStack = [];
         saveFloorProjects();
+        floorEditorInitialSnapshot = floorProjectSnapshot(copy);
+        if (floorProjectDetails) floorProjectDetails.open = false;
       }
       if (action === "delete") {
         if (!confirm(`Удалить план "${project.name}"?`)) return;
         floorProjects = floorProjects.filter((item) => item.id !== id);
         if (activeFloorProjectId === id) activeFloorProjectId = "";
-        selectedFloorObjectId = "";
+        clearFloorSelection();
         saveFloorProjects();
       }
       renderFloorPlanner();
@@ -8120,6 +8308,7 @@
       project.scale = Math.max(0.1, Number(floorProjectScale.value) || 1);
       project.widthMeters = Math.max(5, Number(floorProjectWidth.value) || 30);
       project.heightMeters = Math.max(5, Number(floorProjectHeight.value) || 19);
+      project.defaultWallThicknessMm = Math.max(20, Number(floorDefaultWallThickness.value) || 200);
       project.snapToGrid = floorSnapToGrid.checked;
       project.updatedAt = new Date().toISOString();
       saveFloorProjects();
@@ -8130,9 +8319,27 @@
 
     function setFloorTool(tool) {
       activeFloorTool = tool || "select";
+      if (floorToolSelect && !String(floorToolSelect.value || "").startsWith("add:")) {
+        floorToolSelect.value = activeFloorTool;
+      }
       document.querySelectorAll("[data-floor-tool]").forEach((button) => {
         button.classList.toggle("primary", button.dataset.floorTool === activeFloorTool);
       });
+    }
+
+    function handleFloorToolSelect() {
+      const value = floorToolSelect.value || "select";
+      if (value.startsWith("add:")) {
+        addFloorObject(value.replace("add:", ""));
+        floorToolSelect.value = activeFloorTool;
+        return;
+      }
+      setFloorTool(value);
+    }
+
+    function setFloorZoom(value) {
+      floorZoom = Math.min(2.5, Math.max(0.4, Number(value) || 1));
+      renderFloorCanvas();
     }
 
     function addFloorObject(type, preset = {}) {
@@ -8151,22 +8358,47 @@
         y: floorSnapValue(240 + (project.objects.length % 6) * 40, project),
       });
       project.objects.push(object);
-      selectedFloorObjectId = object.id;
+      setFloorSelection([object.id]);
       project.updatedAt = new Date().toISOString();
       saveFloorProjects();
       renderFloorPlanner();
     }
 
     function floorObjectDefaultLabel(type) {
-      return { perimeter: "Периметр зала", door: "Дверь", window: "Окно", column: "Колонна", zone: "Зона", equipment: "Тренажер" }[type] || "Объект";
+      return { perimeter: "Периметр зала", text: "Текст", door: "Дверь", window: "Окно", column: "Колонна", zone: "Зона", equipment: "Тренажер" }[type] || "Объект";
     }
 
     function floorObjectDefaultWidth(type) {
-      return { perimeter: 12, door: 1, window: 1.4, column: 0.6, zone: 4, equipment: 2 }[type] || 2;
+      return { perimeter: 12, text: 2, door: 1, window: 1.4, column: 0.6, zone: 4, equipment: 2 }[type] || 2;
     }
 
     function floorObjectDefaultHeight(type) {
-      return { perimeter: 8, door: 0.25, window: 0.18, column: 0.6, zone: 3, equipment: 1 }[type] || 1;
+      return { perimeter: 8, text: 0.7, door: 0.25, window: 0.18, column: 0.6, zone: 3, equipment: 1 }[type] || 1;
+    }
+
+    function floorDefaultFillColor(type) {
+      return {
+        perimeter: "#e0f2fe",
+        door: "#fed7aa",
+        window: "#bae6fd",
+        column: "#e9d5ff",
+        zone: "#dcfce7",
+        equipment: "#dbeafe",
+        text: "#111827",
+      }[type] || "#dbeafe";
+    }
+
+    function floorDefaultStrokeColor(type) {
+      return {
+        perimeter: "#38bdf8",
+        wall: "#111827",
+        door: "#fb923c",
+        window: "#22d3ee",
+        column: "#a855f7",
+        zone: "#22c55e",
+        measure: "#f59e0b",
+        text: "#111827",
+      }[type] || "#334155";
     }
 
     function floorMetersToPx(value, project = activeFloorProject()) {
@@ -8200,29 +8432,174 @@
       if (!project) return;
       const dimensions = floorCanvasDimensions(project);
       floorCanvas.setAttribute("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`);
-      floorCanvas.style.minWidth = `${Math.max(900, dimensions.width)}px`;
-      floorCanvas.style.minHeight = `${Math.max(620, dimensions.height)}px`;
+      floorCanvas.style.minWidth = `${Math.max(900, dimensions.width * floorZoom)}px`;
+      floorCanvas.style.minHeight = `${Math.max(620, dimensions.height * floorZoom)}px`;
       const grid = [];
       for (let x = 0; x <= dimensions.width; x += 40) grid.push(`<line class="floor-grid-line" x1="${x}" y1="0" x2="${x}" y2="${dimensions.height}"/>`);
       for (let y = 0; y <= dimensions.height; y += 40) grid.push(`<line class="floor-grid-line" x1="0" y1="${y}" x2="${dimensions.width}" y2="${y}"/>`);
       const walls = project.walls.map((wall) => `
-        <line class="floor-wall ${selectedFloorObjectId === wall.id ? "floor-selected" : ""}" data-floor-id="${escapeHtml(wall.id)}" data-floor-kind="wall" x1="${wall.x1}" y1="${wall.y1}" x2="${wall.x2}" y2="${wall.y2}"/>
+        <line class="floor-wall ${isFloorSelected(wall.id) ? "floor-selected" : ""}" data-floor-id="${escapeHtml(wall.id)}" data-floor-kind="wall" x1="${wall.x1}" y1="${wall.y1}" x2="${wall.x2}" y2="${wall.y2}" style="stroke-width:${floorWallStrokeWidth(wall, project)}px;${wall.strokeColor ? `stroke:${escapeHtml(wall.strokeColor)}` : ""}"/>
       `).join("");
-      const draft = floorWallDraft ? `<line class="floor-wall floor-selected" x1="${floorWallDraft.x1}" y1="${floorWallDraft.y1}" x2="${floorWallDraft.x2}" y2="${floorWallDraft.y2}"/>` : "";
+      const draft = floorWallDraft ? `<line class="floor-wall floor-selected" x1="${floorWallDraft.x1}" y1="${floorWallDraft.y1}" x2="${floorWallDraft.x2}" y2="${floorWallDraft.y2}" style="stroke-width:${floorWallStrokeWidth(floorWallDraft, project)}px"/>` : "";
+      const measurements = project.measurements.map((measure) => renderFloorMeasurement(measure, project)).join("");
+      const measureDraft = floorMeasureDraft ? renderFloorMeasurement(floorMeasureDraft, project, true) : "";
+      const selectionDraft = floorSelectionDraft ? `<rect class="floor-selection-box" x="${Math.min(floorSelectionDraft.x1, floorSelectionDraft.x2)}" y="${Math.min(floorSelectionDraft.y1, floorSelectionDraft.y2)}" width="${Math.abs(floorSelectionDraft.x2 - floorSelectionDraft.x1)}" height="${Math.abs(floorSelectionDraft.y2 - floorSelectionDraft.y1)}"/>` : "";
       const objects = project.objects.map((object) => {
         const width = floorMetersToPx(object.width, project);
         const height = floorMetersToPx(object.height, project);
-        const selected = selectedFloorObjectId === object.id;
+        const selected = isFloorSelected(object.id);
         const resizeHandle = selected ? `<rect class="floor-resize-handle" data-floor-resize="1" data-floor-id="${escapeHtml(object.id)}" data-floor-kind="object" x="${width / 2 - 7}" y="${height / 2 - 7}" width="14" height="14" rx="3"/>` : "";
+        const shape = renderFloorObjectShape(object, width, height);
         return `
           <g class="floor-object floor-object-${escapeHtml(object.type)} ${selected ? "floor-selected" : ""}" data-floor-id="${escapeHtml(object.id)}" data-floor-kind="object" transform="translate(${object.x} ${object.y}) rotate(${object.rotation})">
-            <rect class="floor-object-shape" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" rx="5"/>
-            <text text-anchor="middle" dominant-baseline="middle">${escapeHtml(object.label)}</text>
+            ${shape}
             ${resizeHandle}
           </g>
         `;
       }).join("");
-      floorCanvas.innerHTML = `${grid.join("")}${walls}${draft}${objects}`;
+      floorCanvas.innerHTML = `${grid.join("")}${walls}${draft}${measurements}${measureDraft}${selectionDraft}${objects}`;
+    }
+
+    function floorWallStrokeWidth(wall, project = activeFloorProject()) {
+      return Math.max(2, floorMetersToPx((Number(wall?.thicknessMm) || 200) / 1000, project));
+    }
+
+    function renderFloorObjectShape(object, width, height) {
+      const rx = object.rounded ? Math.min(14, Math.max(4, Math.min(width, height) / 4)) : 0;
+      const fillColor = object.fillColor || "";
+      const strokeColor = object.strokeColor || "";
+      const colorStyle = `${fillColor ? `fill:${escapeHtml(fillColor)};` : ""}${strokeColor ? `stroke:${escapeHtml(strokeColor)};` : ""}`;
+      if (object.type === "text") {
+        const text = escapeHtml(object.label || "Текст");
+        const size = Math.max(8, Number(object.textSize) || 16);
+        const boxWidth = Math.max(width, text.length * size * 0.62);
+        const boxHeight = Math.max(height, size * 1.5);
+        return `
+          <rect class="floor-text-hitbox" x="${-boxWidth / 2}" y="${-boxHeight / 2}" width="${boxWidth}" height="${boxHeight}" rx="2"/>
+          <text class="floor-text-object" text-anchor="middle" dominant-baseline="middle" style="font-size:${size}px;${strokeColor || fillColor ? `fill:${escapeHtml(strokeColor || fillColor)};` : ""}">${text}</text>
+        `;
+      }
+      const baseRect = `<rect class="floor-object-shape" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" rx="${rx}" style="${colorStyle}"/>`;
+      if (object.type !== "door") return baseRect;
+      const hingeX = object.doorHinge === "right" ? width / 2 : -width / 2;
+      const directionX = object.doorHinge === "right" ? -1 : 1;
+      const directionY = object.doorSwing === "out" ? -1 : 1;
+      const leafLength = Math.max(width, height * 5);
+      const lineEndX = hingeX + directionX * leafLength;
+      const lineEndY = directionY * leafLength;
+      const arcEndX = hingeX + directionX * leafLength;
+      const arcEndY = directionY * leafLength;
+      const sweepFlag = object.doorHinge === "right"
+        ? (object.doorSwing === "out" ? 1 : 0)
+        : (object.doorSwing === "out" ? 0 : 1);
+      return `
+        ${baseRect}
+        <path class="floor-door-swing" d="M ${hingeX} 0 L ${lineEndX} ${lineEndY}"/>
+        <path class="floor-door-swing" d="M ${hingeX} 0 A ${leafLength} ${leafLength} 0 0 ${sweepFlag} ${arcEndX} ${arcEndY}"/>
+      `;
+    }
+
+    function renderFloorMeasurement(measure, project, draft = false) {
+      const dx = measure.x2 - measure.x1;
+      const dy = measure.y2 - measure.y1;
+      const length = floorPxToMeters(Math.hypot(dx, dy), project);
+      const midX = (measure.x1 + measure.x2) / 2;
+      const midY = (measure.y1 + measure.y2) / 2;
+      const selected = isFloorSelected(measure.id) || draft;
+      const strokeStyle = measure.strokeColor ? `style="stroke:${escapeHtml(measure.strokeColor)}"` : "";
+      const labelStyle = measure.strokeColor ? `style="fill:${escapeHtml(measure.strokeColor)}"` : "";
+      return `
+        <g class="${selected ? "floor-selected" : ""}" data-floor-id="${escapeHtml(measure.id || "draft")}" data-floor-kind="measure">
+          <line class="floor-measure ${selected ? "floor-selected" : ""}" x1="${measure.x1}" y1="${measure.y1}" x2="${measure.x2}" y2="${measure.y2}" ${strokeStyle}/>
+          <circle class="floor-measure" cx="${measure.x1}" cy="${measure.y1}" r="4" ${strokeStyle}/>
+          <circle class="floor-measure" cx="${measure.x2}" cy="${measure.y2}" r="4" ${strokeStyle}/>
+          <text class="floor-measure-label" x="${midX}" y="${midY - 8}" text-anchor="middle" ${labelStyle}>${length.toFixed(2)} м</text>
+        </g>
+      `;
+    }
+
+    function floorSelectionIds(project, draft) {
+      const rect = normalizeFloorRect(draft);
+      return floorSelectableItems(project)
+        .filter((item) => floorRectsIntersect(rect, item.bounds))
+        .map((item) => item.id);
+    }
+
+    function floorSelectableItems(project) {
+      return [
+        ...project.objects.map((object) => ({ id: object.id, kind: "object", bounds: floorObjectBounds(object, project) })),
+        ...project.walls.map((wall) => ({ id: wall.id, kind: "wall", bounds: normalizeFloorRect(wall) })),
+        ...project.measurements.map((measure) => ({ id: measure.id, kind: "measure", bounds: normalizeFloorRect(measure) })),
+      ];
+    }
+
+    function floorGroupIds(project, groupId) {
+      if (!groupId) return [];
+      return [
+        ...project.objects.filter((item) => item.groupId === groupId).map((item) => item.id),
+        ...project.walls.filter((item) => item.groupId === groupId).map((item) => item.id),
+        ...project.measurements.filter((item) => item.groupId === groupId).map((item) => item.id),
+      ];
+    }
+
+    function floorSelectedSnapshots(project) {
+      const selected = selectedFloorObjectIds;
+      return {
+        objects: project.objects.filter((item) => selected.has(item.id)).map((item) => ({ id: item.id, x: item.x, y: item.y })),
+        walls: project.walls.filter((item) => selected.has(item.id)).map((item) => ({ ...item })),
+        measurements: project.measurements.filter((item) => selected.has(item.id)).map((item) => ({ ...item })),
+      };
+    }
+
+    function moveFloorSelection(project, snapshot, dx, dy) {
+      snapshot.objects.forEach((saved) => {
+        const object = project.objects.find((item) => item.id === saved.id);
+        if (object) {
+          object.x = saved.x + dx;
+          object.y = saved.y + dy;
+        }
+      });
+      snapshot.walls.forEach((saved) => {
+        const wall = project.walls.find((item) => item.id === saved.id);
+        if (wall) {
+          wall.x1 = saved.x1 + dx;
+          wall.y1 = saved.y1 + dy;
+          wall.x2 = saved.x2 + dx;
+          wall.y2 = saved.y2 + dy;
+        }
+      });
+      snapshot.measurements.forEach((saved) => {
+        const measure = project.measurements.find((item) => item.id === saved.id);
+        if (measure) {
+          measure.x1 = saved.x1 + dx;
+          measure.y1 = saved.y1 + dy;
+          measure.x2 = saved.x2 + dx;
+          measure.y2 = saved.y2 + dy;
+        }
+      });
+    }
+
+    function floorObjectBounds(object, project) {
+      const width = floorMetersToPx(object.width, project);
+      const height = floorMetersToPx(object.height, project);
+      return {
+        x1: object.x - width / 2,
+        y1: object.y - height / 2,
+        x2: object.x + width / 2,
+        y2: object.y + height / 2,
+      };
+    }
+
+    function normalizeFloorRect(rect) {
+      const x1 = Math.min(Number(rect.x1) || 0, Number(rect.x2) || 0);
+      const y1 = Math.min(Number(rect.y1) || 0, Number(rect.y2) || 0);
+      const x2 = Math.max(Number(rect.x1) || 0, Number(rect.x2) || 0);
+      const y2 = Math.max(Number(rect.y1) || 0, Number(rect.y2) || 0);
+      return { x1, y1, x2, y2 };
+    }
+
+    function floorRectsIntersect(a, b) {
+      return a.x1 <= b.x2 && a.x2 >= b.x1 && a.y1 <= b.y2 && a.y2 >= b.y1;
     }
 
     function floorSvgPoint(event) {
@@ -8239,30 +8616,61 @@
       const rawPoint = floorSvgPoint(event);
       const point = floorSnapPoint(rawPoint, project);
       const target = event.target.closest("[data-floor-id]");
+      if (activeFloorTool === "select" && !target) {
+        floorSelectionDraft = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
+        floorCanvas.setPointerCapture?.(event.pointerId);
+        renderFloorCanvas();
+        return;
+      }
       if (activeFloorTool === "wall" && !target) {
         pushFloorHistory();
-        floorWallDraft = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
+        floorWallDraft = { x1: point.x, y1: point.y, x2: point.x, y2: point.y, thicknessMm: project.defaultWallThicknessMm || 200 };
+        floorCanvas.setPointerCapture?.(event.pointerId);
+        renderFloorCanvas();
+        return;
+      }
+      if (activeFloorTool === "measure" && !target) {
+        pushFloorHistory();
+        floorMeasureDraft = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
         floorCanvas.setPointerCapture?.(event.pointerId);
         renderFloorCanvas();
         return;
       }
       if (!target) {
-        selectedFloorObjectId = "";
+        clearFloorSelection();
         renderFloorPlanner();
         return;
       }
-      selectedFloorObjectId = target.dataset.floorId;
+      const targetId = target.dataset.floorId;
+      if (event.shiftKey || event.ctrlKey) {
+        const next = new Set(selectedFloorObjectIds);
+        if (next.has(targetId)) next.delete(targetId);
+        else next.add(targetId);
+        setFloorSelection([...next]);
+      } else if (!isFloorSelected(targetId)) {
+        setFloorSelection([targetId]);
+      } else {
+        selectedFloorObjectId = targetId;
+      }
       const kind = target.dataset.floorKind;
       const object = kind === "object" ? project.objects.find((item) => item.id === selectedFloorObjectId) : null;
       const wall = kind === "wall" ? project.walls.find((item) => item.id === selectedFloorObjectId) : null;
+      const measure = kind === "measure" ? project.measurements.find((item) => item.id === selectedFloorObjectId) : null;
+      const targetItem = object || wall || measure;
+      if (!event.shiftKey && !event.ctrlKey && targetItem?.groupId) {
+        setFloorSelection(floorGroupIds(project, targetItem.groupId));
+      }
       pushFloorHistory();
       const isResize = Boolean(event.target.closest("[data-floor-resize]"));
+      const selectedSnapshots = floorSelectedSnapshots(project);
       floorDragState = {
-        kind: isResize ? "resize" : kind,
+        kind: selectedFloorObjectIds.size > 1 && !isResize ? "multi" : (isResize ? "resize" : kind),
         startX: point.x,
         startY: point.y,
         object: object ? { x: object.x, y: object.y, width: object.width, height: object.height } : null,
         wall: wall ? { ...wall } : null,
+        measure: measure ? { ...measure } : null,
+        selected: selectedSnapshots,
       };
       floorCanvas.setPointerCapture?.(event.pointerId);
       renderFloorPlanner();
@@ -8273,9 +8681,21 @@
       if (!project) return;
       const rawPoint = floorSvgPoint(event);
       const point = floorSnapPoint(rawPoint, project);
+      if (floorSelectionDraft) {
+        floorSelectionDraft.x2 = point.x;
+        floorSelectionDraft.y2 = point.y;
+        renderFloorCanvas();
+        return;
+      }
       if (floorWallDraft) {
         floorWallDraft.x2 = point.x;
         floorWallDraft.y2 = point.y;
+        renderFloorCanvas();
+        return;
+      }
+      if (floorMeasureDraft) {
+        floorMeasureDraft.x2 = point.x;
+        floorMeasureDraft.y2 = point.y;
         renderFloorCanvas();
         return;
       }
@@ -8288,6 +8708,9 @@
           object.x = floorDragState.object.x + dx;
           object.y = floorDragState.object.y + dy;
         }
+      }
+      if (floorDragState.kind === "multi") {
+        moveFloorSelection(project, floorDragState.selected, dx, dy);
       }
       if (floorDragState.kind === "resize") {
         const object = project.objects.find((item) => item.id === selectedFloorObjectId);
@@ -8305,19 +8728,44 @@
           wall.y2 = floorDragState.wall.y2 + dy;
         }
       }
+      if (floorDragState.kind === "measure") {
+        const measure = project.measurements.find((item) => item.id === selectedFloorObjectId);
+        if (measure) {
+          measure.x1 = floorDragState.measure.x1 + dx;
+          measure.y1 = floorDragState.measure.y1 + dy;
+          measure.x2 = floorDragState.measure.x2 + dx;
+          measure.y2 = floorDragState.measure.y2 + dy;
+        }
+      }
       renderFloorCanvas();
     }
 
     function handleFloorPointerUp() {
       const project = activeFloorProject();
       if (!project) return;
+      if (floorSelectionDraft) {
+        const ids = floorSelectionIds(project, floorSelectionDraft);
+        const moved = Math.hypot(floorSelectionDraft.x2 - floorSelectionDraft.x1, floorSelectionDraft.y2 - floorSelectionDraft.y1);
+        setFloorSelection(moved > 8 ? ids : []);
+        floorSelectionDraft = null;
+        renderFloorPlanner();
+        return;
+      }
       if (floorWallDraft) {
         if (Math.hypot(floorWallDraft.x2 - floorWallDraft.x1, floorWallDraft.y2 - floorWallDraft.y1) > 12) {
           const wall = normalizeFloorWall(floorWallDraft);
           project.walls.push(wall);
-          selectedFloorObjectId = wall.id;
+          setFloorSelection([wall.id]);
         }
         floorWallDraft = null;
+      }
+      if (floorMeasureDraft) {
+        if (Math.hypot(floorMeasureDraft.x2 - floorMeasureDraft.x1, floorMeasureDraft.y2 - floorMeasureDraft.y1) > 12) {
+          const measure = normalizeFloorMeasurement(floorMeasureDraft);
+          project.measurements.push(measure);
+          setFloorSelection([measure.id]);
+        }
+        floorMeasureDraft = null;
       }
       if (floorDragState) floorDragState = null;
       project.updatedAt = new Date().toISOString();
@@ -8329,41 +8777,102 @@
       const project = activeFloorProject();
       const object = project?.objects.find((item) => item.id === selectedFloorObjectId);
       const wall = project?.walls.find((item) => item.id === selectedFloorObjectId);
-      if (!object && !wall) {
+      const measure = project?.measurements.find((item) => item.id === selectedFloorObjectId);
+      if (!object && !wall && !measure) {
         floorSelectedInfo.textContent = "Выберите объект на плане.";
-        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorObjectNote].forEach((field) => {
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorFillColor, floorStrokeColor, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
           field.value = "";
+          if (field.type === "checkbox") field.checked = false;
           field.disabled = true;
         });
         return;
       }
-      [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorObjectNote].forEach((field) => { field.disabled = Boolean(wall); });
       if (wall) {
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorTextSize, floorFillColor, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => { field.disabled = true; });
+        floorWallThickness.disabled = false;
+        floorStrokeColor.disabled = false;
         floorSelectedInfo.textContent = `Стена · длина ${floorPxToMeters(Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1), project).toFixed(1)} м`;
         floorObjectLabel.value = "Стена";
         floorObjectWidth.value = "";
         floorObjectHeight.value = "";
         floorObjectRotation.value = "";
+        floorWallThickness.value = wall.thicknessMm || 200;
+        floorTextSize.value = "";
+        floorFillColor.value = floorDefaultFillColor("wall");
+        floorStrokeColor.value = wall.strokeColor || floorDefaultStrokeColor("wall");
+        floorObjectRounded.checked = false;
+        floorDoorHinge.value = "left";
+        floorDoorSwing.value = "in";
         floorObjectNote.value = "";
         return;
       }
+      if (measure) {
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorFillColor, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
+          field.value = "";
+          if (field.type === "checkbox") field.checked = false;
+          field.disabled = true;
+        });
+        floorStrokeColor.disabled = false;
+        floorStrokeColor.value = measure.strokeColor || floorDefaultStrokeColor("measure");
+        floorSelectedInfo.textContent = `Линейка · ${floorPxToMeters(Math.hypot(measure.x2 - measure.x1, measure.y2 - measure.y1), project).toFixed(2)} м`;
+        return;
+      }
+      [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorFillColor, floorStrokeColor, floorObjectRounded, floorObjectNote].forEach((field) => { field.disabled = false; });
+      floorWallThickness.disabled = true;
+      const isDoor = object.type === "door";
+      const isText = object.type === "text";
+      floorTextSize.disabled = !isText;
+      floorDoorHinge.disabled = !isDoor;
+      floorDoorSwing.disabled = !isDoor;
       floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м`;
       floorObjectLabel.value = object.label;
       floorObjectWidth.value = object.width;
       floorObjectHeight.value = object.height;
       floorObjectRotation.value = object.rotation;
+      floorWallThickness.value = "";
+      floorTextSize.value = object.textSize || 16;
+      floorFillColor.value = object.fillColor || floorDefaultFillColor(object.type);
+      floorStrokeColor.value = object.strokeColor || floorDefaultStrokeColor(object.type);
+      floorObjectRounded.checked = Boolean(object.rounded);
+      floorDoorHinge.value = object.doorHinge || "left";
+      floorDoorSwing.value = object.doorSwing || "in";
       floorObjectNote.value = object.note;
     }
 
     function applyFloorObjectProperties() {
       const project = activeFloorProject();
       const object = project?.objects.find((item) => item.id === selectedFloorObjectId);
-      if (!object) return;
+      const wall = project?.walls.find((item) => item.id === selectedFloorObjectId);
+      const measure = project?.measurements.find((item) => item.id === selectedFloorObjectId);
+      if (!object && !wall && !measure) return;
       pushFloorHistory();
+      if (wall) {
+        wall.thicknessMm = Math.max(20, Number(floorWallThickness.value) || 200);
+        wall.strokeColor = floorStrokeColor.value || "";
+        project.updatedAt = new Date().toISOString();
+        saveFloorProjects();
+        renderFloorPlanner();
+        return;
+      }
+      if (measure) {
+        measure.strokeColor = floorStrokeColor.value || "";
+        project.updatedAt = new Date().toISOString();
+        saveFloorProjects();
+        renderFloorPlanner();
+        return;
+      }
       object.label = floorObjectLabel.value || floorObjectDefaultLabel(object.type);
       object.width = floorSnapSizeMeters(Number(floorObjectWidth.value) || object.width, project);
       object.height = floorSnapSizeMeters(Number(floorObjectHeight.value) || object.height, project);
       object.rotation = Number(floorObjectRotation.value) || 0;
+      object.rounded = Boolean(floorObjectRounded.checked);
+      object.fillColor = floorFillColor.value || "";
+      object.strokeColor = floorStrokeColor.value || "";
+      object.textSize = Math.max(8, Number(floorTextSize.value) || object.textSize || 16);
+      if (object.type === "door") {
+        object.doorHinge = floorDoorHinge.value || "left";
+        object.doorSwing = floorDoorSwing.value || "in";
+      }
       object.note = floorObjectNote.value;
       project.updatedAt = new Date().toISOString();
       saveFloorProjects();
@@ -8378,8 +8887,27 @@
       pushFloorHistory();
       const copy = normalizeFloorObject({ ...object, id: createId(), label: `${object.label} копия`, x: object.x + 32, y: object.y + 32 });
       project.objects.push(copy);
-      selectedFloorObjectId = copy.id;
+      setFloorSelection([copy.id]);
       saveActiveFloorProject();
+    }
+
+    function groupSelectedFloorItems() {
+      const project = activeFloorProject();
+      if (!project || selectedFloorObjectIds.size < 2) return;
+      pushFloorHistory();
+      const groupId = createId();
+      project.objects.forEach((item) => {
+        if (selectedFloorObjectIds.has(item.id)) item.groupId = groupId;
+      });
+      project.walls.forEach((item) => {
+        if (selectedFloorObjectIds.has(item.id)) item.groupId = groupId;
+      });
+      project.measurements.forEach((item) => {
+        if (selectedFloorObjectIds.has(item.id)) item.groupId = groupId;
+      });
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorPlanner();
     }
 
     function rotateSelectedFloorObject() {
@@ -8393,12 +8921,50 @@
 
     function deleteSelectedFloorObject() {
       const project = activeFloorProject();
-      if (!project || !selectedFloorObjectId) return;
+      if (!project || (!selectedFloorObjectId && selectedFloorObjectIds.size === 0)) return;
+      const ids = selectedFloorObjectIds.size ? selectedFloorObjectIds : new Set([selectedFloorObjectId]);
       pushFloorHistory();
-      project.objects = project.objects.filter((item) => item.id !== selectedFloorObjectId);
-      project.walls = project.walls.filter((item) => item.id !== selectedFloorObjectId);
-      selectedFloorObjectId = "";
+      project.objects = project.objects.filter((item) => !ids.has(item.id));
+      project.walls = project.walls.filter((item) => !ids.has(item.id));
+      project.measurements = project.measurements.filter((item) => !ids.has(item.id));
+      clearFloorSelection();
       saveActiveFloorProject();
+    }
+
+    function handleFloorKeyboard(event) {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (views.floorPlanner.classList.contains("hidden")) return;
+      const tag = event.target?.tagName?.toLowerCase();
+      const isTyping = ["input", "textarea", "select"].includes(tag) || event.target?.isContentEditable;
+      if (isTyping) return;
+      if (!activeFloorProject() || (!selectedFloorObjectId && selectedFloorObjectIds.size === 0)) return;
+      event.preventDefault();
+      deleteSelectedFloorObject();
+    }
+
+    function clearActiveFloorProject() {
+      const project = activeFloorProject();
+      if (!project || !confirm("Очистить все стены и объекты на плане?")) return;
+      pushFloorHistory();
+      project.objects = [];
+      project.walls = [];
+      project.measurements = [];
+      clearFloorSelection();
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorPlanner();
+    }
+
+    function exitFloorWithoutSaving() {
+      const project = activeFloorProject();
+      if (!project) {
+        closeFloorEditor();
+        return;
+      }
+      if (floorEditorInitialSnapshot) {
+        restoreFloorSnapshot(floorEditorInitialSnapshot);
+      }
+      closeFloorEditor();
     }
 
     function exportFloorPlanPng() {
@@ -8416,6 +8982,10 @@
         .floor-object-shape{stroke:#334155;stroke-width:2;fill:#d8eefc}.floor-object-door .floor-object-shape{fill:#fdecc8}
         .floor-object-window .floor-object-shape{fill:#d8f3ff}.floor-object-column .floor-object-shape{fill:#d9dee6}
         .floor-object-zone .floor-object-shape{fill:rgba(34,197,94,.14);stroke-dasharray:8 5}.floor-object-perimeter .floor-object-shape{fill:rgba(56,189,248,.06);stroke-width:8}
+        .floor-door-swing{fill:none;stroke:#f97316;stroke-width:3;stroke-linecap:round}
+        .floor-text-object{fill:#111827;font-weight:700}.floor-text-hitbox{fill:transparent;stroke:transparent}
+        .floor-measure{stroke:#f59e0b;stroke-width:3;stroke-dasharray:8 5;stroke-linecap:round;fill:none}
+        .floor-measure-label{fill:#f59e0b;stroke:#fff;stroke-width:5;paint-order:stroke;font:800 14px Arial}
         .floor-object text{font:700 13px Arial;fill:#111827}
       `;
       clone.insertBefore(style, clone.firstChild);
