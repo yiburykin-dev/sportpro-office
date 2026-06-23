@@ -9165,6 +9165,48 @@
       return normalizeFloorWall({ ...wall, id: createId(), x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
     }
 
+    function floorPointsClose(a, b, tolerance = 2) {
+      return Math.hypot((Number(a.x) || 0) - (Number(b.x) || 0), (Number(a.y) || 0) - (Number(b.y) || 0)) <= tolerance;
+    }
+
+    function floorWallOpenEnds(project, wall) {
+      const start = { x: wall.x1, y: wall.y1 };
+      const end = { x: wall.x2, y: wall.y2 };
+      const connected = { start: false, end: false };
+      project.walls.forEach((item) => {
+        if (item.id === wall.id) return;
+        const itemStart = { x: item.x1, y: item.y1 };
+        const itemEnd = { x: item.x2, y: item.y2 };
+        if (floorPointsClose(start, itemStart) || floorPointsClose(start, itemEnd)) connected.start = true;
+        if (floorPointsClose(end, itemStart) || floorPointsClose(end, itemEnd)) connected.end = true;
+      });
+      return {
+        start: !connected.start,
+        end: !connected.end,
+      };
+    }
+
+    function floorSplitWallToOpenEnd(project, breakTarget) {
+      const wall = project.walls.find((item) => item.id === breakTarget.id);
+      if (!wall || wall.locked) return false;
+      const openEnds = floorWallOpenEnds(project, wall);
+      if (!openEnds.start && !openEnds.end) return false;
+      let endT = 0;
+      if (openEnds.start && openEnds.end) endT = breakTarget.t <= 0.5 ? 0 : 1;
+      else endT = openEnds.start ? 0 : 1;
+      const a = Math.min(endT, breakTarget.t);
+      const b = Math.max(endT, breakTarget.t);
+      if (b - a < 0.02) return false;
+      const nextWalls = [];
+      const edge = floorWallSegment(wall, a, b);
+      if (a > 0.01) nextWalls.push(floorWallSegment(wall, 0, a));
+      nextWalls.push(edge);
+      if (b < 0.99) nextWalls.push(floorWallSegment(wall, b, 1));
+      project.walls = project.walls.filter((item) => item.id !== wall.id).concat(nextWalls);
+      setFloorSelection([edge.id]);
+      return true;
+    }
+
     function floorSplitWallByBreak(project, first, second) {
       const wall = project.walls.find((item) => item.id === first.id);
       if (!wall || wall.locked) return false;
@@ -9236,6 +9278,20 @@
         floorSelectedInfo.textContent = "Для разрыва кликните по стене или стороне объекта.";
         renderFloorCanvas();
         return;
+      }
+      if (!floorBreakDraft && breakTarget.kind === "wall") {
+        const wall = project.walls.find((item) => item.id === breakTarget.id);
+        const openEnds = wall ? floorWallOpenEnds(project, wall) : { start: false, end: false };
+        if (openEnds.start || openEnds.end) {
+          pushFloorHistory();
+          const changedToEnd = floorSplitWallToOpenEnd(project, breakTarget);
+          if (changedToEnd) {
+            project.updatedAt = new Date().toISOString();
+            saveFloorProjects();
+            renderFloorPlanner();
+            return;
+          }
+        }
       }
       if (!floorBreakDraft || floorBreakDraft.kind !== breakTarget.kind || floorBreakDraft.id !== breakTarget.id || floorBreakDraft.side !== breakTarget.side) {
         floorBreakDraft = breakTarget;
