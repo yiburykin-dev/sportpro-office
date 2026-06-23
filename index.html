@@ -3641,19 +3641,6 @@
       cursor: move;
     }
 
-    .floor-object.floor-locked,
-    .floor-wall.floor-locked,
-    .floor-measure.floor-locked {
-      cursor: not-allowed;
-      opacity: .82;
-    }
-
-    .floor-object.floor-locked .floor-object-shape,
-    .floor-wall.floor-locked,
-    .floor-measure.floor-locked {
-      stroke-dasharray: 7 5;
-    }
-
     .floor-object-shape {
       stroke: color-mix(in srgb, var(--ink) 30%, var(--line));
       stroke-width: 2;
@@ -7306,6 +7293,10 @@
     document.querySelector("#floorRotateBtn").addEventListener("click", rotateSelectedFloorObject);
     document.querySelector("#floorDeleteSelectedBtn").addEventListener("click", deleteSelectedFloorObject);
     document.querySelector("#floorApplyObjectBtn").addEventListener("click", applyFloorObjectProperties);
+    floorObjectWidth.addEventListener("input", applyFloorObjectSizeInput);
+    floorObjectHeight.addEventListener("input", applyFloorObjectSizeInput);
+    floorObjectWidth.addEventListener("change", applyFloorObjectSizeInput);
+    floorObjectHeight.addEventListener("change", applyFloorObjectSizeInput);
     floorExportPngBtn.addEventListener("click", exportFloorPlanPng);
     floorProjectsList.addEventListener("click", handleFloorProjectAction);
     floorProjectName.addEventListener("input", handleFloorProjectTextInput);
@@ -8483,12 +8474,6 @@
     function createFloorProject() {
       const project = normalizeFloorProject({
         name: `План зала ${floorProjects.length + 1}`,
-        walls: [
-          { x1: 120, y1: 120, x2: 800, y2: 120 },
-          { x1: 800, y1: 120, x2: 800, y2: 520 },
-          { x1: 800, y1: 520, x2: 120, y2: 520 },
-          { x1: 120, y1: 520, x2: 120, y2: 120 },
-        ],
       });
       floorProjects.unshift(project);
       activeFloorProjectId = project.id;
@@ -8654,6 +8639,10 @@
       return [...selection.objects, ...selection.walls, ...selection.measurements];
     }
 
+    function floorSelectedObject(project = activeFloorProject()) {
+      return project?.objects.find((item) => item.id === selectedFloorObjectId) || null;
+    }
+
     function floorSelectedHasLocked(project = activeFloorProject()) {
       return floorFlattenSelection(floorSelectedItems(project)).some((item) => item.locked);
     }
@@ -8784,6 +8773,12 @@
       const meters = Math.max(0.1, Number(value) || 0.1);
       if (!project || project.snapToGrid === false) return meters;
       return Math.max(0.1, Math.round(meters / Math.max(0.1, project.scale)) * Math.max(0.1, project.scale));
+    }
+
+    function floorNumberFromInput(value) {
+      const normalized = String(value ?? "").replace(",", ".");
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : NaN;
     }
 
     function renderFloorCanvas() {
@@ -9233,13 +9228,35 @@
       saveFloorProjects();
     }
 
+    function applyFloorObjectSizeInput() {
+      const project = activeFloorProject();
+      const object = floorSelectedObject(project);
+      if (!project || !object || object.locked) return;
+      const width = floorNumberFromInput(floorObjectWidth.value);
+      const height = floorNumberFromInput(floorObjectHeight.value);
+      let changed = false;
+      if (Number.isFinite(width) && width >= 0.1 && width !== object.width) {
+        object.width = width;
+        changed = true;
+      }
+      if (Number.isFinite(height) && height >= 0.1 && height !== object.height) {
+        object.height = height;
+        changed = true;
+      }
+      if (!changed) return;
+      floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м${object.locked ? " · заблокирован" : ""}`;
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorCanvas();
+    }
+
     function applyFloorObjectProperties() {
       const project = activeFloorProject();
-      const object = project?.objects.find((item) => item.id === selectedFloorObjectId);
+      const object = floorSelectedObject(project);
       const wall = project?.walls.find((item) => item.id === selectedFloorObjectId);
       const measure = project?.measurements.find((item) => item.id === selectedFloorObjectId);
       if (!object && !wall && !measure) return;
-      if (floorSelectedHasLocked(project)) return;
+      if (object?.locked || wall?.locked || measure?.locked) return;
       pushFloorHistory();
       if (wall) {
         wall.thicknessMm = Math.max(20, Number(floorWallThickness.value) || 200);
@@ -9257,8 +9274,8 @@
         return;
       }
       object.label = floorObjectLabel.value || floorObjectDefaultLabel(object.type);
-      object.width = floorSnapSizeMeters(Number(floorObjectWidth.value) || object.width, project);
-      object.height = floorSnapSizeMeters(Number(floorObjectHeight.value) || object.height, project);
+      object.width = Math.max(0.1, floorNumberFromInput(floorObjectWidth.value) || object.width);
+      object.height = Math.max(0.1, floorNumberFromInput(floorObjectHeight.value) || object.height);
       object.rotation = Number(floorObjectRotation.value) || 0;
       object.rounded = Boolean(floorObjectRounded.checked);
       object.fillColor = floorFillColor.value || "";
