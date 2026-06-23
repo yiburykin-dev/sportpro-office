@@ -3571,6 +3571,14 @@
       font-weight: 700;
     }
 
+    .floor-opacity-control {
+      display: none;
+    }
+
+    .floor-opacity-control.visible {
+      display: inline-flex;
+    }
+
     .floor-equipment-list button {
       justify-content: flex-start;
       text-align: left;
@@ -3708,6 +3716,12 @@
       font-weight: 700;
     }
 
+    .floor-stair-line {
+      stroke: var(--ink);
+      stroke-width: 2;
+      pointer-events: none;
+    }
+
     .floor-resize-handle {
       fill: var(--accent);
       stroke: var(--surface);
@@ -3720,6 +3734,13 @@
       stroke: var(--accent);
       stroke-width: 2;
       stroke-dasharray: 8 5;
+      pointer-events: none;
+    }
+
+    .floor-break-marker {
+      fill: var(--danger);
+      stroke: var(--surface);
+      stroke-width: 2;
       pointer-events: none;
     }
 
@@ -5706,6 +5727,7 @@
                       <select id="floorToolSelect">
                         <option value="select">Выбор / выделение</option>
                         <option value="wall">Стена</option>
+                        <option value="break">Разрыв</option>
                         <option value="measure">Линейка</option>
                         <option value="add:perimeter">Добавить периметр</option>
                         <option value="add:text">Добавить текст</option>
@@ -5713,6 +5735,7 @@
                         <option value="add:window">Добавить окно</option>
                         <option value="add:column">Добавить колонну</option>
                         <option value="add:zone">Добавить зону</option>
+                        <option value="add:stairs">Добавить лестницу</option>
                       </select>
                     </label>
                     <label>Тренажеры
@@ -5754,6 +5777,23 @@
                     <option value="100"></option>
                   </datalist>
                   <button class="btn icon" id="floorZoomInBtn" type="button" title="Увеличить">+</button>
+                  <label class="floor-zoom-control floor-opacity-control" id="floorFillOpacityControl" title="Прозрачность заливки">
+                    <input id="floorFillOpacity" type="number" min="0" max="100" step="10" list="floorOpacityOptions" value="100" aria-label="Прозрачность заливки в процентах">
+                    <span>% прозрачность</span>
+                  </label>
+                  <datalist id="floorOpacityOptions">
+                    <option value="0"></option>
+                    <option value="10"></option>
+                    <option value="20"></option>
+                    <option value="30"></option>
+                    <option value="40"></option>
+                    <option value="50"></option>
+                    <option value="60"></option>
+                    <option value="70"></option>
+                    <option value="80"></option>
+                    <option value="90"></option>
+                    <option value="100"></option>
+                  </datalist>
                 </div>
                 <div class="floor-toolbar-group">
                   <button class="btn icon" id="floorUndoBtn" type="button" title="Отменить">↶</button>
@@ -5798,6 +5838,9 @@
               </label>
               <label>Размер текста
                 <input id="floorTextSize" type="number" min="8" step="1">
+              </label>
+              <label id="floorStairCountWrap">Количество ступеней
+                <input id="floorStairCount" type="number" min="1" step="1" value="10">
               </label>
               <label class="checkbox-line">
                 <input id="floorObjectRounded" type="checkbox">
@@ -6730,9 +6773,13 @@
     const floorObjectRotation = document.querySelector("#floorObjectRotation");
     const floorWallThickness = document.querySelector("#floorWallThickness");
     const floorTextSize = document.querySelector("#floorTextSize");
+    const floorStairCountWrap = document.querySelector("#floorStairCountWrap");
+    const floorStairCount = document.querySelector("#floorStairCount");
     const floorFillColor = document.querySelector("#floorFillColor");
     const floorStrokeColor = document.querySelector("#floorStrokeColor");
     const floorZoomInput = document.querySelector("#floorZoomInput");
+    const floorFillOpacityControl = document.querySelector("#floorFillOpacityControl");
+    const floorFillOpacity = document.querySelector("#floorFillOpacity");
     const floorObjectRounded = document.querySelector("#floorObjectRounded");
     const floorDoorHinge = document.querySelector("#floorDoorHinge");
     const floorDoorSwing = document.querySelector("#floorDoorSwing");
@@ -7097,9 +7144,11 @@
     let floorWallDraft = null;
     let floorMeasureDraft = null;
     let floorSelectionDraft = null;
+    let floorBreakDraft = null;
     let floorZoom = 1;
     let floorActiveFillColor = "#dbeafe";
     let floorActiveStrokeColor = "#334155";
+    let floorActiveFillOpacity = 1;
     let floorUndoStack = [];
     let floorRedoStack = [];
     let floorEditorInitialSnapshot = "";
@@ -7293,10 +7342,15 @@
     document.querySelector("#floorRotateBtn").addEventListener("click", rotateSelectedFloorObject);
     document.querySelector("#floorDeleteSelectedBtn").addEventListener("click", deleteSelectedFloorObject);
     document.querySelector("#floorApplyObjectBtn").addEventListener("click", applyFloorObjectProperties);
+    floorObjectLabel.addEventListener("input", applyFloorTextInput);
+    floorTextSize.addEventListener("input", applyFloorTextInput);
+    floorTextSize.addEventListener("change", applyFloorTextInput);
     floorObjectWidth.addEventListener("input", applyFloorObjectSizeInput);
     floorObjectHeight.addEventListener("input", applyFloorObjectSizeInput);
     floorObjectWidth.addEventListener("change", applyFloorObjectSizeInput);
     floorObjectHeight.addEventListener("change", applyFloorObjectSizeInput);
+    floorStairCount.addEventListener("input", applyFloorStairCountInput);
+    floorStairCount.addEventListener("change", applyFloorStairCountInput);
     floorExportPngBtn.addEventListener("click", exportFloorPlanPng);
     floorProjectsList.addEventListener("click", handleFloorProjectAction);
     floorProjectName.addEventListener("input", handleFloorProjectTextInput);
@@ -7307,6 +7361,8 @@
     floorEquipmentSelect.addEventListener("change", handleFloorEquipmentSelect);
     floorFillColor.addEventListener("input", applyFloorToolbarColors);
     floorStrokeColor.addEventListener("input", applyFloorToolbarColors);
+    floorFillOpacity.addEventListener("input", applyFloorToolbarColors);
+    floorFillOpacity.addEventListener("change", applyFloorToolbarColors);
     floorCanvas.addEventListener("pointerdown", handleFloorPointerDown);
     floorCanvas.addEventListener("pointermove", handleFloorPointerMove);
     floorCanvas.addEventListener("pointerup", handleFloorPointerUp);
@@ -8225,10 +8281,12 @@
         height: Math.max(0.1, Number(item.height) || 1),
         rotation: Number(item.rotation) || 0,
         textSize: Math.max(8, Number(item.textSize) || 16),
+        stairCount: Math.max(1, Math.round(Number(item.stairCount) || 10)),
         rounded: Boolean(item.rounded),
         doorHinge: item.doorHinge === "right" ? "right" : "left",
         doorSwing: item.doorSwing === "out" ? "out" : "in",
         fillColor: item.fillColor || "",
+        fillOpacity: Math.min(1, Math.max(0, item.fillOpacity === undefined ? 1 : Number(item.fillOpacity))),
         strokeColor: item.strokeColor || "",
         groupId: item.groupId || "",
         locked: Boolean(item.locked),
@@ -8237,12 +8295,16 @@
     }
 
     function normalizeFloorWall(wall = {}) {
+      const x1 = Number(wall.x1);
+      const y1 = Number(wall.y1);
+      const x2 = Number(wall.x2);
+      const y2 = Number(wall.y2);
       return {
         id: wall.id || createId(),
-        x1: Number(wall.x1) || 120,
-        y1: Number(wall.y1) || 120,
-        x2: Number(wall.x2) || 360,
-        y2: Number(wall.y2) || 120,
+        x1: Number.isFinite(x1) ? x1 : 120,
+        y1: Number.isFinite(y1) ? y1 : 120,
+        x2: Number.isFinite(x2) ? x2 : 360,
+        y2: Number.isFinite(y2) ? y2 : 120,
         thicknessMm: Math.max(20, Number(wall.thicknessMm) || 200),
         strokeColor: wall.strokeColor || "",
         groupId: wall.groupId || "",
@@ -8480,6 +8542,7 @@
       clearFloorSelection();
       floorUndoStack = [];
       floorRedoStack = [];
+      floorBreakDraft = null;
       saveFloorProjects();
       floorEditorInitialSnapshot = floorProjectSnapshot(project);
       if (floorProjectDetails) floorProjectDetails.open = false;
@@ -8492,6 +8555,7 @@
       floorUndoStack = [];
       floorRedoStack = [];
       floorMeasureDraft = null;
+      floorBreakDraft = null;
       floorEditorInitialSnapshot = "";
       renderFloorPlanner();
     }
@@ -8515,6 +8579,7 @@
       floorRedoStack = [];
       floorWallDraft = null;
       floorMeasureDraft = null;
+      floorBreakDraft = null;
       floorSelectionDraft = null;
       floorEditorInitialSnapshot = floorProjectSnapshot(project);
       if (floorProjectDetails) floorProjectDetails.open = false;
@@ -8607,6 +8672,7 @@
 
     function setFloorTool(tool) {
       activeFloorTool = tool || "select";
+      floorBreakDraft = null;
       if (floorToolSelect && !String(floorToolSelect.value || "").startsWith("add:")) {
         floorToolSelect.value = activeFloorTool;
       }
@@ -8654,6 +8720,7 @@
     function applyFloorToolbarColors() {
       floorActiveFillColor = floorFillColor.value || floorActiveFillColor;
       floorActiveStrokeColor = floorStrokeColor.value || floorActiveStrokeColor;
+      floorActiveFillOpacity = floorPercentToOpacity(floorFillOpacity.value);
       const project = activeFloorProject();
       if (!project) return;
       const selected = floorSelectedItems(project);
@@ -8663,6 +8730,7 @@
       pushFloorHistory();
       selected.objects.forEach((object) => {
         object.fillColor = floorActiveFillColor || floorDefaultFillColor(object.type);
+        if (floorFillOpacitySupports(object)) object.fillOpacity = floorActiveFillOpacity;
         object.strokeColor = floorActiveStrokeColor || floorDefaultStrokeColor(object.type);
       });
       selected.walls.forEach((wall) => {
@@ -8694,13 +8762,20 @@
         createFloorProject();
         return;
       }
+      const stairCount = type === "stairs" ? promptFloorStairCount() : null;
+      if (type === "stairs" && stairCount === null) {
+        floorToolSelect.value = activeFloorTool;
+        return;
+      }
       pushFloorHistory();
       const object = normalizeFloorObject({
         type,
         label: preset.label || floorObjectDefaultLabel(type),
         width: preset.width || floorObjectDefaultWidth(type),
-        height: preset.height || floorObjectDefaultHeight(type),
+        height: type === "stairs" ? floorStairHeightMeters(stairCount) : (preset.height || floorObjectDefaultHeight(type)),
+        stairCount: stairCount || preset.stairCount || floorObjectDefaultStairCount(type),
         fillColor: floorActiveFillColor || floorDefaultFillColor(type),
+        fillOpacity: floorActiveFillOpacity,
         strokeColor: floorActiveStrokeColor || floorDefaultStrokeColor(type),
         x: floorSnapValue(320 + (project.objects.length % 6) * 40, project),
         y: floorSnapValue(240 + (project.objects.length % 6) * 40, project),
@@ -8713,15 +8788,19 @@
     }
 
     function floorObjectDefaultLabel(type) {
-      return { perimeter: "Периметр зала", text: "Текст", door: "Дверь", window: "Окно", column: "Колонна", zone: "Зона", equipment: "Тренажер" }[type] || "Объект";
+      return { perimeter: "Периметр зала", text: "Текст", door: "Дверь", window: "Окно", column: "Колонна", zone: "Зона", stairs: "Лестница", equipment: "Тренажер" }[type] || "Объект";
     }
 
     function floorObjectDefaultWidth(type) {
-      return { perimeter: 12, text: 2, door: 1, window: 1.4, column: 0.6, zone: 4, equipment: 2 }[type] || 2;
+      return { perimeter: 12, text: 2, door: 1, window: 1.4, column: 0.6, zone: 4, stairs: 1.4, equipment: 2 }[type] || 2;
     }
 
     function floorObjectDefaultHeight(type) {
-      return { perimeter: 8, text: 0.7, door: 0.25, window: 0.18, column: 0.6, zone: 3, equipment: 1 }[type] || 1;
+      return { perimeter: 8, text: 0.7, door: 0.25, window: 0.18, column: 0.6, zone: 3, stairs: 3, equipment: 1 }[type] || 1;
+    }
+
+    function floorObjectDefaultStairCount(type) {
+      return type === "stairs" ? 10 : 0;
     }
 
     function floorDefaultFillColor(type) {
@@ -8731,6 +8810,7 @@
         window: "#bae6fd",
         column: "#e9d5ff",
         zone: "#dcfce7",
+        stairs: "#fef3c7",
         equipment: "#dbeafe",
         text: "#111827",
       }[type] || "#dbeafe";
@@ -8744,6 +8824,7 @@
         window: "#22d3ee",
         column: "#a855f7",
         zone: "#22c55e",
+        stairs: "#92400e",
         measure: "#f59e0b",
         text: "#111827",
       }[type] || "#334155";
@@ -8781,6 +8862,29 @@
       return Number.isFinite(parsed) ? parsed : NaN;
     }
 
+    function floorPercentToOpacity(value) {
+      return Math.min(1, Math.max(0, (Number(value) || 0) / 100));
+    }
+
+    function floorOpacityToPercent(value) {
+      return Math.round(Math.min(1, Math.max(0, value === undefined ? 1 : Number(value))) * 100);
+    }
+
+    function floorFillOpacitySupports(item) {
+      return Boolean(item && ["perimeter", "zone", "stairs", "column", "equipment", "door", "window"].includes(item.type));
+    }
+
+    function floorStairHeightMeters(count) {
+      return Math.max(1, Math.round(Number(count) || 10)) * 0.3;
+    }
+
+    function promptFloorStairCount() {
+      const value = window.prompt("Количество ступеней", "10");
+      if (value === null) return null;
+      const count = Math.max(1, Math.round(floorNumberFromInput(value) || 10));
+      return count;
+    }
+
     function renderFloorCanvas() {
       const project = activeFloorProject();
       if (!project) return;
@@ -8798,6 +8902,7 @@
       const measurements = project.measurements.map((measure) => renderFloorMeasurement(measure, project)).join("");
       const measureDraft = floorMeasureDraft ? renderFloorMeasurement(floorMeasureDraft, project, true) : "";
       const selectionDraft = floorSelectionDraft ? `<rect class="floor-selection-box" x="${Math.min(floorSelectionDraft.x1, floorSelectionDraft.x2)}" y="${Math.min(floorSelectionDraft.y1, floorSelectionDraft.y2)}" width="${Math.abs(floorSelectionDraft.x2 - floorSelectionDraft.x1)}" height="${Math.abs(floorSelectionDraft.y2 - floorSelectionDraft.y1)}"/>` : "";
+      const breakMarker = floorBreakDraft ? `<circle class="floor-break-marker" cx="${floorBreakDraft.point.x}" cy="${floorBreakDraft.point.y}" r="6"/>` : "";
       const objects = project.objects.map((object) => {
         const width = floorMetersToPx(object.width, project);
         const height = floorMetersToPx(object.height, project);
@@ -8812,7 +8917,7 @@
           </g>
         `;
       }).join("");
-      floorCanvas.innerHTML = `${grid.join("")}${walls}${draft}${measurements}${measureDraft}${selectionDraft}${objects}`;
+      floorCanvas.innerHTML = `${grid.join("")}${walls}${draft}${measurements}${measureDraft}${selectionDraft}${objects}${breakMarker}`;
     }
 
     function floorWallStrokeWidth(wall, project = activeFloorProject()) {
@@ -8823,7 +8928,8 @@
       const rx = object.rounded ? Math.min(14, Math.max(4, Math.min(width, height) / 4)) : 0;
       const fillColor = object.fillColor || "";
       const strokeColor = object.strokeColor || "";
-      const colorStyle = `${fillColor ? `fill:${escapeHtml(fillColor)};` : ""}${strokeColor ? `stroke:${escapeHtml(strokeColor)};` : ""}`;
+      const opacityStyle = `fill-opacity:${Math.min(1, Math.max(0, object.fillOpacity === undefined ? 1 : Number(object.fillOpacity)))};`;
+      const colorStyle = `${fillColor ? `fill:${escapeHtml(fillColor)};` : ""}${opacityStyle}${strokeColor ? `stroke:${escapeHtml(strokeColor)};` : ""}`;
       if (object.type === "text") {
         const text = escapeHtml(object.label || "Текст");
         const size = Math.max(8, Number(object.textSize) || 16);
@@ -8835,6 +8941,14 @@
         `;
       }
       const baseRect = `<rect class="floor-object-shape" x="${-width / 2}" y="${-height / 2}" width="${width}" height="${height}" rx="${rx}" style="${colorStyle}"/>`;
+      if (object.type === "stairs") {
+        const count = Math.max(1, Math.round(Number(object.stairCount) || 10));
+        const stepLines = Array.from({ length: Math.max(0, count - 1) }, (_, index) => {
+          const y = -height / 2 + height / count * (index + 1);
+          return `<line class="floor-stair-line" x1="${-width / 2}" y1="${y}" x2="${width / 2}" y2="${y}" style="${strokeColor ? `stroke:${escapeHtml(strokeColor)};` : ""}"/>`;
+        }).join("");
+        return `${baseRect}${stepLines}<text text-anchor="middle" dominant-baseline="middle">${count} ст.</text>`;
+      }
       if (object.type !== "door") return baseRect;
       const hingeX = object.doorHinge === "right" ? width / 2 : -width / 2;
       const directionX = object.doorHinge === "right" ? -1 : 1;
@@ -8969,6 +9083,181 @@
       return a.x1 <= b.x2 && a.x2 >= b.x1 && a.y1 <= b.y2 && a.y2 >= b.y1;
     }
 
+    function floorDistanceToSegment(point, line) {
+      const ax = Number(line.x1) || 0;
+      const ay = Number(line.y1) || 0;
+      const bx = Number(line.x2) || 0;
+      const by = Number(line.y2) || 0;
+      const dx = bx - ax;
+      const dy = by - ay;
+      const lengthSq = dx * dx + dy * dy;
+      const t = lengthSq ? Math.max(0, Math.min(1, ((point.x - ax) * dx + (point.y - ay) * dy) / lengthSq)) : 0;
+      const x = ax + dx * t;
+      const y = ay + dy * t;
+      return { x, y, t, distance: Math.hypot(point.x - x, point.y - y) };
+    }
+
+    function floorObjectLocalPoint(object, point) {
+      const angle = -(Number(object.rotation) || 0) * Math.PI / 180;
+      const dx = point.x - object.x;
+      const dy = point.y - object.y;
+      return {
+        x: dx * Math.cos(angle) - dy * Math.sin(angle),
+        y: dx * Math.sin(angle) + dy * Math.cos(angle),
+      };
+    }
+
+    function floorObjectWorldPoint(object, local) {
+      const angle = (Number(object.rotation) || 0) * Math.PI / 180;
+      return {
+        x: object.x + local.x * Math.cos(angle) - local.y * Math.sin(angle),
+        y: object.y + local.x * Math.sin(angle) + local.y * Math.cos(angle),
+      };
+    }
+
+    function floorObjectBreakPoint(object, point, project = activeFloorProject()) {
+      if (!object || object.type === "text") return null;
+      const width = floorMetersToPx(object.width, project);
+      const height = floorMetersToPx(object.height, project);
+      const halfW = width / 2;
+      const halfH = height / 2;
+      const local = floorObjectLocalPoint(object, point);
+      const candidates = [
+        { side: "top", distance: Math.abs(local.y + halfH), t: (local.x + halfW) / Math.max(1, width), local: { x: Math.max(-halfW, Math.min(halfW, local.x)), y: -halfH } },
+        { side: "right", distance: Math.abs(local.x - halfW), t: (local.y + halfH) / Math.max(1, height), local: { x: halfW, y: Math.max(-halfH, Math.min(halfH, local.y)) } },
+        { side: "bottom", distance: Math.abs(local.y - halfH), t: (halfW - local.x) / Math.max(1, width), local: { x: Math.max(-halfW, Math.min(halfW, local.x)), y: halfH } },
+        { side: "left", distance: Math.abs(local.x + halfW), t: (halfH - local.y) / Math.max(1, height), local: { x: -halfW, y: Math.max(-halfH, Math.min(halfH, local.y)) } },
+      ].filter((item) => item.t >= 0 && item.t <= 1).sort((a, b) => a.distance - b.distance);
+      const best = candidates[0];
+      if (!best || best.distance > 28) return null;
+      return { kind: "object", id: object.id, side: best.side, t: best.t, point: floorObjectWorldPoint(object, best.local) };
+    }
+
+    function floorBreakTargetFromEventTarget(target, point, project = activeFloorProject()) {
+      if (!target || !project) return null;
+      const id = target.dataset.floorId;
+      const kind = target.dataset.floorKind;
+      if (kind === "wall") {
+        const wall = project.walls.find((item) => item.id === id);
+        if (!wall || wall.locked) return null;
+        const projected = floorDistanceToSegment(point, wall);
+        if (projected.distance > 28) return null;
+        return { kind: "wall", id: wall.id, t: projected.t, point: { x: projected.x, y: projected.y } };
+      }
+      if (kind === "object") {
+        const object = project.objects.find((item) => item.id === id);
+        if (!object || object.locked) return null;
+        return floorObjectBreakPoint(object, point, project);
+      }
+      return null;
+    }
+
+    function floorWallPointAt(wall, t) {
+      return {
+        x: wall.x1 + (wall.x2 - wall.x1) * t,
+        y: wall.y1 + (wall.y2 - wall.y1) * t,
+      };
+    }
+
+    function floorWallSegment(wall, start, end) {
+      const p1 = floorWallPointAt(wall, start);
+      const p2 = floorWallPointAt(wall, end);
+      return normalizeFloorWall({ ...wall, id: createId(), x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+    }
+
+    function floorSplitWallByBreak(project, first, second) {
+      const wall = project.walls.find((item) => item.id === first.id);
+      if (!wall || wall.locked) return false;
+      const a = Math.min(first.t, second.t);
+      const b = Math.max(first.t, second.t);
+      if (b - a < 0.02) return false;
+      const nextWalls = [];
+      if (a > 0.01) nextWalls.push(floorWallSegment(wall, 0, a));
+      const middle = floorWallSegment(wall, a, b);
+      nextWalls.push(middle);
+      if (b < 0.99) nextWalls.push(floorWallSegment(wall, b, 1));
+      project.walls = project.walls.filter((item) => item.id !== wall.id).concat(nextWalls);
+      setFloorSelection([middle.id]);
+      return true;
+    }
+
+    function floorObjectSideLocalPoints(object, side, project = activeFloorProject()) {
+      const width = floorMetersToPx(object.width, project);
+      const height = floorMetersToPx(object.height, project);
+      const halfW = width / 2;
+      const halfH = height / 2;
+      const points = {
+        top: [{ x: -halfW, y: -halfH }, { x: halfW, y: -halfH }],
+        right: [{ x: halfW, y: -halfH }, { x: halfW, y: halfH }],
+        bottom: [{ x: halfW, y: halfH }, { x: -halfW, y: halfH }],
+        left: [{ x: -halfW, y: halfH }, { x: -halfW, y: -halfH }],
+      };
+      return points[side] || points.top;
+    }
+
+    function floorObjectSideWall(object, side, project = activeFloorProject()) {
+      const [a, b] = floorObjectSideLocalPoints(object, side, project).map((local) => floorObjectWorldPoint(object, local));
+      return normalizeFloorWall({
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+        thicknessMm: 120,
+        strokeColor: object.strokeColor || floorDefaultStrokeColor(object.type),
+        groupId: object.groupId || "",
+      });
+    }
+
+    function floorSplitObjectSideByBreak(project, first, second) {
+      const object = project.objects.find((item) => item.id === first.id);
+      if (!object || object.locked || first.side !== second.side) return false;
+      const sideWall = floorObjectSideWall(object, first.side, project);
+      const a = Math.min(first.t, second.t);
+      const b = Math.max(first.t, second.t);
+      if (b - a < 0.02) return false;
+      const outline = ["top", "right", "bottom", "left"]
+        .filter((side) => side !== first.side)
+        .map((side) => floorObjectSideWall(object, side, project));
+      const pieces = [];
+      if (a > 0.01) pieces.push(floorWallSegment(sideWall, 0, a));
+      const middle = floorWallSegment(sideWall, a, b);
+      pieces.push(middle);
+      if (b < 0.99) pieces.push(floorWallSegment(sideWall, b, 1));
+      project.objects = project.objects.filter((item) => item.id !== object.id);
+      project.walls = project.walls.concat(outline, pieces);
+      setFloorSelection([middle.id]);
+      return true;
+    }
+
+    function handleFloorBreakClick(target, point, project = activeFloorProject()) {
+      const breakTarget = floorBreakTargetFromEventTarget(target, point, project);
+      if (!breakTarget) {
+        floorBreakDraft = null;
+        floorSelectedInfo.textContent = "Для разрыва кликните по стене или стороне объекта.";
+        renderFloorCanvas();
+        return;
+      }
+      if (!floorBreakDraft || floorBreakDraft.kind !== breakTarget.kind || floorBreakDraft.id !== breakTarget.id || floorBreakDraft.side !== breakTarget.side) {
+        floorBreakDraft = breakTarget;
+        floorSelectedInfo.textContent = "Выберите вторую точку разрыва на той же линии.";
+        renderFloorCanvas();
+        return;
+      }
+      pushFloorHistory();
+      const changed = breakTarget.kind === "wall"
+        ? floorSplitWallByBreak(project, floorBreakDraft, breakTarget)
+        : floorSplitObjectSideByBreak(project, floorBreakDraft, breakTarget);
+      floorBreakDraft = null;
+      if (!changed) {
+        floorSelectedInfo.textContent = "Точки разрыва слишком близко или не на одной стороне.";
+        renderFloorCanvas();
+        return;
+      }
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorPlanner();
+    }
+
     function floorSvgPoint(event) {
       const point = floorCanvas.createSVGPoint();
       point.x = event.clientX;
@@ -8983,6 +9272,10 @@
       const rawPoint = floorSvgPoint(event);
       const point = floorSnapPoint(rawPoint, project);
       const target = event.target.closest("[data-floor-id]");
+      if (activeFloorTool === "break") {
+        handleFloorBreakClick(target, rawPoint, project);
+        return;
+      }
       if (activeFloorTool === "select" && !target) {
         floorSelectionDraft = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
         floorCanvas.setPointerCapture?.(event.pointerId);
@@ -9153,17 +9446,20 @@
       const measure = project?.measurements.find((item) => item.id === selectedFloorObjectId);
       floorFillColor.disabled = false;
       floorStrokeColor.disabled = false;
+      floorFillOpacityControl?.classList.remove("visible");
       if (!object && !wall && !measure) {
         floorSelectedInfo.textContent = "Выберите объект на плане.";
-        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorStairCount, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
           field.value = "";
           if (field.type === "checkbox") field.checked = false;
           field.disabled = true;
         });
+        if (floorStairCountWrap) floorStairCountWrap.classList.add("hidden");
         return;
       }
       if (wall) {
-        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorTextSize, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => { field.disabled = true; });
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorTextSize, floorStairCount, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => { field.disabled = true; });
+        if (floorStairCountWrap) floorStairCountWrap.classList.add("hidden");
         floorWallThickness.disabled = false;
         floorSelectedInfo.textContent = `Стена · длина ${floorPxToMeters(Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1), project).toFixed(1)} м${wall.locked ? " · заблокирован" : ""}`;
         floorObjectLabel.value = "Стена";
@@ -9180,11 +9476,12 @@
         return;
       }
       if (measure) {
-        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
+        [floorObjectLabel, floorObjectWidth, floorObjectHeight, floorObjectRotation, floorWallThickness, floorTextSize, floorStairCount, floorObjectRounded, floorDoorHinge, floorDoorSwing, floorObjectNote].forEach((field) => {
           field.value = "";
           if (field.type === "checkbox") field.checked = false;
           field.disabled = true;
         });
+        if (floorStairCountWrap) floorStairCountWrap.classList.add("hidden");
         floorStrokeColor.value = measure.strokeColor || floorDefaultStrokeColor("measure");
         floorSelectedInfo.textContent = `Линейка · ${floorPxToMeters(Math.hypot(measure.x2 - measure.x1, measure.y2 - measure.y1), project).toFixed(2)} м${measure.locked ? " · заблокирован" : ""}`;
         return;
@@ -9193,7 +9490,10 @@
       floorWallThickness.disabled = true;
       const isDoor = object.type === "door";
       const isText = object.type === "text";
+      const isStairs = object.type === "stairs";
       floorTextSize.disabled = !isText;
+      floorStairCount.disabled = !isStairs;
+      if (floorStairCountWrap) floorStairCountWrap.classList.toggle("hidden", !isStairs);
       floorDoorHinge.disabled = !isDoor;
       floorDoorSwing.disabled = !isDoor;
       floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м${object.locked ? " · заблокирован" : ""}`;
@@ -9203,8 +9503,11 @@
       floorObjectRotation.value = object.rotation;
       floorWallThickness.value = "";
       floorTextSize.value = object.textSize || 16;
+      floorStairCount.value = object.stairCount || floorObjectDefaultStairCount(object.type) || "";
       floorFillColor.value = object.fillColor || floorDefaultFillColor(object.type);
       floorStrokeColor.value = object.strokeColor || floorDefaultStrokeColor(object.type);
+      floorFillOpacity.value = String(floorOpacityToPercent(object.fillOpacity));
+      floorFillOpacityControl?.classList.toggle("visible", floorFillOpacitySupports(object));
       floorObjectRounded.checked = Boolean(object.rounded);
       floorDoorHinge.value = object.doorHinge || "left";
       floorDoorSwing.value = object.doorSwing || "in";
@@ -9216,6 +9519,7 @@
       const selected = floorSelectedItems(project);
       selected.objects.forEach((object) => {
         object.fillColor = floorActiveFillColor || floorDefaultFillColor(object.type);
+        if (floorFillOpacitySupports(object)) object.fillOpacity = floorActiveFillOpacity;
         object.strokeColor = floorActiveStrokeColor || floorDefaultStrokeColor(object.type);
       });
       selected.walls.forEach((wall) => {
@@ -9244,6 +9548,39 @@
         changed = true;
       }
       if (!changed) return;
+      floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м${object.locked ? " · заблокирован" : ""}`;
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorCanvas();
+    }
+
+    function applyFloorStairCountInput() {
+      const project = activeFloorProject();
+      const object = floorSelectedObject(project);
+      if (!project || !object || object.locked || object.type !== "stairs") return;
+      const count = Math.max(1, Math.round(floorNumberFromInput(floorStairCount.value) || object.stairCount || 10));
+      if (count === object.stairCount) return;
+      object.stairCount = count;
+      object.width = floorObjectDefaultWidth("stairs");
+      object.height = floorStairHeightMeters(count);
+      floorObjectWidth.value = object.width;
+      floorObjectHeight.value = object.height;
+      floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м${object.locked ? " · заблокирован" : ""}`;
+      project.updatedAt = new Date().toISOString();
+      saveFloorProjects();
+      renderFloorCanvas();
+    }
+
+    function applyFloorTextInput() {
+      const project = activeFloorProject();
+      const object = floorSelectedObject(project);
+      if (!project || !object || object.locked) return;
+      if (object.type !== "text") return;
+      const nextLabel = floorObjectLabel.value || floorObjectDefaultLabel(object.type);
+      const nextSize = Math.max(8, floorNumberFromInput(floorTextSize.value) || object.textSize || 16);
+      if (object.label === nextLabel && object.textSize === nextSize) return;
+      object.label = nextLabel;
+      object.textSize = nextSize;
       floorSelectedInfo.textContent = `${object.label} · ${object.width} × ${object.height} м${object.locked ? " · заблокирован" : ""}`;
       project.updatedAt = new Date().toISOString();
       saveFloorProjects();
@@ -9279,8 +9616,14 @@
       object.rotation = Number(floorObjectRotation.value) || 0;
       object.rounded = Boolean(floorObjectRounded.checked);
       object.fillColor = floorFillColor.value || "";
+      object.fillOpacity = floorPercentToOpacity(floorFillOpacity.value);
       object.strokeColor = floorStrokeColor.value || "";
       object.textSize = Math.max(8, Number(floorTextSize.value) || object.textSize || 16);
+      if (object.type === "stairs") {
+        object.stairCount = Math.max(1, Math.round(floorNumberFromInput(floorStairCount.value) || object.stairCount || 10));
+        object.width = floorObjectDefaultWidth("stairs");
+        object.height = floorStairHeightMeters(object.stairCount);
+      }
       if (object.type === "door") {
         object.doorHinge = floorDoorHinge.value || "left";
         object.doorSwing = floorDoorSwing.value || "in";
