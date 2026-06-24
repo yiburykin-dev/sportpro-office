@@ -1547,6 +1547,19 @@
       cursor: pointer;
     }
 
+    .content-select-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .content-inline-edit {
+      min-height: 30px;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
     .search {
       min-width: min(360px, 100%);
     }
@@ -7733,7 +7746,7 @@
     window.addEventListener("resize", () => syncContentFloatingScroll());
     rowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedRecordIds));
     funnelRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedFunnelRecordIds));
-    contentRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedContentPlanIds));
+    contentRowsEl.addEventListener("change", handleContentPlanRowSelection);
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
@@ -14892,7 +14905,7 @@
 
     function defaultContentTableColumns() {
       return [
-        { key: "select", label: "✓", width: 44, min: 44, select: true, fixed: true },
+        { key: "select", label: "✓", width: 160, min: 160, select: true, fixed: true },
         { key: "date", label: "Дата", width: 130, min: 100 },
         { key: "platform", label: "Площадка", width: 120, min: 90 },
         { key: "type", label: "Тип", width: 120, min: 90 },
@@ -14953,8 +14966,12 @@
 
     function contentTableCellHtml(item, column) {
       const widthStyle = `style="width: ${column.width}px;"`;
+      const isSelected = selectedContentPlanIds.has(item.id);
       if (column.key === "select") return `<td class="select-cell" ${widthStyle}>
-        <input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${item.id}" ${selectedContentPlanIds.has(item.id) ? "checked" : ""}>
+        <div class="content-select-actions">
+          <input class="row-check" type="checkbox" title="Выбрать публикацию" data-select-id="${escapeHtml(item.id)}" ${isSelected ? "checked" : ""}>
+          ${isSelected ? `<button class="btn primary content-inline-edit" type="button" data-action="edit-content" data-id="${escapeHtml(item.id)}">Редактировать</button>` : ""}
+        </div>
       </td>`;
       if (column.key === "date") return `<td ${widthStyle}>${formatDate(item.date)}${item.time ? `, ${escapeHtml(item.time)}` : ""}</td>`;
       if (column.key === "platform") return `<td ${widthStyle}>${escapeHtml(item.platform)}</td>`;
@@ -18314,6 +18331,11 @@
       } else {
         selectedSet.delete(checkbox.dataset.selectId);
       }
+    }
+
+    function handleContentPlanRowSelection(event) {
+      handleRowSelection(event, selectedContentPlanIds);
+      renderContentList();
     }
 
     function getSelectedOrVisible(items, selectedSet) {
