@@ -4574,6 +4574,31 @@
                 <label>Дедлайн подготовки
                   <input id="contentPrepDeadline" type="date">
                 </label>
+                <label class="checkbox-line">
+                  <input id="contentIsAd" type="checkbox">
+                  <span>Реклама</span>
+                </label>
+                <div class="ad-budget-fields hidden" id="contentAdBudgetFields">
+                  <div class="two">
+                    <label>Стоимость дня, $
+                      <input id="contentAdDailyCost" type="number" min="0" step="1" value="0">
+                    </label>
+                    <label>Дата рекламы с
+                      <input id="contentAdStartDate" type="date">
+                    </label>
+                  </div>
+                  <div class="two">
+                    <label>Дата рекламы по
+                      <input id="contentAdEndDate" type="date">
+                    </label>
+                    <label>Количество дней
+                      <input id="contentAdDays" type="number" min="0" step="1" value="0" readonly>
+                    </label>
+                  </div>
+                  <label>Общий бюджет, $
+                    <input id="contentAdBudget" type="number" min="0" step="1" value="0" readonly>
+                  </label>
+                </div>
                 <label>Ссылка на текст / макет / публикацию
                   <input id="contentLink" type="url" placeholder="https://...">
                 </label>
@@ -6994,6 +7019,12 @@
       status: document.querySelector("#contentStatus"),
       owner: document.querySelector("#contentOwner"),
       prepDeadline: document.querySelector("#contentPrepDeadline"),
+      isAd: document.querySelector("#contentIsAd"),
+      adDailyCost: document.querySelector("#contentAdDailyCost"),
+      adStartDate: document.querySelector("#contentAdStartDate"),
+      adEndDate: document.querySelector("#contentAdEndDate"),
+      adDays: document.querySelector("#contentAdDays"),
+      adBudget: document.querySelector("#contentAdBudget"),
       link: document.querySelector("#contentLink"),
       preview: document.querySelector("#contentPreview"),
       comment: document.querySelector("#contentComment"),
@@ -7571,6 +7602,12 @@
         status: contentFields.status.value,
         owner: contentFields.owner.value.trim(),
         prepDeadline: contentFields.prepDeadline.value,
+        isAd: Boolean(contentFields.isAd.checked),
+        adDailyCost: contentFields.isAd.checked ? Number(contentFields.adDailyCost.value) || 0 : 0,
+        adStartDate: contentFields.isAd.checked ? contentFields.adStartDate.value : "",
+        adEndDate: contentFields.isAd.checked ? contentFields.adEndDate.value : "",
+        adDays: contentFields.isAd.checked ? contentAdDaysFromFields() : 0,
+        adBudget: contentFields.isAd.checked ? contentAdBudgetFromFields() : 0,
         link: contentFields.link.value.trim(),
         preview: contentFields.preview.value.trim(),
         comment: contentFields.comment.value.trim(),
@@ -7747,6 +7784,10 @@
     rowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedRecordIds));
     funnelRowsEl.addEventListener("change", (event) => handleRowSelection(event, selectedFunnelRecordIds));
     contentRowsEl.addEventListener("change", handleContentPlanRowSelection);
+    contentFields.isAd.addEventListener("change", updateContentAdBudgetFields);
+    contentFields.adDailyCost.addEventListener("input", updateContentAdBudgetFields);
+    contentFields.adStartDate.addEventListener("change", updateContentAdBudgetFields);
+    contentFields.adEndDate.addEventListener("change", updateContentAdBudgetFields);
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
@@ -12200,10 +12241,52 @@
       return (Number(fields.adDailyCost.value) || 0) * (Number(fields.adDays.value) || 0);
     }
 
+    function updateContentAdBudgetFields() {
+      const enabled = Boolean(contentFields.isAd.checked);
+      document.querySelector("#contentAdBudgetFields")?.classList.toggle("hidden", !enabled);
+      if (!enabled) {
+        contentFields.adDailyCost.value = 0;
+        contentFields.adStartDate.value = "";
+        contentFields.adEndDate.value = "";
+        contentFields.adDays.value = 0;
+        contentFields.adBudget.value = 0;
+        return;
+      }
+      if (!contentFields.adStartDate.value) contentFields.adStartDate.value = contentFields.date.value || formatIsoDate(new Date());
+      if (!contentFields.adEndDate.value) contentFields.adEndDate.value = contentFields.adStartDate.value;
+      contentFields.adDays.value = contentAdDaysFromFields();
+      contentFields.adBudget.value = contentAdBudgetFromFields();
+    }
+
+    function contentAdDaysFromFields() {
+      return adDateRangeDays(contentFields.adStartDate.value, contentFields.adEndDate.value);
+    }
+
+    function contentAdBudgetFromFields() {
+      return (Number(contentFields.adDailyCost.value) || 0) * contentAdDaysFromFields();
+    }
+
+    function contentAdBudgetFromItem(item) {
+      if (!item?.isAd) return 0;
+      const savedBudget = Number(item.adBudget) || 0;
+      const days = Number(item.adDays) || adDateRangeDays(item.adStartDate || item.date, item.adEndDate || item.adStartDate || item.date);
+      const calculatedBudget = (Number(item.adDailyCost) || 0) * days;
+      return savedBudget || calculatedBudget;
+    }
+
+    function adDateRangeDays(startValue, endValue) {
+      if (!startValue || !endValue) return 0;
+      const start = new Date(`${startValue}T00:00:00`);
+      const end = new Date(`${endValue}T00:00:00`);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+      return Math.floor((end - start) / 86400000) + 1;
+    }
+
     function adRecordBudget(record) {
       if (!record?.isAd) return 0;
       const savedBudget = Number(record.adBudget) || 0;
-      const calculatedBudget = (Number(record.adDailyCost) || 0) * (Number(record.adDays) || 0);
+      const days = Number(record.adDays) || adDateRangeDays(record.adStartDate || record.date, record.adEndDate || record.adStartDate || record.date);
+      const calculatedBudget = (Number(record.adDailyCost) || 0) * days;
       return savedBudget || calculatedBudget;
     }
 
@@ -12211,9 +12294,9 @@
       return sourceRecords.flatMap((record) => {
         if (!record?.isAd || !record.date) return [];
         const dailyCost = Number(record.adDailyCost) || 0;
-        const days = Math.max(0, Math.floor(Number(record.adDays) || 0));
+        const days = Math.max(0, Math.floor(Number(record.adDays) || adDateRangeDays(record.adStartDate || record.date, record.adEndDate || record.adStartDate || record.date)));
         if (!dailyCost || !days) return [];
-        const start = new Date(`${record.date}T00:00:00`);
+        const start = new Date(`${record.adStartDate || record.date}T00:00:00`);
         if (Number.isNaN(start.getTime())) return [];
         return Array.from({ length: days }, (_, index) => {
           const date = new Date(start);
@@ -15692,6 +15775,13 @@
       contentFields.status.value = item.status;
       contentFields.owner.value = item.owner;
       contentFields.prepDeadline.value = item.prepDeadline;
+      contentFields.isAd.checked = Boolean(item.isAd);
+      contentFields.adDailyCost.value = Number(item.adDailyCost) || 0;
+      contentFields.adStartDate.value = item.adStartDate || item.date || "";
+      contentFields.adEndDate.value = item.adEndDate || item.adStartDate || item.date || "";
+      contentFields.adDays.value = Number(item.adDays) || 0;
+      contentFields.adBudget.value = contentAdBudgetFromItem(item);
+      updateContentAdBudgetFields();
       contentFields.link.value = item.link;
       contentFields.preview.value = item.preview || "";
       contentFields.comment.value = item.comment;
@@ -15705,6 +15795,13 @@
       contentFields.id.value = "";
       contentFields.date.valueAsDate = new Date();
       contentFields.prepDeadline.value = "";
+      contentFields.isAd.checked = false;
+      contentFields.adDailyCost.value = 0;
+      contentFields.adStartDate.value = "";
+      contentFields.adEndDate.value = "";
+      contentFields.adDays.value = 0;
+      contentFields.adBudget.value = 0;
+      updateContentAdBudgetFields();
       contentFormTitle.textContent = "Новая публикация";
       contentCancelEditBtn.classList.add("hidden");
       if (options.close !== false) closeContentFormPanel();
@@ -15824,10 +15921,12 @@
           saves: 0,
           messages: 0,
           followers: 0,
-          isAd: false,
-          adDailyCost: 0,
-          adDays: 0,
-          adBudget: 0,
+          isAd: Boolean(item.isAd),
+          adDailyCost: Number(item.adDailyCost) || 0,
+          adStartDate: item.adStartDate || item.date || publishedDate,
+          adEndDate: item.adEndDate || item.adStartDate || item.date || publishedDate,
+          adDays: Number(item.adDays) || 0,
+          adBudget: contentAdBudgetFromItem(item),
           conclusion: `Из контент-плана: ${item.rubric}`,
           linkedContentId: item.id,
           measurements: [],
@@ -15842,6 +15941,12 @@
         adRecord.date = publishedDate;
         adRecord.type = contentTypeToAdType(item.type);
         adRecord.topic = item.topic;
+        adRecord.isAd = Boolean(item.isAd);
+        adRecord.adDailyCost = Number(item.adDailyCost) || 0;
+        adRecord.adStartDate = item.adStartDate || item.date || publishedDate;
+        adRecord.adEndDate = item.adEndDate || item.adStartDate || item.date || publishedDate;
+        adRecord.adDays = Number(item.adDays) || 0;
+        adRecord.adBudget = contentAdBudgetFromItem(item);
         adRecord.updatedAt = new Date().toISOString();
         saveRecords();
       }
@@ -15911,6 +16016,12 @@
         status: "Опубликовано",
         owner: existing?.owner || "",
         prepDeadline: existing?.prepDeadline || "",
+        isAd: Boolean(normalizedRecord.isAd),
+        adDailyCost: Number(normalizedRecord.adDailyCost) || 0,
+        adStartDate: normalizedRecord.adStartDate || normalizedRecord.date || publishedDate,
+        adEndDate: normalizedRecord.adEndDate || normalizedRecord.adStartDate || normalizedRecord.date || publishedDate,
+        adDays: Number(normalizedRecord.adDays) || 0,
+        adBudget: adRecordBudget(normalizedRecord),
         link: existing?.link || "",
         preview: existing?.preview || "",
         comment: existing?.comment || normalizedRecord.conclusion || "Добавлено вручную из раздела Реклама.",
@@ -15955,10 +16066,12 @@
             saves: 0,
             messages: 0,
             followers: 0,
-            isAd: false,
-            adDailyCost: 0,
-            adDays: 0,
-            adBudget: 0,
+            isAd: Boolean(item.isAd),
+            adDailyCost: Number(item.adDailyCost) || 0,
+            adStartDate: item.adStartDate || item.date || publishedDate,
+            adEndDate: item.adEndDate || item.adStartDate || item.date || publishedDate,
+            adDays: Number(item.adDays) || 0,
+            adBudget: contentAdBudgetFromItem(item),
             conclusion: `Из контент-плана: ${item.rubric}`,
             linkedContentId: item.id,
             measurements: [],
@@ -15977,11 +16090,25 @@
           item.linkedAdId = adRecord.id;
           contentChanged = true;
         }
-        if (adRecord.linkedContentId !== item.id || adRecord.date !== publishedDate || adRecord.type !== nextType || adRecord.topic !== item.topic) {
+        const nextIsAd = Boolean(item.isAd);
+        const nextAdDailyCost = Number(item.adDailyCost) || 0;
+        const nextAdStartDate = item.adStartDate || item.date || publishedDate;
+        const nextAdEndDate = item.adEndDate || item.adStartDate || item.date || publishedDate;
+        const nextAdDays = Number(item.adDays) || adDateRangeDays(nextAdStartDate, nextAdEndDate);
+        const nextAdBudget = contentAdBudgetFromItem(item);
+        if (adRecord.linkedContentId !== item.id || adRecord.date !== publishedDate || adRecord.type !== nextType || adRecord.topic !== item.topic
+          || adRecord.isAd !== nextIsAd || Number(adRecord.adDailyCost) !== nextAdDailyCost || adRecord.adStartDate !== nextAdStartDate
+          || adRecord.adEndDate !== nextAdEndDate || Number(adRecord.adDays) !== nextAdDays || adRecordBudget(adRecord) !== nextAdBudget) {
           adRecord.linkedContentId = item.id;
           adRecord.date = publishedDate;
           adRecord.type = nextType;
           adRecord.topic = item.topic;
+          adRecord.isAd = nextIsAd;
+          adRecord.adDailyCost = nextAdDailyCost;
+          adRecord.adStartDate = nextAdStartDate;
+          adRecord.adEndDate = nextAdEndDate;
+          adRecord.adDays = nextAdDays;
+          adRecord.adBudget = nextAdBudget;
           adRecord.updatedAt = new Date().toISOString();
           recordsChanged = true;
         }
@@ -18112,6 +18239,8 @@
         followers: Number(record.followers) || 0,
         isAd: Boolean(record.isAd),
         adDailyCost: Number(record.adDailyCost) || 0,
+        adStartDate: record.adStartDate || record.date || "",
+        adEndDate: record.adEndDate || record.adStartDate || record.date || "",
         adDays: Number(record.adDays) || 0,
         adBudget: Boolean(record.isAd) ? (Number(record.adBudget) || ((Number(record.adDailyCost) || 0) * (Number(record.adDays) || 0))) : 0,
         measurements,
@@ -18227,6 +18356,12 @@
         status: futurePublished ? "Запланировано" : item.status || "Идея",
         owner: item.owner || "",
         prepDeadline: item.prepDeadline || "",
+        isAd: Boolean(item.isAd),
+        adDailyCost: Number(item.adDailyCost) || 0,
+        adStartDate: item.adStartDate || item.date || "",
+        adEndDate: item.adEndDate || item.adStartDate || item.date || "",
+        adDays: Number(item.adDays) || adDateRangeDays(item.adStartDate || item.date, item.adEndDate || item.adStartDate || item.date),
+        adBudget: Boolean(item.isAd) ? (Number(item.adBudget) || ((Number(item.adDailyCost) || 0) * (Number(item.adDays) || adDateRangeDays(item.adStartDate || item.date, item.adEndDate || item.adStartDate || item.date)))) : 0,
         link: item.link || "",
         preview: item.preview || "",
         comment: item.comment || "",
