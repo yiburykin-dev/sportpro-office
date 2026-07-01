@@ -5617,7 +5617,18 @@
             </div>
           </div>
           <div class="installation-projects-list" id="installationProjectsList"></div>
-          <div class="empty hidden" id="installationProjectsEmpty">Проектов пока нет. Заполните данные ниже и нажмите “Сохранить проект”.</div>
+          <div class="empty hidden" id="installationProjectsEmpty">РџСЂРѕРµРєС‚РѕРІ РїРѕРєР° РЅРµС‚. Р—Р°РїРѕР»РЅРёС‚Рµ РґР°РЅРЅС‹Рµ РЅРёР¶Рµ Рё РЅР°Р¶РјРёС‚Рµ вЂњРЎРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕРµРєС‚вЂќ.</div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="toolbar">
+            <div>
+              <h3>Архив проектов монтажа</h3>
+              <p class="sales-goal">Удаленные проекты попадают сюда. При необходимости их можно восстановить.</p>
+            </div>
+          </div>
+          <div class="installation-projects-list" id="installationArchiveList"></div>
+          <div class="empty hidden" id="installationArchiveEmpty">Архив проектов пока пуст.</div>
         </section>
 
         <section class="panel chart-panel">
@@ -6724,6 +6735,8 @@
     const installationProjectToggleBtn = document.querySelector("#installationProjectToggleBtn");
     const installationProjectsList = document.querySelector("#installationProjectsList");
     const installationProjectsEmpty = document.querySelector("#installationProjectsEmpty");
+    const installationArchiveList = document.querySelector("#installationArchiveList");
+    const installationArchiveEmpty = document.querySelector("#installationArchiveEmpty");
     const installationSummary = document.querySelector("#installationSummary");
     const installationBars = document.querySelector("#installationBars");
     const installationTotalsList = document.querySelector("#installationTotalsList");
@@ -7359,6 +7372,7 @@
     installationProjectFields.addEventListener("change", handleInstallationProjectInput);
     installationProjectToggleBtn.addEventListener("click", toggleInstallationProjectFields);
     installationProjectsList.addEventListener("click", handleInstallationProjectListAction);
+    installationArchiveList.addEventListener("click", handleInstallationProjectListAction);
     document.querySelector("#installationSaveProjectBtn").addEventListener("click", saveCurrentInstallationProject);
     document.querySelector("#installationNewProjectBtn").addEventListener("click", resetInstallationProject);
     document.querySelector("#installationExportExcelBtn").addEventListener("click", () => exportRowsToExcel("montazh", installationExportRows()));
@@ -13411,8 +13425,13 @@
 
     function renderInstallationProjectsList() {
       const projects = installationProjects
+        .filter((project) => !project.archivedAt)
         .slice()
         .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+      const archivedProjects = installationProjects
+        .filter((project) => project.archivedAt)
+        .slice()
+        .sort((a, b) => (b.archivedAt || "").localeCompare(a.archivedAt || ""));
       const showDraft = hasInstallationDraftData() && (!activeInstallationProjectId || !projects.some((project) => project.id === activeInstallationProjectId));
       const cards = [
         ...(showDraft ? [installationProjectCardHtml(installationData, { draft: true })] : []),
@@ -13420,14 +13439,37 @@
       ];
       installationProjectsEmpty.classList.toggle("hidden", cards.length > 0);
       installationProjectsList.innerHTML = cards.join("");
+      installationArchiveEmpty.classList.toggle("hidden", archivedProjects.length > 0);
+      installationArchiveList.innerHTML = archivedProjects.map((project) => installationProjectCardHtml(project, { archived: true })).join("");
+      addInstallationCopyButtons();
+    }
+
+    function addInstallationCopyButtons() {
+      [installationProjectsList, installationArchiveList].forEach((list) => {
+        list.querySelectorAll(".installation-project-card .actions").forEach((actions) => {
+          if (actions.querySelector('[data-installation-project-action="copy"]')) return;
+          const sourceButton = actions.querySelector("[data-project-id]");
+          const projectId = sourceButton?.dataset.projectId;
+          if (!projectId) return;
+          const beforeButton = actions.querySelector('[data-installation-project-action="delete"], [data-installation-project-action="delete-final"]');
+          const copyButton = document.createElement("button");
+          copyButton.className = "btn";
+          copyButton.type = "button";
+          copyButton.dataset.installationProjectAction = "copy";
+          copyButton.dataset.projectId = projectId;
+          copyButton.textContent = "Копировать";
+          actions.insertBefore(copyButton, beforeButton || null);
+        });
+      });
     }
 
     function installationProjectCardHtml(project, options = {}) {
       const totals = installationTotals(project);
       const dates = installationProjectDatesLabel(project.project);
       const active = options.draft || project.id === activeInstallationProjectId;
+      const archived = Boolean(options.archived);
       return `
-        <article class="installation-project-card ${active ? "active" : ""}">
+        <article class="installation-project-card ${active ? "active" : ""} ${archived ? "muted" : ""}">
           <strong>${escapeHtml(project.project.clubName || "Проект без названия")}</strong>
           <span>${escapeHtml([project.project.city, dates, project.project.contractor].filter(Boolean).join(" · ") || "Данные проекта не заполнены")}</span>
           <div class="installation-project-card-footer">
@@ -13435,7 +13477,10 @@
             <strong>${formatMoney(totals.total)}</strong>
           </div>
           <div class="actions">
-            ${options.draft
+            ${archived
+              ? `<button class="btn primary" type="button" data-installation-project-action="restore" data-project-id="${escapeHtml(project.id)}">Восстановить</button>
+                 <button class="btn danger" type="button" data-installation-project-action="delete-final" data-project-id="${escapeHtml(project.id)}">Удалить навсегда</button>`
+              : options.draft
               ? `<button class="btn primary" type="button" data-installation-project-action="save-draft">Сохранить</button>`
               : `<button class="btn ${active ? "" : "primary"}" type="button" data-installation-project-action="${active ? "focus" : "open"}" data-project-id="${escapeHtml(project.id)}">${active ? "Открыт" : "Открыть"}</button>
                  <button class="btn danger" type="button" data-installation-project-action="delete" data-project-id="${escapeHtml(project.id)}">Удалить</button>`}
@@ -13625,6 +13670,22 @@
       if (button.dataset.installationProjectAction === "open") {
         openInstallationProject(projectId);
       }
+      if (button.dataset.installationProjectAction === "copy") {
+        copyInstallationProject(projectId);
+        return;
+      }
+      if (button.dataset.installationProjectAction === "delete") {
+        archiveInstallationProject(projectId);
+        return;
+      }
+      if (button.dataset.installationProjectAction === "restore") {
+        restoreInstallationProject(projectId);
+        return;
+      }
+      if (button.dataset.installationProjectAction === "delete-final") {
+        deleteInstallationProjectForever(projectId);
+        return;
+      }
       if (button.dataset.installationProjectAction === "delete" && confirm("Удалить проект монтажа из списка?")) {
         installationProjects = installationProjects.filter((project) => project.id !== projectId);
         if (activeInstallationProjectId === projectId) {
@@ -13634,6 +13695,70 @@
         saveInstallationProjects();
         renderInstallation();
       }
+    }
+
+    function archiveInstallationProject(projectId) {
+      const project = installationProjects.find((item) => item.id === projectId);
+      if (!project) return;
+      const label = project.project?.clubName || "проект монтажа";
+      if (!confirm(`Переместить проект "${label}" в архив?`)) return;
+      const archivedAt = new Date().toISOString();
+      installationProjects = installationProjects.map((item) => item.id === projectId ? { ...item, archivedAt, updatedAt: archivedAt } : item);
+      if (activeInstallationProjectId === projectId) {
+        activeInstallationProjectId = "";
+        localStorage.removeItem("workspace-tables.installation.activeProjectId");
+        installationData = defaultInstallationData();
+        saveInstallationData({ skipProjectUpdate: true });
+      }
+      saveInstallationProjects();
+      renderInstallation();
+    }
+
+    function copyInstallationProject(projectId) {
+      const source = installationProjects.find((item) => item.id === projectId);
+      if (!source) return;
+      const now = new Date().toISOString();
+      const sourceCopy = JSON.parse(JSON.stringify(source));
+      const copied = normalizeInstallationData({
+        ...sourceCopy,
+        id: createId(),
+        project: {
+          ...(sourceCopy.project || {}),
+          clubName: sourceCopy.project?.clubName ? `${sourceCopy.project.clubName} копия` : "",
+        },
+        savedAt: "",
+        updatedAt: now,
+        archivedAt: "",
+      });
+      copied.sections = Object.fromEntries(Object.entries(copied.sections || {}).map(([key, rows]) => [
+        key,
+        rows.map((row) => ({ ...row, id: createId(), updatedAt: now })),
+      ]));
+      installationData = copied;
+      activeInstallationProjectId = "";
+      localStorage.removeItem("workspace-tables.installation.activeProjectId");
+      saveInstallationData({ skipProjectUpdate: true });
+      installationProjectFields.classList.remove("hidden");
+      installationProjectToggleBtn.textContent = "Свернуть";
+      renderInstallation();
+      setInstallationMode("dashboard");
+      focusInstallationProjectArea();
+    }
+
+    function restoreInstallationProject(projectId) {
+      const restoredAt = new Date().toISOString();
+      installationProjects = installationProjects.map((item) => item.id === projectId ? { ...item, archivedAt: "", updatedAt: restoredAt } : item);
+      saveInstallationProjects();
+      renderInstallation();
+    }
+
+    function deleteInstallationProjectForever(projectId) {
+      const project = installationProjects.find((item) => item.id === projectId);
+      const label = project?.project?.clubName || "проект монтажа";
+      if (!confirm(`Удалить проект "${label}" из архива навсегда?`)) return;
+      installationProjects = installationProjects.filter((item) => item.id !== projectId);
+      saveInstallationProjects();
+      renderInstallation();
     }
 
     function saveCurrentInstallationProject() {
@@ -13649,6 +13774,7 @@
         id: activeInstallationProjectId || createId(),
         savedAt: installationData.savedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        archivedAt: "",
       });
       activeInstallationProjectId = project.id;
       localStorage.setItem("workspace-tables.installation.activeProjectId", activeInstallationProjectId);
@@ -16353,6 +16479,7 @@
         sections,
         savedAt: data.savedAt || "",
         updatedAt: data.updatedAt || new Date().toISOString(),
+        archivedAt: data.archivedAt || "",
       };
     }
 
