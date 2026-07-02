@@ -5673,7 +5673,7 @@
           <button type="button" data-installation-mode="block2">Питание и проживание</button>
           <button type="button" data-installation-mode="block3">Технические</button>
           <button type="button" data-installation-mode="block4">Разные</button>
-          <button type="button" data-installation-mode="block5">Грузчики</button>
+          <button type="button" data-installation-mode="block5">Грузчики и мастера</button>
           <button type="button" data-installation-mode="block6">Рабочее время</button>
         </div>
 
@@ -6607,6 +6607,7 @@
     const wholesaleSafetySnapshotsKey = "workspace-tables.wholesale.safetySnapshots";
     const installationStorageKey = "workspace-tables.installation.data";
     const installationProjectsStorageKey = "workspace-tables.installation.projects";
+    const installationAssemblyRatesKey = "workspace-tables.installation.assemblyRates";
     const floorPlannerStorageKey = "workspace-tables.floorPlanner.projects";
     const gymCalculatorStorageKey = "workspace-tables.gymCalculator.records";
     const proposalStorageKey = "workspace-tables.proposal.current";
@@ -6740,12 +6741,21 @@
     const installationArchivePanel = installationArchiveList.closest(".panel");
     const installationSaveProjectBtn = document.querySelector("#installationSaveProjectBtn");
     const installationNewProjectBtn = document.querySelector("#installationNewProjectBtn");
+    const installationProjectPanel = installationProjectFields.closest(".panel");
+    const installationModeTabs = document.querySelector("#installationView .module-tabs");
+    installationSaveProjectBtn.textContent = "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c";
+    const installationSaveExitProjectBtn = document.createElement("button");
+    installationSaveExitProjectBtn.className = "btn primary";
+    installationSaveExitProjectBtn.type = "button";
+    installationSaveExitProjectBtn.id = "installationSaveExitProjectBtn";
+    installationSaveExitProjectBtn.textContent = "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0438 \u0432\u044b\u0439\u0442\u0438";
+    installationSaveProjectBtn.insertAdjacentElement("afterend", installationSaveExitProjectBtn);
     const installationEditProjectBtn = document.createElement("button");
     installationEditProjectBtn.className = "btn";
     installationEditProjectBtn.type = "button";
     installationEditProjectBtn.id = "installationEditProjectBtn";
     installationEditProjectBtn.textContent = "\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c";
-    installationSaveProjectBtn.insertAdjacentElement("afterend", installationEditProjectBtn);
+    installationSaveExitProjectBtn.insertAdjacentElement("afterend", installationEditProjectBtn);
     const installationArchiveToggleBtn = document.createElement("button");
     installationArchiveToggleBtn.className = "btn";
     installationArchiveToggleBtn.type = "button";
@@ -7228,6 +7238,7 @@
     let salesScript = loadSalesScript();
     let salesClients = loadSalesClients();
     let wholesaleData = loadWholesaleData();
+    let installationAssemblyRates = loadInstallationAssemblyRates();
     let installationData = loadInstallationData();
     let installationProjects = loadInstallationProjects();
     let wholesaleSyncHistory = loadWholesaleSyncHistory();
@@ -7250,6 +7261,7 @@
     let activeInstallationMode = "dashboard";
     let activeInstallationProjectId = localStorage.getItem("workspace-tables.installation.activeProjectId") || "";
     let installationEditMode = false;
+    let installationListOnlyMode = false;
     let activeMemoryMode = "today";
     let activeMemoryCardId = "";
     let memoryReviewRevealed = false;
@@ -7390,7 +7402,8 @@
     installationProjectToggleBtn.addEventListener("click", toggleInstallationProjectFields);
     installationProjectsList.addEventListener("click", handleInstallationProjectListAction);
     installationArchiveList.addEventListener("click", handleInstallationProjectListAction);
-    installationSaveProjectBtn.addEventListener("click", saveCurrentInstallationProject);
+    installationSaveProjectBtn.addEventListener("click", () => saveCurrentInstallationProject({ exit: false }));
+    installationSaveExitProjectBtn.addEventListener("click", () => saveCurrentInstallationProject({ exit: true }));
     installationEditProjectBtn.addEventListener("click", enableInstallationEditing);
     installationNewProjectBtn.addEventListener("click", resetInstallationProject);
     installationArchiveToggleBtn.addEventListener("click", toggleInstallationArchivePanel);
@@ -13195,6 +13208,25 @@
         transferType: ["Поезд", "Самолет", "Автомобиль"],
         lodgingType: ["Квартира", "Хостел", "Гостиница"],
         technicalType: ["Инструмент", "Расходники", "Работа"],
+        assemblyEquipmentType: [
+          "Беговая дорожка",
+          "Велотренажер",
+          "Эллипсоид",
+          "Гребной тренажер",
+          "Аэробайк",
+          "Сайкл",
+          "Степпер",
+          "Тренажер с грузоблоком",
+          "Свободнонагружаемый тренажер",
+          "Мультифункциональный тренажер",
+          "Силовая стойка",
+          "Силовая скамья",
+          "Силовая рама",
+          "Тренажер для кросс тренинга",
+          "Стойка для хранения",
+          "Стойка многофункциональная",
+          "Иное",
+        ],
         workerType: ["Грузчик", "Дополнительный работник"],
       };
     }
@@ -13314,6 +13346,26 @@
           calc: (row) => ({ total: money(row.price) * numberValue(row.quantity || 1) }),
         },
         {
+          block: "block3",
+          key: "equipmentAssembly",
+          title: "Оборудование для сборки",
+          fields: [
+            selectField("equipmentType", "Тип тренажера", fieldTypes.assemblyEquipmentType),
+            numberField("price", "Стоимость сборки"),
+            numberField("quantity", "Количество"),
+            computedField("total", "Сумма"),
+          ],
+          create: () => {
+            const equipmentType = fieldTypes.assemblyEquipmentType[0];
+            return {
+              equipmentType,
+              price: installationAssemblyRate(equipmentType),
+              quantity: 1,
+            };
+          },
+          calc: (row) => ({ total: money(row.price) * numberValue(row.quantity || 1) }),
+        },
+        {
           block: "block4",
           key: "miscellaneous",
           title: "Расходы разные",
@@ -13330,7 +13382,7 @@
         {
           block: "block5",
           key: "loaders",
-          title: "Грузчики",
+          title: "Грузчики и мастера",
           fields: [
             dateField("date", "Дата"),
             numberField("hourRate", "Тг/час"),
@@ -13427,6 +13479,28 @@
       return { key, label, type: "computed" };
     }
 
+    function installationAssemblyRate(type) {
+      const key = String(type || "");
+      const savedRate = Number(installationAssemblyRates[key]) || 0;
+      if (savedRate) return savedRate;
+      const sources = [installationData, ...(Array.isArray(installationProjects) ? installationProjects : [])];
+      for (const source of sources) {
+        const rows = source?.sections?.equipmentAssembly || [];
+        const match = rows.find((row) => row.equipmentType === key && money(row.price) > 0);
+        if (match) return money(match.price);
+      }
+      return 0;
+    }
+
+    function loadInstallationAssemblyRates() {
+      const saved = readStorage(installationAssemblyRatesKey);
+      return saved && !Array.isArray(saved) && typeof saved === "object" ? saved : {};
+    }
+
+    function saveInstallationAssemblyRates() {
+      localStorage.setItem(installationAssemblyRatesKey, JSON.stringify(installationAssemblyRates));
+    }
+
     function renderInstallation() {
       renderInstallationProjectsList();
       renderInstallationProjectFields();
@@ -13446,24 +13520,35 @@
 
     function updateInstallationEditState() {
       const isEditing = Boolean(installationEditMode);
+      const isListOnly = Boolean(installationListOnlyMode);
       const hasSavedProject = Boolean(activeInstallationProjectId);
       const canEditCurrentProject = hasSavedProject || hasInstallationDraftData();
       installationSaveProjectBtn.classList.toggle("hidden", !isEditing);
-      installationEditProjectBtn.classList.toggle("hidden", isEditing || !canEditCurrentProject);
+      installationSaveExitProjectBtn.classList.toggle("hidden", !isEditing);
+      installationEditProjectBtn.classList.toggle("hidden", isEditing || isListOnly || !canEditCurrentProject);
+      installationProjectPanel.classList.toggle("hidden", isListOnly);
+      installationSummary.classList.toggle("hidden", isListOnly);
+      installationModeTabs.classList.toggle("hidden", isListOnly);
+      if (isListOnly) {
+        Object.values(installationModeViews).forEach((section) => section.classList.add("hidden"));
+      } else {
+        setInstallationMode(activeInstallationMode);
+      }
       installationProjectToggleBtn.classList.toggle("hidden", !isEditing);
       if (!isEditing) {
         installationProjectFields.classList.add("hidden");
         installationProjectToggleBtn.textContent = "\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c";
-        setInstallationMode("dashboard");
+        if (!isListOnly) setInstallationMode("dashboard");
       }
       document.querySelectorAll("[data-installation-mode]").forEach((button) => {
         const editableTab = button.dataset.installationMode !== "dashboard";
-        button.classList.toggle("hidden", editableTab && !isEditing);
+        button.classList.toggle("hidden", isListOnly || (editableTab && !isEditing));
       });
     }
 
     function enableInstallationEditing() {
       if (!activeInstallationProjectId && !hasInstallationDraftData()) return;
+      installationListOnlyMode = false;
       installationEditMode = true;
       openInstallationProjectFields();
       setInstallationMode("dashboard");
@@ -13592,11 +13677,13 @@
     function renderInstallationSummary() {
       const totals = installationTotals();
       const projectDays = installationProjectDays();
+      const assemblyTotal = totals.byKey.equipmentAssembly || 0;
       const cards = [
         ["total", "Общий бюджет", totals.total],
         ["transport", "Транспорт", totals.block1],
         ["living", "Питание/проживание", totals.block2],
-        ["technical", "Технические", totals.block3],
+        ["technical", "Технические", Math.max(0, totals.block3 - assemblyTotal)],
+        ["assembly", "Сборка оборудования", assemblyTotal],
         ["other", "Разные", totals.block4],
         ["works", "Работы", totals.block5 + totals.block6],
       ];
@@ -13653,7 +13740,7 @@
       const calculated = installationRowCalculated(schema, row);
       return `
         <tr data-section-key="${escapeHtml(schema.key)}" data-row-id="${escapeHtml(row.id)}">
-          ${schema.fields.map((field) => installationCellHtml(field, row, calculated)).join("")}
+          ${schema.fields.map((field) => installationCellHtml(schema, field, row, calculated)).join("")}
           <td class="numeric">
             <button class="btn icon danger" type="button" title="Удалить строку" data-installation-action="delete-row" data-section-key="${escapeHtml(schema.key)}" data-row-id="${escapeHtml(row.id)}">×</button>
           </td>
@@ -13661,7 +13748,7 @@
       `;
     }
 
-    function installationCellHtml(field, row, calculated) {
+    function installationCellHtml(schema, field, row, calculated) {
       const value = field.type === "computed" ? calculated[field.key] : row[field.key];
       if (field.type === "computed") {
         const output = field.key === "hours" || field.key === "days" ? formatNumber(value) : formatMoney(value);
@@ -13676,7 +13763,11 @@
       if (field.type === "checkbox") {
         return `<td><input data-installation-field="${escapeHtml(field.key)}" type="checkbox" ${value ? "checked" : ""}></td>`;
       }
-      return `<td><input data-installation-field="${escapeHtml(field.key)}" type="${field.type}" value="${escapeHtml(value ?? "")}" ${field.type === "number" ? "step=\"0.01\"" : ""}></td>`;
+      const rememberedPrice = schema.key === "equipmentAssembly" && field.key === "price" && row.equipmentType
+        ? installationAssemblyRate(row.equipmentType)
+        : 0;
+      const placeholder = rememberedPrice ? ` placeholder="Последняя: ${formatNumber(rememberedPrice)}"` : "";
+      return `<td><input data-installation-field="${escapeHtml(field.key)}" type="${field.type}" value="${escapeHtml(value ?? "")}" ${field.type === "number" ? "step=\"0.01\"" : ""}${placeholder}></td>`;
     }
 
     function renderInstallationDashboard() {
@@ -13703,12 +13794,14 @@
     }
 
     function installationDashboardRows(totals) {
+      const assemblyTotal = totals.byKey.equipmentAssembly || 0;
       return [
         { label: "Транспортные расходы и трансфер", value: totals.block1 },
         { label: "Питание, проживание, командировочные", value: totals.block2 },
-        { label: "Расходы технические", value: totals.block3 },
+        { label: "Расходы технические", value: Math.max(0, totals.block3 - assemblyTotal) },
+        { label: "Сборка оборудования", value: assemblyTotal },
         { label: "Расходы разные", value: totals.block4 },
-        { label: "Грузчики и дополнительные мастера", value: totals.block5 },
+        { label: "Грузчики и мастера", value: totals.block5 },
         { label: "Учет рабочего времени", value: totals.block6 },
       ];
     }
@@ -13732,6 +13825,8 @@
         saveCurrentInstallationProject();
       }
       if (button.dataset.installationProjectAction === "focus") {
+        installationListOnlyMode = false;
+        renderInstallation();
         focusInstallationProjectArea();
       }
       if (button.dataset.installationProjectAction === "open") {
@@ -13773,6 +13868,7 @@
       installationProjects = installationProjects.map((item) => item.id === projectId ? { ...item, archivedAt, updatedAt: archivedAt } : item);
       if (activeInstallationProjectId === projectId) {
         activeInstallationProjectId = "";
+        installationListOnlyMode = true;
         installationEditMode = false;
         localStorage.removeItem("workspace-tables.installation.activeProjectId");
         installationData = defaultInstallationData();
@@ -13804,6 +13900,7 @@
       ]));
       installationData = copied;
       activeInstallationProjectId = "";
+      installationListOnlyMode = false;
       installationEditMode = true;
       localStorage.removeItem("workspace-tables.installation.activeProjectId");
       saveInstallationData({ skipProjectUpdate: true });
@@ -13829,10 +13926,13 @@
       renderInstallation();
     }
 
-    function saveCurrentInstallationProject() {
+    function saveCurrentInstallationProject(options = {}) {
+      const shouldExit = Boolean(options.exit);
       const hasProjectName = String(installationData.project.clubName || "").trim();
       if (!hasProjectName) {
         alert("Заполните наименование клуба, чтобы сохранить проект.");
+        installationListOnlyMode = false;
+        installationEditMode = true;
         openInstallationProjectFields();
         return;
       }
@@ -13854,11 +13954,20 @@
       installationData = project;
       saveInstallationProjects();
       saveInstallationData({ skipProjectUpdate: true });
-      installationEditMode = false;
-      installationProjectFields.classList.add("hidden");
-      installationProjectToggleBtn.textContent = "Развернуть";
+      installationListOnlyMode = shouldExit;
+      installationEditMode = !shouldExit;
+      if (shouldExit) {
+        installationProjectFields.classList.add("hidden");
+        installationProjectToggleBtn.textContent = "Развернуть";
+        setInstallationMode("dashboard");
+      } else {
+        installationProjectFields.classList.remove("hidden");
+        installationProjectToggleBtn.textContent = "Свернуть";
+      }
       renderInstallation();
-      alert("Проект сохранен.");
+      installationSaveStatus.textContent = shouldExit
+        ? "Проект сохранен. Редактирование закрыто."
+        : "Проект сохранен. Можно продолжать заполнение.";
     }
 
     function openInstallationProject(projectId) {
@@ -13869,6 +13978,7 @@
       }
       installationData = normalizeInstallationData(project);
       activeInstallationProjectId = installationData.id;
+      installationListOnlyMode = false;
       installationEditMode = false;
       localStorage.setItem("workspace-tables.installation.activeProjectId", activeInstallationProjectId);
       saveInstallationData({ skipProjectUpdate: true });
@@ -13910,6 +14020,19 @@
       const row = (installationData.sections[sectionKey] || []).find((item) => item.id === rowEl.dataset.rowId);
       if (!row) return;
       row[input.dataset.installationField] = input.type === "checkbox" ? input.checked : input.value;
+      if (sectionKey === "equipmentAssembly") {
+        if (input.dataset.installationField === "equipmentType") {
+          const rememberedPrice = installationAssemblyRate(input.value);
+          if (rememberedPrice) row.price = rememberedPrice;
+        }
+        if (input.dataset.installationField === "price" && row.equipmentType) {
+          const price = money(input.value);
+          if (price > 0) {
+            installationAssemblyRates[row.equipmentType] = price;
+            saveInstallationAssemblyRates();
+          }
+        }
+      }
       row.updatedAt = new Date().toISOString();
       saveInstallationData();
       renderInstallation();
@@ -13927,6 +14050,7 @@
     function resetInstallationProject() {
       installationData = defaultInstallationData();
       activeInstallationProjectId = "";
+      installationListOnlyMode = false;
       installationEditMode = true;
       localStorage.removeItem("workspace-tables.installation.activeProjectId");
       saveInstallationData({ skipProjectUpdate: true });
@@ -13943,9 +14067,10 @@
 
     function installationTotals(data = installationData) {
       const schemas = installationSchemas();
-      const totals = { block1: 0, block2: 0, block3: 0, block4: 0, block5: 0, block6: 0, total: 0 };
+      const totals = { block1: 0, block2: 0, block3: 0, block4: 0, block5: 0, block6: 0, total: 0, byKey: {} };
       schemas.forEach((schema) => {
         const sectionTotal = (data.sections?.[schema.key] || []).reduce((value, row) => value + installationRowCalculated(schema, row).total, 0);
+        totals.byKey[schema.key] = sectionTotal;
         totals[schema.block] += sectionTotal;
         totals.total += sectionTotal;
       });
@@ -13981,31 +14106,40 @@
     }
 
     function installationExportRows() {
-      const rows = [
-        ["Монтаж: проект"],
-        ["Наименование клуба", installationData.project.clubName || ""],
-        ["Город", installationData.project.city || ""],
-        ["Дата с", installationData.project.dateFrom ? formatDate(installationData.project.dateFrom) : ""],
-        ["Дата по", installationData.project.dateTo ? formatDate(installationData.project.dateTo) : ""],
-        ["Контрагент", installationData.project.contractor || ""],
-        ["Контактные данные", installationData.project.contacts || ""],
-        ["Куратор от заказчика", installationData.project.curator || ""],
-        [],
-        ["Блок", "Подраздел", "Поле", "Значение"],
+      const sectionTotal = (key) => {
+        const schema = installationSchemas().find((item) => item.key === key);
+        if (!schema) return 0;
+        return (installationData.sections?.[key] || []).reduce((sum, row) => sum + installationRowCalculated(schema, row).total, 0);
+      };
+      const assemblyUnits = (installationData.sections?.equipmentAssembly || [])
+        .reduce((sum, row) => sum + numberValue(row.quantity || 0), 0);
+      const summaryRows = [
+        ["Транспорт", "Трансфер", sectionTotal("transfer")],
+        ["Транспорт", "Транспортные расходы", sectionTotal("transportExpenses")],
+        ["Питание и проживание", "Питание", sectionTotal("food")],
+        ["Питание и проживание", "Проживание", sectionTotal("lodging")],
+        ["Питание и проживание", "Командировочные", sectionTotal("perDiem")],
+        ["Расходы технические", "Расходы технические", sectionTotal("technical")],
+        ["Расходы разные", "Расходы разные", sectionTotal("miscellaneous")],
+        ["Грузчики и мастера", "Грузчики и мастера", sectionTotal("loaders")],
+        ["Грузчики и мастера", "Дополнительные мастера", sectionTotal("workers")],
+        ["Учет рабочего времени", "Учет рабочего времени", sectionTotal("labor")],
+        ["Сборка оборудования", `Сборка оборудования (${formatNumber(assemblyUnits)} ед. для сборки)`, sectionTotal("equipmentAssembly")],
       ];
-      installationSchemas().forEach((schema) => {
-        (installationData.sections[schema.key] || []).forEach((row) => {
-          const calculated = installationRowCalculated(schema, row);
-          schema.fields.forEach((field) => {
-            const value = field.type === "computed" ? calculated[field.key] : row[field.key];
-            rows.push([schema.block, schema.title, field.label, field.type === "computed" && field.key !== "hours" && field.key !== "days" ? formatMoney(value) : value || ""]);
-          });
-          rows.push([schema.block, schema.title, "Итого строки", formatMoney(calculated.total)]);
-        });
-      });
+      const rows = [
+        ["Раздел", "Строка отчета", "Значение / сумма"],
+        ["Проект", "Наименование клуба", installationData.project.clubName || ""],
+        ["Проект", "Город", installationData.project.city || ""],
+        ["Проект", "Дата с", installationData.project.dateFrom ? formatDate(installationData.project.dateFrom) : ""],
+        ["Проект", "Дата по", installationData.project.dateTo ? formatDate(installationData.project.dateTo) : ""],
+        ["Проект", "Контрагент", installationData.project.contractor || ""],
+        ["Проект", "Контактные данные", installationData.project.contacts || ""],
+        ["Проект", "Куратор от заказчика", installationData.project.curator || ""],
+        ["", "", ""],
+      ];
+      summaryRows.forEach(([section, label, value]) => rows.push([section, label, formatMoney(value)]));
       rows.push([]);
-      installationDashboardRows(installationTotals()).forEach((row) => rows.push(["Итого", row.label, "", formatMoney(row.value)]));
-      rows.push(["Итого", "Общий бюджет", "", formatMoney(installationTotals().total)]);
+      rows.push(["Итого", "Общий бюджет", formatMoney(installationTotals().total)]);
       return rows;
     }
 
