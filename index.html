@@ -7412,8 +7412,8 @@
     installationEditProjectBtn.addEventListener("click", enableInstallationEditing);
     installationNewProjectBtn.addEventListener("click", resetInstallationProject);
     installationArchiveToggleBtn.addEventListener("click", toggleInstallationArchivePanel);
-    document.querySelector("#installationExportExcelBtn").addEventListener("click", () => exportRowsToExcel("montazh", installationExportRows()));
-    document.querySelector("#installationExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Монтаж", installationExportRows()));
+    document.querySelector("#installationExportExcelBtn").addEventListener("click", () => exportRowsToExcel(installationExportFilename(), installationExportRows()));
+    document.querySelector("#installationExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Монтаж", installationExportRows(), { filename: installationExportFilename() }));
     Object.values(installationModeViews).forEach((section) => {
       section.addEventListener("click", handleInstallationClick);
       section.addEventListener("change", handleInstallationInput);
@@ -14148,6 +14148,23 @@
       return rows;
     }
 
+    function installationExportFilename() {
+      const project = installationData.project || {};
+      const dateSource = project.dateFrom || project.dateTo || todayIsoDate();
+      const date = new Date(String(dateSource).includes("T") ? dateSource : `${dateSource}T00:00:00`);
+      const month = Number.isNaN(date.getTime())
+        ? ""
+        : new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(date);
+      const year = Number.isNaN(date.getTime()) ? "" : String(date.getFullYear());
+      return [
+        "montazh",
+        project.city || "gorod",
+        project.curator || "kurator",
+        month,
+        year,
+      ].filter(Boolean).join("-");
+    }
+
     function setMemoryMode(mode) {
       activeMemoryMode = memoryModeViews[mode] ? mode : "today";
       document.querySelectorAll("[data-memory-mode]").forEach((item) => item.classList.toggle("active", item.dataset.memoryMode === activeMemoryMode));
@@ -19148,7 +19165,7 @@
       return candidate;
     }
 
-    function exportRowsToPdf(title, rows) {
+    function exportRowsToPdf(title, rows, options = {}) {
       if (!rows || rows.length <= 1) {
         alert("Нет данных для экспорта.");
         return;
@@ -19159,11 +19176,12 @@
         return;
       }
       const generatedAt = formatFullDateTime(new Date());
+      const documentTitle = sanitizeFilename(options.filename || title);
       printWindow.document.write(`<!doctype html>
         <html>
           <head>
             <meta charset="utf-8">
-            <title>${escapeHtml(title)}</title>
+            <title>${escapeHtml(documentTitle)}</title>
             <style>
               body { font-family: Arial, sans-serif; color: #111827; margin: 24px; }
               h1 { font-size: 22px; margin: 0 0 6px; }
