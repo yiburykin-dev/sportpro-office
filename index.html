@@ -4297,6 +4297,7 @@
           <section class="panel table-panel">
             <div class="toolbar">
               <button class="btn primary" id="adsNewPublicationBtn" type="button">Новая публикация вручную</button>
+              <button class="btn" id="adsCopyPublicationBtn" type="button">Копировать</button>
               <input class="search" id="search" type="search" placeholder="Поиск по теме или выводу">
               <div class="filters">
                 <select id="typeFilter" aria-label="Фильтр по типу">
@@ -7795,6 +7796,7 @@
     document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: лиды. итоги дня", funnelExportRows()));
     contentImportDate.addEventListener("change", renderContentImportControls);
     contentImportBtn.addEventListener("click", importSelectedContentToAds);
+    document.querySelector("#adsCopyPublicationBtn").addEventListener("click", copySelectedAdsToContentPlan);
     contentCloudPullBtn.addEventListener("click", () => pullFromCloud());
     contentCloudSyncBtn.addEventListener("click", () => syncWithCloud());
     contentCancelEditBtn.addEventListener("click", resetContentForm);
@@ -8005,6 +8007,10 @@
 
       if (button.dataset.action === "measure") {
         openMeasurementPanel(record.id);
+      }
+
+      if (button.dataset.action === "view") {
+        openAdRecordDetails(record);
       }
 
       if (button.dataset.action === "delete" && confirm("Удалить запись?")) {
@@ -12511,6 +12517,133 @@
       return `${item.time ? `${item.time} - ` : ""}${item.type} - ${item.topic || "Без темы"}`;
     }
 
+    function getContentItemForAdRecord(record) {
+      return contentPlanItems.find((item) =>
+        item.id === record.linkedContentId
+        || item.linkedAdId === record.id
+      ) || null;
+    }
+
+    function adRecordDescription(record) {
+      const item = getContentItemForAdRecord(record);
+      const parts = [];
+      if (item?.text) parts.push(item.text);
+      if (item?.hashtags) parts.push(`Хэштеги: ${item.hashtags}`);
+      if (item?.comment) parts.push(`Комментарий: ${item.comment}`);
+      if (item?.link) parts.push(`Ссылка: ${item.link}`);
+      if (item?.preview) parts.push(`Превью: ${item.preview}`);
+      if (!parts.length && record.conclusion) parts.push(record.conclusion);
+      return parts.join("\n");
+    }
+
+    function openAdRecordDetails(record) {
+      const item = getContentItemForAdRecord(record);
+      const description = adRecordDescription(record) || "Описание не заполнено.";
+      const measurements = Array.isArray(record.measurements) ? record.measurements : [];
+      let dialog = document.querySelector("#adRecordDetailsDialog");
+      if (!dialog) {
+        dialog = document.createElement("dialog");
+        dialog.id = "adRecordDetailsDialog";
+        dialog.style.cssText = "width:min(920px,92vw);max-height:88vh;border:0;border-radius:14px;padding:0;background:var(--panel);color:var(--text);box-shadow:0 24px 80px rgba(0,0,0,.35);";
+        document.body.appendChild(dialog);
+      }
+      dialog.innerHTML = `
+        <div style="padding:24px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+          <div>
+            <p style="margin:0 0 8px;color:var(--muted);">${escapeHtml(formatDate(record.date))} · ${escapeHtml(record.type || "")}${item?.platform ? ` · ${escapeHtml(item.platform)}` : ""}</p>
+            <h2 style="margin:0;font-size:26px;">${escapeHtml(record.topic || "Публикация без темы")}</h2>
+          </div>
+          <button class="btn" type="button" data-close-ad-record-details>Закрыть</button>
+        </div>
+        <div style="padding:24px;display:grid;gap:18px;overflow:auto;max-height:calc(88vh - 92px);">
+          <section class="panel" style="box-shadow:none;">
+            <h3>Описание</h3>
+            <div style="white-space:pre-wrap;line-height:1.55;">${escapeHtml(description)}</div>
+          </section>
+          <section class="summary" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+            <div class="metric-card"><span>Просмотры</span><strong>${formatNumber(record.views)}</strong></div>
+            <div class="metric-card"><span>Охват</span><strong>${formatNumber(record.reach)}</strong></div>
+            <div class="metric-card"><span>Сохранения</span><strong>${formatNumber(record.saves)}</strong></div>
+            <div class="metric-card"><span>Сообщения</span><strong>${formatNumber(record.messages)}</strong></div>
+            <div class="metric-card"><span>Подписчики</span><strong>${formatNumber(getRecordFollowers(record))}</strong></div>
+            <div class="metric-card"><span>Отклик</span><strong>${rate(record)}%</strong></div>
+          </section>
+          <section class="panel" style="box-shadow:none;">
+            <h3>Замеры</h3>
+            ${measurements.length ? measurements.map((measurement) => `
+              <div style="border-top:1px solid var(--border);padding:10px 0;">
+                <strong>${escapeHtml(formatDate(measurement.date))}</strong>
+                <div style="color:var(--muted);line-height:1.5;">
+                  ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.reach)} охват,
+                  ${formatNumber(measurement.saves)} сохранений, ${formatNumber(measurement.messages)} сообщений,
+                  ${formatNumber(measurement.likes)} лайков, ${formatNumber(measurement.forwards)} переслано,
+                  ${formatNumber(measurement.reposts)} репостов, ${formatNumber(measurement.profileVisits)} посещений профиля.
+                </div>
+                ${measurement.note ? `<div style="white-space:pre-wrap;margin-top:6px;">${escapeHtml(measurement.note)}</div>` : ""}
+              </div>
+            `).join("") : '<p style="color:var(--muted);">Замеров пока нет.</p>'}
+          </section>
+          ${record.conclusion ? `<section class="panel" style="box-shadow:none;"><h3>Вывод</h3><div style="white-space:pre-wrap;">${escapeHtml(record.conclusion)}</div></section>` : ""}
+        </div>
+      `;
+      dialog.querySelector("[data-close-ad-record-details]").addEventListener("click", () => dialog.close());
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else alert(`${record.topic}\n\n${description}`);
+    }
+
+    function copySelectedAdsToContentPlan() {
+      const selected = records.filter((record) => selectedRecordIds.has(record.id));
+      if (!selected.length) {
+        alert("Выберите одну или несколько публикаций галочкой.");
+        return;
+      }
+      const today = formatIsoDate(new Date());
+      const now = new Date().toISOString();
+      const copies = selected.map((record) => {
+        const source = getContentItemForAdRecord(record);
+        const isAd = source ? Boolean(source.isAd) : Boolean(record.isAd);
+        return normalizeContentPlanItem({
+          id: createId(),
+          date: today,
+          time: source?.time || "",
+          platform: source?.platform || "Instagram",
+          type: source?.type || adTypeToContentType(record.type),
+          rubric: source?.rubric || defaultContentRubrics()[0].name,
+          topic: source?.topic || record.topic,
+          text: source?.text || "",
+          hashtags: source?.hashtags || "",
+          status: "Запланировано",
+          owner: source?.owner || "",
+          prepDeadline: "",
+          isAd,
+          adDailyCost: isAd ? Number(source?.adDailyCost ?? record.adDailyCost) || 0 : 0,
+          adStartDate: isAd ? today : "",
+          adEndDate: isAd ? today : "",
+          adDays: isAd ? Number(source?.adDays ?? record.adDays) || 1 : 0,
+          adBudget: isAd ? Number(source?.adBudget ?? adRecordBudget(record)) || 0 : 0,
+          link: "",
+          preview: source?.preview || "",
+          comment: source?.comment || record.conclusion || "",
+          publishedAt: "",
+          linkedAdId: "",
+          archivedAt: "",
+          updatedAt: now,
+        });
+      });
+      contentPlanItems = [...copies, ...contentPlanItems];
+      selectedRecordIds.clear();
+      saveContentPlanItems();
+      render();
+      document.querySelector('[data-view="contentPlan"]')?.click();
+      document.querySelector('[data-content-mode="list"]')?.click();
+      if (copies.length === 1) {
+        fillContentForm(copies[0]);
+        contentFields.date.focus();
+      } else {
+        alert(`Скопировано в контент-план: ${copies.length}. Новые публикации стоят на сегодняшнюю дату и готовы к правке.`);
+      }
+    }
+
     function applyClientSourcesConfig() {
       sourcesApiUrl.value = localStorage.getItem(clientSourcesUrlKey) || defaultClientSourcesUrl;
     }
@@ -13172,6 +13305,7 @@
             <td>${escapeHtml(measureInfo)}</td>
             <td class="result">${escapeHtml(record.conclusion || "-")}</td>
             <td class="numeric">
+              <button class="btn" type="button" title="Открыть публикацию" data-action="view" data-id="${record.id}">Открыть</button>
               <button class="btn icon" type="button" title="Добавить замер" data-action="measure" data-id="${record.id}">＋</button>
               <button class="btn icon" type="button" title="Редактировать" data-action="edit" data-id="${record.id}">✎</button>
               <button class="btn icon danger" type="button" title="Удалить" data-action="delete" data-id="${record.id}">×</button>
@@ -18836,13 +18970,14 @@
     function adsExportRows() {
       const items = getSelectedOrVisible(getVisibleRecords(), selectedRecordIds);
       return [
-        ["Дата", "Тип", "Тема", "Реклама", "Стоимость дня, USD", "Дней", "Бюджет, USD", "Просмотры", "Охват", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
+        ["Дата", "Тип", "Тема", "Описание", "Реклама", "Стоимость дня, USD", "Дней", "Бюджет, USD", "Просмотры", "Охват", "Сохранения", "Сообщения", "Лайки", "Переслано", "Репосты", "Посещения профиля", "Подписчики", "Отклик %", "Замеры", "Вывод"],
         ...items.map((record) => {
           const latest = getLatestMeasurement(record);
           return [
             formatDate(record.date),
             record.type,
             record.topic,
+            adRecordDescription(record),
             record.isAd ? "Да" : "Нет",
             record.adDailyCost,
             record.adDays,
