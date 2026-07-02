@@ -5675,6 +5675,7 @@
           <button type="button" data-installation-mode="block4">Разные</button>
           <button type="button" data-installation-mode="block5">Грузчики и мастера</button>
           <button type="button" data-installation-mode="block6">Рабочее время</button>
+          <button type="button" data-installation-mode="block7">Сборка оборудования</button>
         </div>
 
         <section id="installationDashboardView">
@@ -5707,6 +5708,9 @@
         </section>
         <section id="installationBlock6View" class="hidden">
           <div class="installation-block-grid" data-installation-block="block6"></div>
+        </section>
+        <section id="installationBlock7View" class="hidden">
+          <div class="installation-block-grid" data-installation-block="block7"></div>
         </section>
       </section>
 
@@ -6914,6 +6918,7 @@
       block4: document.querySelector("#installationBlock4View"),
       block5: document.querySelector("#installationBlock5View"),
       block6: document.querySelector("#installationBlock6View"),
+      block7: document.querySelector("#installationBlock7View"),
     };
     const gymModeViews = {
       form: document.querySelector("#gymFormView"),
@@ -13346,7 +13351,7 @@
           calc: (row) => ({ total: money(row.price) * numberValue(row.quantity || 1) }),
         },
         {
-          block: "block3",
+          block: "block7",
           key: "equipmentAssembly",
           title: "Оборудование для сборки",
           fields: [
@@ -13682,7 +13687,7 @@
         ["total", "Общий бюджет", totals.total],
         ["transport", "Транспорт", totals.block1],
         ["living", "Питание/проживание", totals.block2],
-        ["technical", "Технические", Math.max(0, totals.block3 - assemblyTotal)],
+        ["technical", "Технические", totals.block3],
         ["assembly", "Сборка оборудования", assemblyTotal],
         ["other", "Разные", totals.block4],
         ["works", "Работы", totals.block5 + totals.block6],
@@ -13798,7 +13803,7 @@
       return [
         { label: "Транспортные расходы и трансфер", value: totals.block1 },
         { label: "Питание, проживание, командировочные", value: totals.block2 },
-        { label: "Расходы технические", value: Math.max(0, totals.block3 - assemblyTotal) },
+        { label: "Расходы технические", value: totals.block3 },
         { label: "Сборка оборудования", value: assemblyTotal },
         { label: "Расходы разные", value: totals.block4 },
         { label: "Грузчики и мастера", value: totals.block5 },
@@ -14067,7 +14072,7 @@
 
     function installationTotals(data = installationData) {
       const schemas = installationSchemas();
-      const totals = { block1: 0, block2: 0, block3: 0, block4: 0, block5: 0, block6: 0, total: 0, byKey: {} };
+      const totals = { block1: 0, block2: 0, block3: 0, block4: 0, block5: 0, block6: 0, block7: 0, total: 0, byKey: {} };
       schemas.forEach((schema) => {
         const sectionTotal = (data.sections?.[schema.key] || []).reduce((value, row) => value + installationRowCalculated(schema, row).total, 0);
         totals.byKey[schema.key] = sectionTotal;
