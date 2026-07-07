@@ -4632,6 +4632,7 @@
                     <option value="unpublished">Не опубликованные</option>
                     <option value="overdue">Просроченные</option>
                   </select>
+                  <button class="btn" id="contentSortToggle" type="button" aria-label="Поменять порядок публикаций">Новые внизу</button>
                 </div>
               </div>
               <div class="table-export-actions">
@@ -6634,6 +6635,7 @@
     const deletedFunnelRecordsKey = "workspace-tables.ads.funnel.deleted";
     const deletedContentPlanKey = "workspace-tables.contentPlan.deleted";
     const deletedContentIdeasKey = "workspace-tables.contentPlan.ideas.deleted";
+    const contentPlanSortDirectionKey = "workspace-tables.contentPlan.sortDirection";
     const deletedSalesClientsKey = "workspace-tables.sales.clients.deleted";
     const cloudTable = "sportpro_ads_records";
     const funnelCloudTable = "sportpro_ads_funnel_records";
@@ -6693,6 +6695,7 @@
     const contentStatusFilter = document.querySelector("#contentStatusFilter");
     const contentPlatformFilter = document.querySelector("#contentPlatformFilter");
     const contentLifecycleFilter = document.querySelector("#contentLifecycleFilter");
+    const contentSortToggle = document.querySelector("#contentSortToggle");
     const funnelSearch = document.querySelector("#funnelSearch");
     const funnelSortBy = document.querySelector("#funnelSortBy");
     const themeSelect = document.querySelector("#themeSelect");
@@ -7282,6 +7285,7 @@
     let draggedContentDate = "";
     let draggedContentColumn = "";
     let activeContentRowId = "";
+    let contentPlanSortDirection = localStorage.getItem(contentPlanSortDirectionKey) === "desc" ? "desc" : "asc";
     let contentColumnResize = null;
     let calendarCursor = new Date();
     let deletedRecords = loadDeletedRecords(deletedRecordsKey);
@@ -7816,6 +7820,11 @@
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
     contentLifecycleFilter.addEventListener("change", renderContentList);
+    contentSortToggle.addEventListener("click", () => {
+      contentPlanSortDirection = contentPlanSortDirection === "asc" ? "desc" : "asc";
+      localStorage.setItem(contentPlanSortDirectionKey, contentPlanSortDirection);
+      renderContentList();
+    });
     contentFields.status.addEventListener("change", enforceContentStatusDateRule);
     contentFields.date.addEventListener("change", enforceContentStatusDateRule);
     document.querySelector("#contentNewItemBtn").addEventListener("click", () => {
@@ -15384,6 +15393,7 @@
     function renderContentList() {
       const visible = getVisibleContentItems();
       const columns = getContentTableColumns();
+      updateContentSortToggle();
       renderContentTableHeader(columns);
       contentEmptyState.classList.toggle("hidden", visible.length > 0);
       contentRowsEl.innerHTML = visible.map((item) => `
@@ -15393,6 +15403,13 @@
       `).join("");
       renderContentRowActionBar(visible);
       syncContentFloatingScroll();
+    }
+
+    function updateContentSortToggle() {
+      const newestOnTop = contentPlanSortDirection === "desc";
+      contentSortToggle.textContent = newestOnTop ? "Новые вверху" : "Новые внизу";
+      contentSortToggle.title = newestOnTop ? "Сейчас новые публикации сверху" : "Сейчас новые публикации снизу";
+      contentSortToggle.setAttribute("aria-pressed", String(newestOnTop));
     }
 
     function handleContentItemAction(action, id) {
@@ -15741,7 +15758,10 @@
             && (!platform || item.platform === platform)
             && contentLifecycleMatches(item, lifecycle);
         })
-        .sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
+        .sort((a, b) => {
+          const result = `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`);
+          return contentPlanSortDirection === "desc" ? -result : result;
+        });
     }
 
     function contentLifecycleMatches(item, lifecycle) {
