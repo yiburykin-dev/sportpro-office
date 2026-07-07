@@ -883,6 +883,25 @@
       font-size: 13px;
     }
 
+    .chart-header input[type="month"],
+    .chart-header input[type="date"] {
+      width: auto;
+      min-width: 138px;
+      min-height: 36px;
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .ad-spend-custom-range {
+      display: inline-grid;
+      grid-template-columns: auto minmax(126px, auto) auto minmax(126px, auto);
+      gap: 6px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     .bars {
       display: grid;
       gap: 12px;
@@ -4194,10 +4213,17 @@
                     <option value="currentMonth">Текущий месяц</option>
                     <option value="previousMonth">Прошлый месяц</option>
                     <option value="month">Выбор месяца</option>
+                    <option value="custom">Выбор периода</option>
                     <option value="year">Год</option>
                     <option value="all">Весь период</option>
                   </select>
                   <input id="adSpendMonth" type="month" aria-label="Месяц расходов">
+                  <span class="ad-spend-custom-range hidden" id="adSpendCustomRange">
+                    <span>с</span>
+                    <input id="adSpendDateFrom" type="date" aria-label="Расходы с даты">
+                    <span>по</span>
+                    <input id="adSpendDateTo" type="date" aria-label="Расходы по дату">
+                  </span>
                   <button class="btn" id="adSpendExportExcelBtn" type="button">Excel</button>
                   <button class="btn" id="adSpendExportPdfBtn" type="button">PDF</button>
                 </div>
@@ -6861,6 +6887,9 @@
     const timelineTitle = document.querySelector("#timelineTitle");
     const adSpendPeriod = document.querySelector("#adSpendPeriod");
     const adSpendMonth = document.querySelector("#adSpendMonth");
+    const adSpendCustomRange = document.querySelector("#adSpendCustomRange");
+    const adSpendDateFrom = document.querySelector("#adSpendDateFrom");
+    const adSpendDateTo = document.querySelector("#adSpendDateTo");
     const adSpendTotal = document.querySelector("#adSpendTotal");
     const adSpendPosts = document.querySelector("#adSpendPosts");
     const adSpendBars = document.querySelector("#adSpendBars");
@@ -7445,6 +7474,11 @@
     updateCloudAuthStatus();
     fields.date.valueAsDate = new Date();
     adSpendMonth.value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    {
+      const currentAdSpendMonth = monthRange(new Date());
+      adSpendDateFrom.value = currentAdSpendMonth.from;
+      adSpendDateTo.value = currentAdSpendMonth.to;
+    }
     contentFields.date.valueAsDate = new Date();
     contentFields.prepDeadline.value = "";
     funnelFields.date.valueAsDate = new Date();
@@ -7932,8 +7966,13 @@
     document.querySelector("#exportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: публикации", adsExportRows()));
     document.querySelector("#adSpendExportExcelBtn").addEventListener("click", () => exportRowsToExcel("reklama-zatraty", adSpendExportRows()));
     document.querySelector("#adSpendExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: затраты", adSpendExportRows()));
-    adSpendPeriod.addEventListener("change", renderAdSpendStats);
+    adSpendPeriod.addEventListener("change", () => {
+      updateAdSpendPeriodControls();
+      renderAdSpendStats();
+    });
     adSpendMonth.addEventListener("change", renderAdSpendStats);
+    adSpendDateFrom.addEventListener("change", renderAdSpendStats);
+    adSpendDateTo.addEventListener("change", renderAdSpendStats);
     document.querySelector("#funnelExportBtn").addEventListener("click", () => exportRowsToExcel("reklama-itogi-dnya", funnelExportRows()));
     document.querySelector("#funnelExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Реклама: лиды. итоги дня", funnelExportRows()));
     contentImportDate.addEventListener("change", renderContentImportControls);
@@ -12539,6 +12578,13 @@
       return events.filter((event) => event.date >= range.from && event.date <= range.to);
     }
 
+    function updateAdSpendPeriodControls() {
+      const isMonth = adSpendPeriod.value === "month";
+      const isCustom = adSpendPeriod.value === "custom";
+      adSpendMonth.classList.toggle("hidden", !isMonth);
+      adSpendCustomRange.classList.toggle("hidden", !isCustom);
+    }
+
     function selectedAdSpendRange() {
       const now = new Date();
       if (adSpendPeriod.value === "previousMonth") {
@@ -12547,6 +12593,14 @@
       if (adSpendPeriod.value === "month") {
         const [year, month] = (adSpendMonth.value || "").split("-").map(Number);
         return monthRange(new Date(year || now.getFullYear(), (month || now.getMonth() + 1) - 1, 1));
+      }
+      if (adSpendPeriod.value === "custom") {
+        const from = adSpendDateFrom.value;
+        const to = adSpendDateTo.value;
+        if (from && to) return from <= to ? { from, to } : { from: to, to: from };
+        if (from) return { from, to: from };
+        if (to) return { from: to, to };
+        return {};
       }
       if (adSpendPeriod.value === "year") return yearRange(now);
       if (adSpendPeriod.value === "all") return {};
@@ -12576,6 +12630,7 @@
     }
 
     function renderAdSpendStats() {
+      updateAdSpendPeriodControls();
       const range = selectedAdSpendRange();
       const events = filterAdSpendEvents(adSpendEvents(records), range);
       const rows = groupedAdSpendRows(events);
