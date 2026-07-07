@@ -1533,6 +1533,97 @@
       font-weight: 700;
     }
 
+    .content-list-toolbar {
+      display: grid;
+      grid-template-columns: auto minmax(180px, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 14px;
+    }
+
+    .content-list-toolbar .search,
+    .content-list-toolbar .filters select,
+    .content-list-toolbar .btn {
+      min-height: 34px;
+    }
+
+    .content-list-toolbar .search {
+      min-width: 0;
+      width: 100%;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .content-list-toolbar .filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(112px, max-content)) max-content;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .content-list-toolbar .filters select {
+      width: auto;
+      min-width: 112px;
+      max-width: 150px;
+      padding: 6px 26px 6px 10px;
+    }
+
+    .content-list-toolbar .btn {
+      padding-inline: 10px;
+    }
+
+    .content-list-toolbar .table-export-actions {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      gap: 8px;
+      justify-content: end;
+      flex-wrap: nowrap;
+    }
+
+    .content-list-toolbar .table-export-actions > span {
+      display: none;
+    }
+
+    .ads-publications-toolbar {
+      display: grid;
+      grid-template-columns: auto auto minmax(180px, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 14px;
+    }
+
+    .ads-publications-toolbar .search,
+    .ads-publications-toolbar .filters select,
+    .ads-publications-toolbar .btn {
+      min-height: 34px;
+    }
+
+    .ads-publications-toolbar .search {
+      min-width: 0;
+      width: 100%;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .ads-publications-toolbar .filters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(128px, max-content));
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ads-publications-toolbar .filters select {
+      width: auto;
+      min-width: 128px;
+      max-width: 170px;
+      padding: 6px 26px 6px 10px;
+    }
+
+    .ads-publications-toolbar .btn {
+      padding-inline: 10px;
+    }
+
     .select-cell {
       width: 44px;
       min-width: 44px;
@@ -3818,6 +3909,53 @@
       .filters select {
         flex: 1 1 100%;
       }
+
+      .content-list-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .content-list-toolbar .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .content-list-toolbar .filters select,
+      .content-list-toolbar .filters .btn,
+      .content-list-toolbar .table-export-actions .btn {
+        width: 100%;
+        max-width: none;
+        flex: initial;
+      }
+
+      .content-list-toolbar .table-export-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .content-list-toolbar .table-export-actions .actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .ads-publications-toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .ads-publications-toolbar .search,
+      .ads-publications-toolbar .filters {
+        grid-column: 1 / -1;
+      }
+
+      .ads-publications-toolbar .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .ads-publications-toolbar .filters select,
+      .ads-publications-toolbar .btn {
+        width: 100%;
+        max-width: none;
+        flex: initial;
+      }
     }
   </style>
 </head>
@@ -4295,7 +4433,7 @@
           </aside>
 
           <section class="panel table-panel">
-            <div class="toolbar">
+            <div class="toolbar ads-publications-toolbar">
               <button class="btn primary" id="adsNewPublicationBtn" type="button">Новая публикация вручную</button>
               <button class="btn" id="adsCopyPublicationBtn" type="button">Копировать</button>
               <input class="search" id="search" type="search" placeholder="Поиск по теме или выводу">
@@ -4615,7 +4753,7 @@
             </aside>
 
             <section class="panel table-panel">
-              <div class="toolbar">
+              <div class="toolbar content-list-toolbar">
                 <button class="btn primary" id="contentNewItemBtn" type="button">Новая публикация</button>
                 <input class="search" id="contentSearch" type="search" placeholder="Поиск по теме, рубрике или комментарию">
                 <div class="filters">
@@ -4634,12 +4772,12 @@
                   </select>
                   <button class="btn" id="contentSortToggle" type="button" aria-label="Поменять порядок публикаций">Новые внизу</button>
                 </div>
-              </div>
-              <div class="table-export-actions">
-                <span>Экспорт списка</span>
-                <div class="actions">
-                  <button class="btn" id="contentExportExcelBtn" type="button" title="Скачать список для Excel">Excel</button>
-                  <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
+                <div class="table-export-actions">
+                  <span>Экспорт списка</span>
+                  <div class="actions">
+                    <button class="btn" id="contentExportExcelBtn" type="button" title="Скачать список для Excel">Excel</button>
+                    <button class="btn" id="contentExportPdfBtn" type="button" title="Открыть печатную версию для PDF">PDF</button>
+                  </div>
                 </div>
               </div>
               <div class="content-selected-actions hidden" id="contentRowActionBar"></div>
