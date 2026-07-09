@@ -1574,13 +1574,14 @@
     }
 
     .content-list-toolbar .filters {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(112px, max-content)) max-content;
+      display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
-    .content-list-toolbar .filters select {
+    .content-list-toolbar .filters select,
+    .content-list-toolbar .filters input[type="date"] {
       width: auto;
       min-width: 112px;
       max-width: 150px;
@@ -4796,6 +4797,15 @@
                     <option value="unpublished">Не опубликованные</option>
                     <option value="overdue">Просроченные</option>
                   </select>
+                  <select id="contentDatePeriodFilter" aria-label="Фильтр по периоду">
+                    <option value="all">Весь период</option>
+                    <option value="week">Неделя</option>
+                    <option value="month">Месяц</option>
+                    <option value="year">Год</option>
+                    <option value="custom">С/по</option>
+                  </select>
+                  <input class="hidden" id="contentDateFromFilter" type="date" aria-label="Дата с">
+                  <input class="hidden" id="contentDateToFilter" type="date" aria-label="Дата по">
                   <button class="btn" id="contentSortToggle" type="button" aria-label="Поменять порядок публикаций">Новые внизу</button>
                 </div>
                 <div class="table-export-actions">
@@ -6859,6 +6869,9 @@
     const contentStatusFilter = document.querySelector("#contentStatusFilter");
     const contentPlatformFilter = document.querySelector("#contentPlatformFilter");
     const contentLifecycleFilter = document.querySelector("#contentLifecycleFilter");
+    const contentDatePeriodFilter = document.querySelector("#contentDatePeriodFilter");
+    const contentDateFromFilter = document.querySelector("#contentDateFromFilter");
+    const contentDateToFilter = document.querySelector("#contentDateToFilter");
     const contentSortToggle = document.querySelector("#contentSortToggle");
     const funnelSearch = document.querySelector("#funnelSearch");
     const funnelSortBy = document.querySelector("#funnelSortBy");
@@ -7997,6 +8010,12 @@
     contentStatusFilter.addEventListener("change", renderContentList);
     contentPlatformFilter.addEventListener("change", renderContentList);
     contentLifecycleFilter.addEventListener("change", renderContentList);
+    contentDatePeriodFilter.addEventListener("change", () => {
+      updateContentDatePeriodControls();
+      renderContentList();
+    });
+    contentDateFromFilter.addEventListener("change", renderContentList);
+    contentDateToFilter.addEventListener("change", renderContentList);
     contentSortToggle.addEventListener("click", () => {
       contentPlanSortDirection = contentPlanSortDirection === "asc" ? "desc" : "asc";
       localStorage.setItem(contentPlanSortDirectionKey, contentPlanSortDirection);
@@ -8295,11 +8314,7 @@
       const yearDay = event.target.closest("[data-year-source-date]");
       if (card) card.classList.remove("dragging");
       if (yearDay) yearDay.classList.remove("dragging");
-      draggedContentId = "";
-      draggedContentDate = "";
-      calendarArchiveDrop.classList.add("hidden");
-      calendarArchiveDrop.classList.remove("active");
-      contentCalendarGrid.querySelectorAll(".drop-target").forEach((day) => day.classList.remove("drop-target"));
+      resetContentCalendarDragState();
     });
 
     contentCalendarGrid.addEventListener("dragover", (event) => {
@@ -8331,7 +8346,7 @@
       } else {
         moveContentItemsFromDateToDate(sourceDate, day.dataset.calendarDate);
       }
-      contentCalendarGrid.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+      resetContentCalendarDragState();
     });
 
     calendarArchiveDrop.addEventListener("dragover", (event) => {
@@ -8357,11 +8372,11 @@
       } else {
         archiveContentItemsByDate(sourceDate);
       }
-      calendarArchiveDrop.classList.add("hidden");
-      calendarArchiveDrop.classList.remove("active");
-      draggedContentId = "";
-      draggedContentDate = "";
+      resetContentCalendarDragState();
     });
+
+    document.addEventListener("dragend", () => resetContentCalendarDragState());
+    document.addEventListener("drop", () => resetContentCalendarDragState());
 
     contentIdeasList.addEventListener("click", (event) => {
       const button = event.target.closest("button");
@@ -15326,6 +15341,7 @@
     }
 
     function renderContentCalendar() {
+      resetContentCalendarDragState();
       renderCalendarMonthSelect();
       if (activeCalendarMode === "year") {
         renderContentYearCalendar();
@@ -15527,6 +15543,16 @@
       renderContentPlan();
     }
 
+    function resetContentCalendarDragState() {
+      draggedContentId = "";
+      draggedContentDate = "";
+      calendarArchiveDrop?.classList.add("hidden");
+      calendarArchiveDrop?.classList.remove("active");
+      contentCalendarGrid?.querySelectorAll(".dragging, .drop-target").forEach((item) => {
+        item.classList.remove("dragging", "drop-target");
+      });
+    }
+
     function archiveContentItem(id) {
       const item = contentPlanItems.find((record) => record.id === id);
       if (!item || item.archivedAt) return;
@@ -15584,6 +15610,7 @@
     }
 
     function renderContentList() {
+      updateContentDatePeriodControls();
       const visible = getVisibleContentItems();
       const columns = getContentTableColumns();
       updateContentSortToggle();
@@ -15938,18 +15965,68 @@
       fillSelectOptions(contentPlatformFilter, activeItems.map((item) => item.platform), "Все площадки");
     }
 
+    function updateContentDatePeriodControls() {
+      const custom = contentDatePeriodFilter.value === "custom";
+      contentDateFromFilter.classList.toggle("hidden", !custom);
+      contentDateToFilter.classList.toggle("hidden", !custom);
+    }
+
+    function selectedContentDateRange() {
+      const mode = contentDatePeriodFilter.value || "all";
+      if (mode === "all") return null;
+
+      if (mode === "custom") {
+        let from = contentDateFromFilter.value || "";
+        let to = contentDateToFilter.value || "";
+        if (from && to && from > to) [from, to] = [to, from];
+        return { from, to };
+      }
+
+      const now = new Date();
+      if (mode === "week") {
+        const fromDate = startOfWeek(now);
+        const toDate = new Date(fromDate);
+        toDate.setDate(fromDate.getDate() + 6);
+        return { from: formatIsoDate(fromDate), to: formatIsoDate(toDate) };
+      }
+
+      if (mode === "month") {
+        const fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        const toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return { from: formatIsoDate(fromDate), to: formatIsoDate(toDate) };
+      }
+
+      if (mode === "year") {
+        return {
+          from: `${now.getFullYear()}-01-01`,
+          to: `${now.getFullYear()}-12-31`,
+        };
+      }
+
+      return null;
+    }
+
+    function contentDateMatchesRange(item, range) {
+      if (!range) return true;
+      if (!item.date) return false;
+      return (!range.from || item.date >= range.from)
+        && (!range.to || item.date <= range.to);
+    }
+
     function getVisibleContentItems() {
       const query = contentSearch.value.trim().toLowerCase();
       const status = contentStatusFilter.value;
       const platform = contentPlatformFilter.value;
       const lifecycle = contentLifecycleFilter.value;
+      const dateRange = selectedContentDateRange();
       return getActiveContentPlanItems()
         .filter((item) => {
           const haystack = `${item.topic} ${item.text} ${item.hashtags} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
           return (!query || haystack.includes(query))
             && (!status || item.status === status)
             && (!platform || item.platform === platform)
-            && contentLifecycleMatches(item, lifecycle);
+            && contentLifecycleMatches(item, lifecycle)
+            && contentDateMatchesRange(item, dateRange);
         })
         .sort((a, b) => {
           const result = `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`);
