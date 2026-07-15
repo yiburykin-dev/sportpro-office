@@ -3365,6 +3365,36 @@
     .status-published { border-left-color: #0f766e; }
     .status-paused { border-left-color: #b91c1c; }
 
+    .scroll-top-btn {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 60;
+      width: 46px;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      box-shadow: var(--shadow);
+      font-size: 24px;
+      line-height: 1;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease, background .18s ease;
+    }
+
+    .scroll-top-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .scroll-top-btn:hover {
+      background: var(--accent-strong);
+    }
+
     .idea-list,
     .rubric-grid {
       display: grid;
@@ -6763,6 +6793,8 @@
     </div>
   </div>
 
+  <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Наверх" title="Наверх">↑</button>
+
   <script src="assets/kp-logo-data.js"></script>
   <script>
     const storageKey = "workspace-tables.ads.records";
@@ -6775,6 +6807,7 @@
     const contentPlanCloudDeadlineCleanupKey = "workspace-tables.contentPlan.cloudDeadlineDefaultsCleared";
     const dashboardSettingsStoragePrefix = "workspace-tables.dashboardSettings.";
     const sidebarCollapsedKey = "workspace-tables.sidebar.collapsed";
+    const appNavigationStateKey = "workspace-tables.navigation.state";
     const clientSourcesUrlKey = "workspace-tables.clientSources.url";
     const clientSourcesDataKey = "workspace-tables.clientSources.data";
     const floorPlannerUpdatedKey = "workspace-tables.floorPlanner.updatedAt";
@@ -7116,6 +7149,7 @@
       techniques: document.querySelector("#memoryTechniquesView"),
       stats: document.querySelector("#memoryStatsView"),
     };
+    const scrollTopBtn = document.querySelector("#scrollTopBtn");
     const salesSteps = document.querySelector("#salesSteps");
     const salesStageTitle = document.querySelector("#salesStageTitle");
     const salesStageGoal = document.querySelector("#salesStageGoal");
@@ -7443,6 +7477,9 @@
     let activeSalesStage = salesScript.stages[0].id;
     let activeObjection = salesScript.objections[0].id;
     let activeDashboardMetric = "views";
+    let currentAppView = "ads";
+    let activeContentMode = "calendar";
+    let activeSalesMode = "script";
     let activeCalendarMode = "week";
     let activeContentTypeHighlight = "";
     let activeWholesaleInvoiceId = "";
@@ -7480,6 +7517,7 @@
     let isApplyingCloudData = false;
     let isAutoSyncing = false;
     let activeDashboardSettingsId = "";
+    let navigationReady = false;
 
     applyTheme(localStorage.getItem(themeStorageKey) || "green");
     applySidebarState(localStorage.getItem(sidebarCollapsedKey) === "true");
@@ -7522,15 +7560,7 @@
 
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
-        const view = button.dataset.view;
-        document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item === button));
-        Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== view));
-        if (view === "clientSources") ensureClientSourcesLoaded();
-        if (view === "gymCalculator") renderGymCalculator();
-        if (view === "installation") renderInstallation();
-        if (view === "floorPlanner") renderFloorPlanner();
-        if (view === "memory") renderMemory();
-        if (view === "proposal") renderProposal();
+        activateMainView(button.dataset.view);
       });
     });
 
@@ -7542,20 +7572,13 @@
 
     document.querySelectorAll("[data-content-mode]").forEach((button) => {
       button.addEventListener("click", () => {
-        const mode = button.dataset.contentMode;
-        document.querySelectorAll("[data-content-mode]").forEach((item) => item.classList.toggle("active", item === button));
-        Object.entries(contentModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+        setContentMode(button.dataset.contentMode);
       });
     });
 
     document.querySelectorAll("[data-calendar-mode]").forEach((button) => {
       button.addEventListener("click", () => {
-        activeCalendarMode = button.dataset.calendarMode;
-        document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item === button));
-        if (activeCalendarMode === "year") {
-          calendarCursor = new Date(new Date().getFullYear(), 0, 1);
-        }
-        renderContentCalendar();
+        setCalendarMode(button.dataset.calendarMode);
       });
     });
 
@@ -7563,16 +7586,12 @@
       const selectedMonth = Number(calendarMonthSelect.value);
       const year = new Date().getFullYear();
       calendarCursor = new Date(year, selectedMonth, 1);
-      activeCalendarMode = "month";
-      document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item.dataset.calendarMode === "month"));
-      renderContentCalendar();
+      setCalendarMode("month");
     });
 
     document.querySelectorAll("[data-sales-mode]").forEach((button) => {
       button.addEventListener("click", () => {
-        const mode = button.dataset.salesMode;
-        document.querySelectorAll("[data-sales-mode]").forEach((item) => item.classList.toggle("active", item === button));
-        Object.entries(salesModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== mode));
+        setSalesMode(button.dataset.salesMode);
       });
     });
 
@@ -7591,6 +7610,10 @@
     document.querySelectorAll("[data-memory-mode]").forEach((button) => {
       button.addEventListener("click", () => setMemoryMode(button.dataset.memoryMode));
     });
+
+    setupScrollTopButton();
+    restoreNavigationState();
+    window.addEventListener("beforeunload", persistNavigationState);
 
     installationProjectFields.addEventListener("input", handleInstallationProjectInput);
     installationProjectFields.addEventListener("change", handleInstallationProjectInput);
@@ -8274,9 +8297,7 @@
       if (monthCard) {
         const year = new Date().getFullYear();
         calendarCursor = new Date(year, Number(monthCard.dataset.calendarMonth), 1);
-        activeCalendarMode = "month";
-        document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item.dataset.calendarMode === "month"));
-        renderContentCalendar();
+        setCalendarMode("month");
         return;
       }
 
@@ -8436,11 +8457,114 @@
       }
     });
 
-    function setAdsMode(mode) {
+    function activeDataValue(selector, key, fallback) {
+      return document.querySelector(`${selector}.active`)?.dataset[key] || fallback;
+    }
+
+    function navigationState() {
+      return {
+        view: currentAppView || "ads",
+        adsMode: activeDataValue("[data-ads-mode]", "adsMode", "dashboard"),
+        contentMode: activeContentMode || activeDataValue("[data-content-mode]", "contentMode", "calendar"),
+        calendarMode: activeCalendarMode || "week",
+        calendarCursor: calendarCursor instanceof Date && !Number.isNaN(calendarCursor.getTime()) ? calendarCursor.toISOString() : "",
+        salesMode: activeSalesMode || activeDataValue("[data-sales-mode]", "salesMode", "script"),
+        wholesaleMode: activeDataValue("[data-wholesale-mode]", "wholesaleMode", "ledger"),
+        installationMode: activeInstallationMode || "dashboard",
+        gymMode: activeDataValue("[data-gym-mode]", "gymMode", "form"),
+        memoryMode: activeMemoryMode || "today",
+        scrollY: window.scrollY || 0,
+      };
+    }
+
+    function persistNavigationState() {
+      if (!navigationReady) return;
+      localStorage.setItem(appNavigationStateKey, JSON.stringify(navigationState()));
+    }
+
+    function restoreNavigationState() {
+      const state = readStorage(appNavigationStateKey);
+      const saved = state && !Array.isArray(state) && typeof state === "object" ? state : {};
+      setAdsMode(saved.adsMode || "dashboard", { persist: false });
+      setContentMode(saved.contentMode || "calendar", { persist: false });
+      if (saved.calendarCursor) {
+        const savedCalendarCursor = new Date(saved.calendarCursor);
+        if (!Number.isNaN(savedCalendarCursor.getTime())) calendarCursor = savedCalendarCursor;
+      }
+      setCalendarMode(saved.calendarMode || activeCalendarMode, { persist: false, keepCursor: true });
+      setSalesMode(saved.salesMode || "script", { persist: false });
+      setWholesaleMode(saved.wholesaleMode || activeDataValue("[data-wholesale-mode]", "wholesaleMode", "ledger"), { persist: false });
+      setInstallationMode(saved.installationMode || activeInstallationMode, { persist: false });
+      setGymMode(saved.gymMode || activeDataValue("[data-gym-mode]", "gymMode", "form"), { persist: false });
+      setMemoryMode(saved.memoryMode || activeMemoryMode, { persist: false });
+      activateMainView(saved.view || "ads", { persist: false });
+      window.setTimeout(() => {
+        const y = Math.max(0, Number(saved.scrollY) || 0);
+        if (y) window.scrollTo({ top: y, behavior: "auto" });
+        updateScrollTopButton();
+      }, 0);
+      navigationReady = true;
+    }
+
+    function activateMainView(view, options = {}) {
+      const nextView = views[view] ? view : "ads";
+      currentAppView = nextView;
+      document.querySelectorAll("[data-view]").forEach((item) => item.classList.toggle("active", item.dataset.view === nextView));
+      Object.entries(views).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextView));
+      if (nextView === "clientSources") ensureClientSourcesLoaded();
+      if (nextView === "gymCalculator") renderGymCalculator();
+      if (nextView === "installation") renderInstallation();
+      if (nextView === "floorPlanner") renderFloorPlanner();
+      if (nextView === "memory") renderMemory();
+      if (nextView === "proposal") renderProposal();
+      if (options.persist !== false) persistNavigationState();
+    }
+
+    function setContentMode(mode, options = {}) {
+      const nextMode = contentModeViews[mode] ? mode : "calendar";
+      activeContentMode = nextMode;
+      document.querySelectorAll("[data-content-mode]").forEach((item) => item.classList.toggle("active", item.dataset.contentMode === nextMode));
+      Object.entries(contentModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+      if (options.persist !== false) persistNavigationState();
+    }
+
+    function setCalendarMode(mode, options = {}) {
+      const allowedModes = new Set(["week", "month", "year"]);
+      activeCalendarMode = allowedModes.has(mode) ? mode : "week";
+      document.querySelectorAll("[data-calendar-mode]").forEach((item) => item.classList.toggle("active", item.dataset.calendarMode === activeCalendarMode));
+      if (activeCalendarMode === "year" && !options.keepCursor) {
+        calendarCursor = new Date(new Date().getFullYear(), 0, 1);
+      }
+      renderContentCalendar();
+      if (options.persist !== false) persistNavigationState();
+    }
+
+    function setSalesMode(mode, options = {}) {
+      const nextMode = salesModeViews[mode] ? mode : "script";
+      activeSalesMode = nextMode;
+      document.querySelectorAll("[data-sales-mode]").forEach((item) => item.classList.toggle("active", item.dataset.salesMode === nextMode));
+      Object.entries(salesModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
+      if (options.persist !== false) persistNavigationState();
+    }
+
+    function setupScrollTopButton() {
+      if (!scrollTopBtn) return;
+      scrollTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+      window.addEventListener("scroll", updateScrollTopButton, { passive: true });
+      updateScrollTopButton();
+    }
+
+    function updateScrollTopButton() {
+      if (!scrollTopBtn) return;
+      scrollTopBtn.classList.toggle("visible", window.scrollY > window.innerHeight);
+    }
+
+    function setAdsMode(mode, options = {}) {
       const nextMode = adsModeViews[mode] ? mode : "dashboard";
       document.querySelectorAll("[data-ads-mode]").forEach((item) => item.classList.toggle("active", item.dataset.adsMode === nextMode));
       Object.entries(adsModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
       if (nextMode === "funnel") closeFunnelFormPanel();
+      if (options.persist !== false) persistNavigationState();
     }
 
     function render() {
@@ -13278,11 +13402,12 @@
       applyDashboardSettings("gymCalculator");
     }
 
-    function setGymMode(mode) {
+    function setGymMode(mode, options = {}) {
       const nextMode = gymModeViews[mode] ? mode : "form";
       document.querySelectorAll("[data-gym-mode]").forEach((item) => item.classList.toggle("active", item.dataset.gymMode === nextMode));
       Object.entries(gymModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
       renderGymCalculator();
+      if (options.persist !== false) persistNavigationState();
     }
 
     function saveGymRecordFromForm() {
@@ -13867,11 +13992,12 @@
       updateInstallationEditState();
     }
 
-    function setInstallationMode(mode) {
+    function setInstallationMode(mode, options = {}) {
       if (!installationEditMode && mode !== "dashboard") mode = "dashboard";
       activeInstallationMode = mode || "dashboard";
       document.querySelectorAll("[data-installation-mode]").forEach((item) => item.classList.toggle("active", item.dataset.installationMode === activeInstallationMode));
       Object.entries(installationModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== activeInstallationMode));
+      if (options.persist !== false) persistNavigationState();
     }
 
     function updateInstallationEditState() {
@@ -14516,11 +14642,12 @@
       ].filter(Boolean).join("-");
     }
 
-    function setMemoryMode(mode) {
+    function setMemoryMode(mode, options = {}) {
       activeMemoryMode = memoryModeViews[mode] ? mode : "today";
       document.querySelectorAll("[data-memory-mode]").forEach((item) => item.classList.toggle("active", item.dataset.memoryMode === activeMemoryMode));
       Object.entries(memoryModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== activeMemoryMode));
       renderMemory();
+      if (options.persist !== false) persistNavigationState();
     }
 
     function renderMemory() {
@@ -17060,11 +17187,12 @@
       adsFunnelWorkspace?.classList.remove("is-form-open");
     }
 
-    function setWholesaleMode(mode) {
+    function setWholesaleMode(mode, options = {}) {
       const nextMode = wholesaleModeViews[mode] ? mode : "ledger";
       document.querySelectorAll("[data-wholesale-mode]").forEach((item) => item.classList.toggle("active", item.dataset.wholesaleMode === nextMode));
       Object.entries(wholesaleModeViews).forEach(([name, section]) => section.classList.toggle("hidden", name !== nextMode));
       renderWholesale();
+      if (options.persist !== false) persistNavigationState();
     }
 
     function loadWholesaleData() {
