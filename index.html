@@ -4493,6 +4493,7 @@
             <div class="toolbar ads-publications-toolbar">
               <button class="btn primary" id="adsNewPublicationBtn" type="button">Новая публикация вручную</button>
               <button class="btn" id="adsCopyPublicationBtn" type="button">Копировать</button>
+              <button class="btn danger" id="adsDeleteSelectedBtn" type="button">Удалить выбранные</button>
               <input class="search" id="search" type="search" placeholder="Поиск по теме или выводу">
               <div class="filters">
                 <select id="typeFilter" aria-label="Фильтр по типу">
@@ -8014,6 +8015,7 @@
     contentImportDate.addEventListener("change", renderContentImportControls);
     contentImportBtn.addEventListener("click", importSelectedContentToAds);
     document.querySelector("#adsCopyPublicationBtn").addEventListener("click", copySelectedAdsToContentPlan);
+    document.querySelector("#adsDeleteSelectedBtn").addEventListener("click", deleteSelectedAdsRecords);
     contentCloudPullBtn.addEventListener("click", () => pullFromCloud());
     contentCloudSyncBtn.addEventListener("click", () => syncWithCloud());
     contentCancelEditBtn.addEventListener("click", resetContentForm);
@@ -8241,13 +8243,8 @@
         openAdRecordDetails(record);
       }
 
-      if (button.dataset.action === "delete" && confirm("Удалить запись?")) {
-        deletedRecords[id] = new Date().toISOString();
-        records = records.filter((item) => item.id !== id);
-        selectedRecordIds.delete(id);
-        saveRecords();
-        saveDeletedRecords(deletedRecordsKey, deletedRecords);
-        render();
+      if (button.dataset.action === "delete") {
+        deleteAdRecords([id], { confirmMessage: "Удалить публикацию?" });
       }
     });
 
@@ -12985,6 +12982,56 @@
       }
     }
 
+    function deleteSelectedAdsRecords() {
+      const selectedIds = [...selectedRecordIds];
+      if (!selectedIds.length) {
+        alert("Выберите одну или несколько публикаций галочкой.");
+        return;
+      }
+      deleteAdRecords(selectedIds, {
+        confirmMessage: selectedIds.length === 1
+          ? "Удалить выбранную публикацию?"
+          : `Удалить выбранные публикации: ${selectedIds.length}?`,
+      });
+    }
+
+    function deleteAdRecords(ids, options = {}) {
+      const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+      if (!uniqueIds.length) return false;
+      const removed = records.filter((record) => uniqueIds.includes(record.id));
+      if (!removed.length) return false;
+      const message = options.confirmMessage || `Удалить публикации: ${removed.length}?`;
+      if (options.confirm !== false && !confirm(message)) return false;
+
+      const deletedAt = new Date().toISOString();
+      const removedIds = new Set(removed.map((record) => record.id));
+      const removedContentIds = new Set(removed.map((record) => record.linkedContentId).filter(Boolean));
+      removedIds.forEach((id) => {
+        deletedRecords[id] = deletedAt;
+        selectedRecordIds.delete(id);
+      });
+
+      let contentChanged = false;
+      contentPlanItems = contentPlanItems.map((item) => {
+        if (!removedIds.has(item.linkedAdId) && !removedContentIds.has(item.id)) return item;
+        contentChanged = true;
+        return normalizeContentPlanItem({
+          ...item,
+          linkedAdId: "",
+          adSyncDisabled: true,
+          updatedAt: deletedAt,
+        });
+      });
+
+      records = records.filter((record) => !removedIds.has(record.id));
+      saveRecords();
+      saveDeletedRecords(deletedRecordsKey, deletedRecords);
+      if (contentChanged) saveContentPlanItems();
+      closeMeasurementPanel();
+      render();
+      return true;
+    }
+
     function applyClientSourcesConfig() {
       sourcesApiUrl.value = localStorage.getItem(clientSourcesUrlKey) || defaultClientSourcesUrl;
     }
@@ -16771,6 +16818,7 @@
         prepDeadline: "",
         publishedAt: "",
         linkedAdId: "",
+        adSyncDisabled: false,
         archivedAt: "",
         updatedAt: now,
       });
@@ -16812,6 +16860,7 @@
       }
       item.status = "Опубликовано";
       item.publishedAt = publishedDate;
+      item.adSyncDisabled = false;
       item.updatedAt = new Date().toISOString();
 
       let adRecord = findLinkedAdRecordForContent(item, publishedDate);
@@ -16932,6 +16981,7 @@
         comment: existing?.comment || normalizedRecord.conclusion || "Добавлено вручную из раздела Реклама.",
         publishedAt: publishedDate,
         linkedAdId: normalizedRecord.id,
+        adSyncDisabled: false,
         archivedAt: existing?.archivedAt || "",
         updatedAt: now,
       });
@@ -16956,6 +17006,7 @@
       if (dedupeResult.removedIds.length) recordsChanged = true;
       if (dedupeResult.contentChanged) contentChanged = true;
       contentPlanItems.forEach((item) => {
+        if (item.adSyncDisabled) return;
         if (!isContentPublished(item) || item.archivedAt || isFutureContentDate(item.date)) return;
         const publishedDate = item.publishedAt || item.date || formatIsoDate(new Date());
         if (isFutureContentDate(publishedDate)) return;
@@ -19274,6 +19325,7 @@
         comment: item.comment || "",
         publishedAt: futurePublished ? "" : item.publishedAt || (item.status === "Опубликовано" ? item.date || "" : ""),
         linkedAdId: item.linkedAdId || "",
+        adSyncDisabled: Boolean(item.adSyncDisabled),
         archivedAt: item.archivedAt || "",
         updatedAt: item.updatedAt || new Date().toISOString(),
       };
