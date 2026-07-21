@@ -15812,6 +15812,11 @@
     }
 
     function handleContentItemAction(action, id) {
+      if (action === "delete-selected-content") {
+        deleteContentItems([...selectedContentPlanIds]);
+        return;
+      }
+
       const item = contentPlanItems.find((record) => record.id === id);
       if (!item) return;
       activeContentRowId = id;
@@ -15842,6 +15847,23 @@
     }
 
     function renderContentRowActionBar(visibleItems = getVisibleContentItems()) {
+      const selectedItems = visibleItems.filter((record) => selectedContentPlanIds.has(record.id));
+      if (selectedItems.length) {
+        const oneItem = selectedItems.length === 1 ? selectedItems[0] : null;
+        if (oneItem) activeContentRowId = oneItem.id;
+        contentRowActionBar.classList.remove("hidden");
+        contentRowActionBar.innerHTML = `
+          <strong>${oneItem ? `${formatDate(oneItem.date)}${oneItem.time ? `, ${escapeHtml(oneItem.time)}` : ""} · ${escapeHtml(oneItem.topic || "Без темы")}` : `Выбрано публикаций: ${selectedItems.length}`}</strong>
+          <div class="actions">
+            ${oneItem ? `<button class="btn primary" type="button" data-action="edit-content" data-id="${escapeHtml(oneItem.id)}">Редактировать</button>` : ""}
+            ${oneItem ? `<button class="btn" type="button" data-action="repeat-content" data-id="${escapeHtml(oneItem.id)}">Повторить публикацию</button>` : ""}
+            ${oneItem ? `<button class="btn" type="button" data-action="publish-content" data-id="${escapeHtml(oneItem.id)}">${isContentPublished(oneItem) ? "Обновить в рекламе" : "Опубликовать"}</button>` : ""}
+            <button class="btn danger" type="button" data-action="delete-selected-content">Удалить выбранные</button>
+          </div>
+        `;
+        return;
+      }
+
       const item = visibleItems.find((record) => record.id === activeContentRowId);
       if (!item) {
         activeContentRowId = "";
@@ -15860,6 +15882,34 @@
           <button class="btn danger" type="button" data-action="delete-content" data-id="${escapeHtml(item.id)}">Удалить</button>
         </div>
       `;
+    }
+
+    function deleteContentItems(ids) {
+      const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+      if (!uniqueIds.length) {
+        alert("Выберите одну или несколько публикаций галочкой.");
+        return false;
+      }
+
+      const removable = contentPlanItems.filter((record) => uniqueIds.includes(record.id));
+      if (!removable.length) return false;
+      const message = removable.length === 1
+        ? "Удалить публикацию из контент-плана?"
+        : `Удалить выбранные публикации из контент-плана: ${removable.length}?`;
+      if (!confirm(message)) return false;
+
+      const deletedAt = new Date().toISOString();
+      removable.forEach((item) => {
+        deletedContentPlan[item.id] = deletedAt;
+        selectedContentPlanIds.delete(item.id);
+      });
+      const removedIds = new Set(removable.map((item) => item.id));
+      contentPlanItems = contentPlanItems.filter((record) => !removedIds.has(record.id));
+      if (removedIds.has(activeContentRowId)) activeContentRowId = "";
+      saveContentPlanItems();
+      saveDeletedRecords(deletedContentPlanKey, deletedContentPlan);
+      renderContentPlan();
+      return true;
     }
 
     function syncContentFloatingScroll(source = "") {
