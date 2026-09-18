@@ -4752,8 +4752,14 @@
                 <label>Тема
                   <input id="contentTopic" type="text" placeholder="Например: кейс клуба, подбор тренажеров, акция" required>
                 </label>
+                <label>Что подготовить
+                  <textarea id="contentPrepare" placeholder="Материалы, съемка, фото, оборудование или другие задачи для подготовки"></textarea>
+                </label>
                 <label>Текст
                   <textarea id="contentText" placeholder="Текст публикации, сценарий Reels или тезисы для сторис"></textarea>
+                </label>
+                <label>Призыв к действию
+                  <textarea id="contentCta" placeholder="Что должен сделать зритель: написать, перейти, запросить КП"></textarea>
                 </label>
                 <label>Хэштеги
                   <input id="contentHashtags" type="text" placeholder="#sportpro #фитнесклуб #тренажеры">
@@ -4818,7 +4824,9 @@
             <section class="panel table-panel">
               <div class="toolbar content-list-toolbar">
                 <button class="btn primary" id="contentNewItemBtn" type="button">Новая публикация</button>
-                <input class="search" id="contentSearch" type="search" placeholder="Поиск по теме, рубрике или комментарию">
+                <button class="btn" id="contentPlanImportBtn" type="button">Импорт</button>
+                <input class="hidden" id="contentPlanImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                <input class="search" id="contentSearch" type="search" placeholder="Поиск по теме, тексту, подготовке или призыву">
                 <div class="filters">
                   <select id="contentStatusFilter" aria-label="Фильтр по статусу">
                     <option value="">Все статусы</option>
@@ -6905,6 +6913,7 @@
     const sortBy = document.querySelector("#sortBy");
     const search = document.querySelector("#search");
     const contentSearch = document.querySelector("#contentSearch");
+    const contentPlanImportFile = document.querySelector("#contentPlanImportFile");
     const contentStatusFilter = document.querySelector("#contentStatusFilter");
     const contentPlatformFilter = document.querySelector("#contentPlatformFilter");
     const contentLifecycleFilter = document.querySelector("#contentLifecycleFilter");
@@ -7282,7 +7291,9 @@
       type: document.querySelector("#contentType"),
       rubric: document.querySelector("#contentRubric"),
       topic: document.querySelector("#contentTopic"),
+      prepare: document.querySelector("#contentPrepare"),
       text: document.querySelector("#contentText"),
+      cta: document.querySelector("#contentCta"),
       hashtags: document.querySelector("#contentHashtags"),
       status: document.querySelector("#contentStatus"),
       owner: document.querySelector("#contentOwner"),
@@ -7867,7 +7878,9 @@
         type: contentFields.type.value,
         rubric: contentFields.rubric.value,
         topic: contentFields.topic.value.trim(),
+        prepare: contentFields.prepare.value.trim(),
         text: contentFields.text.value.trim(),
+        cta: contentFields.cta.value.trim(),
         hashtags: contentFields.hashtags.value.trim(),
         status: contentFields.status.value,
         owner: contentFields.owner.value.trim(),
@@ -8058,6 +8071,8 @@
       openContentFormPanel();
       contentCancelEditBtn.classList.remove("hidden");
     });
+    document.querySelector("#contentPlanImportBtn").addEventListener("click", () => contentPlanImportFile.click());
+    contentPlanImportFile.addEventListener("change", handleContentPlanXlsxImport);
     document.querySelector("#contentExportExcelBtn").addEventListener("click", () => exportRowsToExcel("content-plan-spisok", contentListExportRows()));
     document.querySelector("#contentExportPdfBtn").addEventListener("click", () => exportRowsToPdf("Контент-план: список", contentListExportRows()));
     contentHeaderRow.addEventListener("dragstart", handleContentColumnDragStart);
@@ -12870,7 +12885,9 @@
     function adRecordDescription(record) {
       const item = getContentItemForAdRecord(record);
       const parts = [];
+      if (item?.prepare) parts.push(`Что подготовить: ${item.prepare}`);
       if (item?.text) parts.push(item.text);
+      if (item?.cta) parts.push(`Призыв к действию: ${item.cta}`);
       if (item?.hashtags) parts.push(`Хэштеги: ${item.hashtags}`);
       if (item?.comment) parts.push(`Комментарий: ${item.comment}`);
       if (item?.link) parts.push(`Ссылка: ${item.link}`);
@@ -12953,7 +12970,9 @@
           type: source?.type || adTypeToContentType(record.type),
           rubric: source?.rubric || defaultContentRubrics()[0].name,
           topic: source?.topic || record.topic,
+          prepare: source?.prepare || "",
           text: source?.text || "",
+          cta: source?.cta || "",
           hashtags: source?.hashtags || "",
           status: "Запланировано",
           owner: source?.owner || "",
@@ -15948,7 +15967,9 @@
         { key: "type", label: "Тип", width: 120, min: 90 },
         { key: "rubric", label: "Рубрика", width: 150, min: 110 },
         { key: "topic", label: "Тема", width: 220, min: 140 },
+        { key: "prepare", label: "Что подготовить", width: 220, min: 140 },
         { key: "text", label: "Текст", width: 260, min: 150 },
+        { key: "cta", label: "Призыв", width: 190, min: 120 },
         { key: "hashtags", label: "Хэштеги", width: 170, min: 120 },
         { key: "preview", label: "Превью", width: 90, min: 72 },
         { key: "status", label: "Статус", width: 150, min: 110 },
@@ -15976,11 +15997,23 @@
       const defaults = defaultContentTableColumns();
       const byKey = new Map(defaults.map((column) => [column.key, column]));
       const layout = loadContentTableLayout();
-      const orderedKeys = [
-        "select",
-        ...layout.order.filter((key) => byKey.has(key) && key !== "select"),
-        ...defaults.map((column) => column.key).filter((key) => key !== "select" && !layout.order.includes(key)),
-      ];
+      const orderedKeys = ["select", ...layout.order.filter((key) => byKey.has(key) && key !== "select")];
+      defaults
+        .map((column) => column.key)
+        .filter((key) => key !== "select" && !orderedKeys.includes(key))
+        .forEach((key) => {
+          const defaultIndex = defaults.findIndex((column) => column.key === key);
+          const anchor = defaults
+            .slice(0, defaultIndex)
+            .map((column) => column.key)
+            .reverse()
+            .find((existingKey) => orderedKeys.includes(existingKey));
+          if (!anchor) {
+            orderedKeys.push(key);
+            return;
+          }
+          orderedKeys.splice(orderedKeys.indexOf(anchor) + 1, 0, key);
+        });
       return orderedKeys.map((key) => {
         const column = { ...byKey.get(key) };
         const width = Number(layout.widths[column.key]);
@@ -16015,7 +16048,9 @@
       if (column.key === "type") return `<td ${widthStyle}>${escapeHtml(item.type)}</td>`;
       if (column.key === "rubric") return `<td ${widthStyle}>${escapeHtml(item.rubric)}</td>`;
       if (column.key === "topic") return `<td ${widthStyle}>${escapeHtml(item.topic)}</td>`;
+      if (column.key === "prepare") return `<td ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.prepare || "-")}">${escapeHtml(item.prepare || "-")}</div></td>`;
       if (column.key === "text") return `<td class="content-text-cell" ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.text || "-")}">${escapeHtml(item.text || "-")}</div></td>`;
+      if (column.key === "cta") return `<td ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.cta || "-")}">${escapeHtml(item.cta || "-")}</div></td>`;
       if (column.key === "hashtags") return `<td ${widthStyle}><div class="content-cell-clamp" title="${escapeHtml(item.hashtags || "-")}">${escapeHtml(item.hashtags || "-")}</div></td>`;
       if (column.key === "preview") return `<td ${widthStyle}>${contentPreviewHtml(item.preview)}</td>`;
       if (column.key === "status") return `<td ${widthStyle}><span class="status-pill ${isContentPublished(item) ? "status-published" : isContentOverdue(item) ? "status-overdue" : ""}">${escapeHtml(isContentOverdue(item) ? "Просрочено" : item.status)}</span></td>`;
@@ -16250,7 +16285,7 @@
       const dateRange = selectedContentDateRange();
       return getActiveContentPlanItems()
         .filter((item) => {
-          const haystack = `${item.topic} ${item.text} ${item.hashtags} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
+          const haystack = `${item.topic} ${item.prepare} ${item.text} ${item.cta} ${item.hashtags} ${item.rubric} ${item.comment} ${item.owner}`.toLowerCase();
           return (!query || haystack.includes(query))
             && (!status || item.status === status)
             && (!platform || item.platform === platform)
@@ -16778,7 +16813,9 @@
       contentFields.type.value = item.type;
       contentFields.rubric.value = item.rubric;
       contentFields.topic.value = item.topic;
+      contentFields.prepare.value = item.prepare || "";
       contentFields.text.value = item.text || "";
+      contentFields.cta.value = item.cta || "";
       contentFields.hashtags.value = item.hashtags || "";
       contentFields.status.value = item.status;
       contentFields.owner.value = item.owner;
@@ -16847,7 +16884,9 @@
       contentFields.platform.value = idea.platform || "Instagram";
       contentFields.status.value = "Идея";
       contentFields.comment.value = idea.comment || "";
+      contentFields.prepare.value = "";
       contentFields.text.value = "";
+      contentFields.cta.value = "";
       contentFields.hashtags.value = "";
       contentFields.preview.value = "";
       contentFields.topic.focus();
@@ -16884,6 +16923,341 @@
       renderContentPlan();
       fillContentForm(copy);
       contentFields.date.focus();
+    }
+
+    async function handleContentPlanXlsxImport(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const rows = await readXlsxRows(file);
+        const imported = importContentPlanRows(rows);
+        if (!imported.length) {
+          alert("В файле не найдено строк для импорта. Проверьте, что есть столбцы “Формат”, “Тема / первый кадр” и “Содержание”.");
+          return;
+        }
+
+        const firstDate = imported[0].date ? formatDate(imported[0].date) : "";
+        const lastDate = imported[imported.length - 1].date ? formatDate(imported[imported.length - 1].date) : "";
+        const periodText = firstDate && lastDate ? ` Даты: ${firstDate} - ${lastDate}.` : "";
+        alert(`Импортировано публикаций: ${imported.length}.${periodText}`);
+      } catch (error) {
+        console.error(error);
+        alert(`Не удалось импортировать Excel-файл: ${error.message || "неизвестная ошибка"}`);
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function importContentPlanRows(rows) {
+      const importedRows = contentPlanImportObjects(rows);
+      if (!importedRows.length) return [];
+
+      let nextDate = nextContentImportDate();
+      const now = new Date().toISOString();
+      const entries = importedRows.map((row) => {
+        const topic = pickImportedContentValue(row, ["Тема / первый кадр", "Тема", "Первый кадр"]);
+        const content = pickImportedContentValue(row, ["Содержание"]);
+        const stories = pickImportedContentValue(row, ["Сторис в этот день"]);
+        const storyConnection = pickImportedContentValue(row, ["Связь с историей"]);
+        const entry = normalizeContentPlanItem({
+          id: createId(),
+          date: nextDate,
+          time: "",
+          platform: "Instagram",
+          type: normalizeContentImportType(pickImportedContentValue(row, ["Формат"])),
+          rubric: defaultContentRubrics()[0].name,
+          topic,
+          prepare: pickImportedContentValue(row, ["Что подготовить"]),
+          text: buildImportedContentText(content, stories, storyConnection),
+          cta: pickImportedContentValue(row, ["Призыв к действию", "CTA"]),
+          hashtags: "",
+          status: "Запланировано",
+          owner: "",
+          prepDeadline: "",
+          updatedAt: now,
+        });
+        nextDate = nextWeekdayIso(addDaysIso(nextDate, 1));
+        return entry;
+      });
+
+      const usableEntries = entries.filter((item) => item.topic || item.text || item.prepare || item.cta);
+      if (!usableEntries.length) return [];
+
+      contentPlanItems = [...contentPlanItems, ...usableEntries];
+      activeContentRowId = "";
+      selectedContentPlanIds.clear();
+      saveContentPlanItems();
+      autoPushToCloud("Контент-план").catch(() => updateCloudStatus("Автосинхронизация не прошла"));
+      document.querySelector('[data-content-mode="list"]')?.click();
+      renderContentPlan();
+      return usableEntries;
+    }
+
+    function contentPlanImportObjects(rows) {
+      const headerIndex = rows.findIndex(isContentPlanImportHeaderRow);
+      if (headerIndex < 0) {
+        throw new Error("не найдена строка заголовков шаблона");
+      }
+
+      const headers = rows[headerIndex].map(normalizeImportHeader);
+      return rows.slice(headerIndex + 1).map((row) => {
+        const object = {};
+        headers.forEach((header, index) => {
+          if (!header) return;
+          object[header] = cleanImportedCell(row[index]);
+        });
+        return object;
+      }).filter((row) => pickImportedContentValue(row, ["Формат", "Тема / первый кадр", "Содержание", "Что подготовить", "Призыв к действию"]));
+    }
+
+    function isContentPlanImportHeaderRow(row) {
+      const expected = [
+        "Формат",
+        "Тема / первый кадр",
+        "Содержание",
+        "Что подготовить",
+        "Призыв к действию",
+        "Сторис в этот день",
+        "Связь с историей",
+      ];
+      const headers = row.map(normalizeImportHeader).filter(Boolean);
+      const matches = headers.filter((header) => expected.some((alias) => importHeaderMatches(header, alias))).length;
+      return matches >= 2;
+    }
+
+    function pickImportedContentValue(row, aliases) {
+      for (const [header, value] of Object.entries(row)) {
+        if (!value) continue;
+        if (aliases.some((alias) => importHeaderMatches(header, alias))) return value;
+      }
+      return "";
+    }
+
+    function importHeaderMatches(header, alias) {
+      const normalizedHeader = normalizeImportHeader(header);
+      const normalizedAlias = normalizeImportHeader(alias);
+      if (!normalizedHeader || !normalizedAlias) return false;
+      if (normalizedHeader === normalizedAlias || normalizedHeader.includes(normalizedAlias)) return true;
+      return compactImportHeader(normalizedHeader).includes(compactImportHeader(normalizedAlias));
+    }
+
+    function normalizeImportHeader(value) {
+      return String(value || "")
+        .normalize("NFKC")
+        .replace(/\u00a0/g, " ")
+        .replace(/[«»"]/g, "")
+        .replace(/\s*\/\s*/g, " / ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase()
+        .replace(/ё/g, "е");
+    }
+
+    function compactImportHeader(value) {
+      return normalizeImportHeader(value).replace(/[^a-zа-я0-9]+/g, "");
+    }
+
+    function cleanImportedCell(value) {
+      return String(value ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+    }
+
+    function buildImportedContentText(content, stories, storyConnection) {
+      const parts = [];
+      if (content) parts.push(content);
+      if (stories) parts.push(`Сторис в этот день:\n${stories}`);
+      if (storyConnection) parts.push(`Связь с историей:\n${storyConnection}`);
+      return parts.join("\n\n").trim();
+    }
+
+    function normalizeContentImportType(value) {
+      const normalized = normalizeImportHeader(value);
+      if (!normalized) return "Другое";
+      if (/reels?|рил|видео/.test(normalized)) return "Reels";
+      if (/стор|stor/.test(normalized)) return "Сторис";
+      if (/стать|article/.test(normalized)) return "Статья";
+      if (/реклам|креатив|creative/.test(normalized)) return "Рекламный креатив";
+      if (/пост|post|карус/.test(normalized)) return "Пост";
+      return "Другое";
+    }
+
+    function nextContentImportDate() {
+      const today = formatIsoDate(new Date());
+      const latest = getActiveContentPlanItems()
+        .map((item) => item.date || "")
+        .filter(Boolean)
+        .sort()
+        .at(-1);
+      const start = latest && latest >= today ? addDaysIso(latest, 1) : today;
+      return nextWeekdayIso(start);
+    }
+
+    function addDaysIso(isoDate, days) {
+      const date = new Date(`${isoDate}T00:00:00`);
+      date.setDate(date.getDate() + days);
+      return formatIsoDate(date);
+    }
+
+    function nextWeekdayIso(isoDate) {
+      let result = isoDate;
+      while (isWeekendIso(result)) {
+        result = addDaysIso(result, 1);
+      }
+      return result;
+    }
+
+    function isWeekendIso(isoDate) {
+      const day = new Date(`${isoDate}T00:00:00`).getDay();
+      return day === 0 || day === 6;
+    }
+
+    async function readXlsxRows(file) {
+      const entries = await readZipEntries(await file.arrayBuffer());
+      const workbookXml = await zipEntryText(entries, "xl/workbook.xml");
+      const workbookRelsXml = entries.has("xl/_rels/workbook.xml.rels") ? await zipEntryText(entries, "xl/_rels/workbook.xml.rels") : "";
+      const worksheetPath = firstWorksheetPath(workbookXml, workbookRelsXml, entries);
+      const sharedStrings = entries.has("xl/sharedStrings.xml") ? parseSharedStrings(await zipEntryText(entries, "xl/sharedStrings.xml")) : [];
+      return parseWorksheetRows(await zipEntryText(entries, worksheetPath), sharedStrings);
+    }
+
+    async function readZipEntries(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      const textDecoder = new TextDecoder("utf-8");
+      const endOffset = findZipEndRecord(view, bytes);
+      const totalEntries = view.getUint16(endOffset + 10, true);
+      let offset = view.getUint32(endOffset + 16, true);
+      const entries = new Map();
+
+      for (let index = 0; index < totalEntries; index += 1) {
+        if (view.getUint32(offset, true) !== 0x02014b50) throw new Error("повреждена структура Excel-файла");
+        const method = view.getUint16(offset + 10, true);
+        const compressedSize = view.getUint32(offset + 20, true);
+        const nameLength = view.getUint16(offset + 28, true);
+        const extraLength = view.getUint16(offset + 30, true);
+        const commentLength = view.getUint16(offset + 32, true);
+        const localOffset = view.getUint32(offset + 42, true);
+        const name = normalizeZipPath(textDecoder.decode(bytes.slice(offset + 46, offset + 46 + nameLength)));
+        const localNameLength = view.getUint16(localOffset + 26, true);
+        const localExtraLength = view.getUint16(localOffset + 28, true);
+        const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+        const compressedData = bytes.slice(dataStart, dataStart + compressedSize);
+        const data = method === 0 ? compressedData : method === 8 ? await inflateZipData(compressedData) : null;
+        if (!data) throw new Error(`неподдерживаемое сжатие в Excel-файле: ${method}`);
+        entries.set(name, data);
+        offset += 46 + nameLength + extraLength + commentLength;
+      }
+
+      return entries;
+    }
+
+    function findZipEndRecord(view, bytes) {
+      const minOffset = Math.max(0, bytes.length - 66000);
+      for (let offset = bytes.length - 22; offset >= minOffset; offset -= 1) {
+        if (view.getUint32(offset, true) === 0x06054b50) return offset;
+      }
+      throw new Error("это не похоже на файл .xlsx");
+    }
+
+    async function inflateZipData(data) {
+      if (typeof DecompressionStream !== "function") {
+        throw new Error("браузер не поддерживает чтение .xlsx. Обновите Chrome или откройте веб-версию в Chrome.");
+      }
+      const tryInflate = async (format) => {
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream(format));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      };
+      try {
+        return await tryInflate("deflate-raw");
+      } catch (error) {
+        return tryInflate("deflate");
+      }
+    }
+
+    async function zipEntryText(entries, path) {
+      const data = entries.get(normalizeZipPath(path));
+      if (!data) throw new Error(`в Excel-файле не найден ${path}`);
+      return new TextDecoder("utf-8").decode(data);
+    }
+
+    function firstWorksheetPath(workbookXml, workbookRelsXml, entries) {
+      const workbook = parseXmlDocument(workbookXml);
+      const sheet = xmlElements(workbook, "sheet")[0];
+      const relationId = sheet?.getAttribute("r:id") || sheet?.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+
+      if (relationId && workbookRelsXml) {
+        const rels = parseXmlDocument(workbookRelsXml);
+        const relation = xmlElements(rels, "Relationship").find((item) => item.getAttribute("Id") === relationId);
+        const target = relation?.getAttribute("Target");
+        if (target) return resolveZipPath("xl", target);
+      }
+
+      return [...entries.keys()].find((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)) || "xl/worksheets/sheet1.xml";
+    }
+
+    function parseSharedStrings(xmlText) {
+      const documentXml = parseXmlDocument(xmlText);
+      return xmlElements(documentXml, "si").map((item) =>
+        xmlElements(item, "t").map((textNode) => textNode.textContent || "").join("")
+      );
+    }
+
+    function parseWorksheetRows(xmlText, sharedStrings) {
+      const documentXml = parseXmlDocument(xmlText);
+      return xmlElements(documentXml, "row").map((row) => {
+        const values = [];
+        xmlElements(row, "c").forEach((cell, cellIndex) => {
+          const reference = cell.getAttribute("r") || "";
+          const columnIndex = reference ? xlsxColumnIndex(reference) : cellIndex;
+          values[columnIndex] = worksheetCellValue(cell, sharedStrings);
+        });
+        return values.map((value) => cleanImportedCell(value));
+      }).filter((row) => row.some(Boolean));
+    }
+
+    function worksheetCellValue(cell, sharedStrings) {
+      const type = cell.getAttribute("t") || "";
+      if (type === "inlineStr") {
+        return xmlElements(cell, "t").map((item) => item.textContent || "").join("");
+      }
+      const value = xmlElements(cell, "v")[0]?.textContent || "";
+      if (type === "s") return sharedStrings[Number(value)] || "";
+      if (type === "b") return value === "1" ? "TRUE" : "FALSE";
+      return value;
+    }
+
+    function xlsxColumnIndex(reference) {
+      const letters = String(reference).match(/[A-Z]+/i)?.[0] || "A";
+      return [...letters.toUpperCase()].reduce((index, letter) => index * 26 + letter.charCodeAt(0) - 64, 0) - 1;
+    }
+
+    function parseXmlDocument(xmlText) {
+      const documentXml = new DOMParser().parseFromString(xmlText, "application/xml");
+      if (documentXml.getElementsByTagName("parsererror").length) throw new Error("не удалось прочитать структуру Excel-файла");
+      return documentXml;
+    }
+
+    function xmlElements(root, localName) {
+      return Array.from(root.getElementsByTagName("*")).filter((item) => item.localName === localName);
+    }
+
+    function normalizeZipPath(path) {
+      const parts = String(path || "").replace(/\\/g, "/").replace(/^\/+/, "").split("/");
+      const result = [];
+      parts.forEach((part) => {
+        if (!part || part === ".") return;
+        if (part === "..") {
+          result.pop();
+          return;
+        }
+        result.push(part);
+      });
+      return result.join("/");
+    }
+
+    function resolveZipPath(basePath, target) {
+      if (String(target).startsWith("/")) return normalizeZipPath(target);
+      return normalizeZipPath(`${basePath}/${target}`);
     }
 
     function publishContentItem(item, options = {}) {
@@ -19365,7 +19739,9 @@
         type: item.type || "Reels",
         rubric: item.rubric || defaultContentRubrics()[0].name,
         topic: item.topic || "",
+        prepare: item.prepare || "",
         text: item.text || "",
+        cta: item.cta || "",
         hashtags: item.hashtags || "",
         status: futurePublished ? "Запланировано" : item.status || "Идея",
         owner: item.owner || "",
