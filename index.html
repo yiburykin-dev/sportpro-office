@@ -2970,6 +2970,62 @@
       grid-template-columns: repeat(4, minmax(180px, 1fr));
     }
 
+    .calendar-grid.month-stream {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 30px;
+    }
+
+    .calendar-month-section {
+      min-width: 0;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .calendar-month-section:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .calendar-month-heading {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .calendar-month-board {
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .calendar-month-layout {
+      min-width: 900px;
+    }
+
+    .calendar-month-weekdays,
+    .calendar-month-days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .calendar-month-weekdays {
+      margin-bottom: 8px;
+    }
+
+    .calendar-month-weekdays span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .calendar-day.calendar-day-placeholder {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
     .calendar-day {
       min-height: 138px;
       height: 170px;
@@ -3177,12 +3233,18 @@
     .calendar-items {
       display: grid;
       gap: 6px;
+      min-width: 0;
       max-height: 118px;
+      overflow-x: hidden;
       overflow-y: auto;
       padding-right: 2px;
     }
 
     .content-card {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
       border: 1px solid var(--line);
       border-left: 4px solid var(--accent);
       border-radius: 8px;
@@ -3196,6 +3258,8 @@
 
     .content-card[draggable="true"] {
       cursor: grab;
+      user-select: none;
+      -webkit-user-drag: element;
     }
 
     .content-card.dragging {
@@ -4386,6 +4450,21 @@
                 <label>Дата
                   <input id="date" type="date" required>
                 </label>
+                <label>Время
+                  <input id="adTime" type="time">
+                </label>
+              </div>
+              <div class="two">
+                <label>Площадка
+                  <select id="adPlatform">
+                    <option value="Instagram">Instagram</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="VK">VK</option>
+                    <option value="Сайт">Сайт</option>
+                    <option value="Другое">Другое</option>
+                  </select>
+                </label>
                 <label>Тип
                   <select id="type" required>
                     <option value="Рилс">Рилс</option>
@@ -4397,9 +4476,32 @@
                   </select>
                 </label>
               </div>
+              <label>Рубрика
+                <select id="adRubric"></select>
+              </label>
               <label>Тема
                 <input id="topic" type="text" placeholder="Например: акция, кейс, отзыв" required>
               </label>
+              <label>Что подготовить
+                <textarea id="adPrepare" placeholder="Материалы, съемка, фото, оборудование или другие задачи для подготовки"></textarea>
+              </label>
+              <label>Текст / описание
+                <textarea id="adText" placeholder="Текст публикации, сценарий Reels или тезисы для сторис"></textarea>
+              </label>
+              <label>Призыв к действию
+                <textarea id="adCta" placeholder="Что должен сделать зритель: написать, перейти, запросить КП"></textarea>
+              </label>
+              <label>Хэштеги
+                <input id="adHashtags" type="text" placeholder="#sportpro #фитнесклуб #тренажеры">
+              </label>
+              <div class="two">
+                <label>Ответственный
+                  <input id="adOwner" type="text" placeholder="Кто готовит">
+                </label>
+                <label>Дедлайн подготовки
+                  <input id="adPrepDeadline" type="date">
+                </label>
+              </div>
               <div class="two">
                 <label>Просмотры сейчас
                   <input id="views" type="number" min="0" step="1" value="0" required>
@@ -4431,6 +4533,15 @@
                   <input id="adBudget" type="number" min="0" step="1" value="0" readonly>
                 </label>
               </div>
+              <label>Ссылка на текст / макет / публикацию
+                <input id="adLink" type="url" placeholder="https://...">
+              </label>
+              <label>Превью / фото
+                <input id="adPreview" type="url" placeholder="Ссылка на изображение, макет или папку">
+              </label>
+              <label>Комментарий
+                <textarea id="adComment" placeholder="Что важно учесть, цель публикации, правки"></textarea>
+              </label>
               <label>Вывод
                 <textarea id="conclusion" placeholder="Что сработало, что повторить, что изменить"></textarea>
               </label>
@@ -7270,8 +7381,17 @@
     const fields = {
       id: document.querySelector("#entryId"),
       date: document.querySelector("#date"),
+      time: document.querySelector("#adTime"),
+      platform: document.querySelector("#adPlatform"),
       type: document.querySelector("#type"),
+      rubric: document.querySelector("#adRubric"),
       topic: document.querySelector("#topic"),
+      prepare: document.querySelector("#adPrepare"),
+      text: document.querySelector("#adText"),
+      cta: document.querySelector("#adCta"),
+      hashtags: document.querySelector("#adHashtags"),
+      owner: document.querySelector("#adOwner"),
+      prepDeadline: document.querySelector("#adPrepDeadline"),
       views: document.querySelector("#views"),
       saves: document.querySelector("#saves"),
       messages: document.querySelector("#messages"),
@@ -7280,6 +7400,9 @@
       adDailyCost: document.querySelector("#adDailyCost"),
       adDays: document.querySelector("#adDays"),
       adBudget: document.querySelector("#adBudget"),
+      link: document.querySelector("#adLink"),
+      preview: document.querySelector("#adPreview"),
+      comment: document.querySelector("#adComment"),
       conclusion: document.querySelector("#conclusion"),
     };
 
@@ -7749,8 +7872,17 @@
       const entry = {
         id,
         date: fields.date.value,
+        time: fields.time.value,
+        platform: fields.platform.value,
         type: fields.type.value,
+        rubric: fields.rubric.value,
         topic: fields.topic.value.trim(),
+        prepare: fields.prepare.value.trim(),
+        text: fields.text.value.trim(),
+        cta: fields.cta.value.trim(),
+        hashtags: fields.hashtags.value.trim(),
+        owner: fields.owner.value.trim(),
+        prepDeadline: fields.prepDeadline.value,
         views: Number(fields.views.value) || 0,
         saves: Number(fields.saves.value) || 0,
         messages: Number(fields.messages.value) || 0,
@@ -7759,6 +7891,9 @@
         adDailyCost: fields.isAd.checked ? Number(fields.adDailyCost.value) || 0 : 0,
         adDays: fields.isAd.checked ? Number(fields.adDays.value) || 0 : 0,
         adBudget: fields.isAd.checked ? adBudgetFromFields() : 0,
+        link: fields.link.value.trim(),
+        preview: fields.preview.value.trim(),
+        comment: fields.comment.value.trim(),
         conclusion: fields.conclusion.value.trim(),
         measurements: [],
         updatedAt: new Date().toISOString(),
@@ -8236,10 +8371,20 @@
 
       if (button.dataset.action === "edit") {
         openAdsPublicationFormPanel();
+        const contentItem = getContentItemForAdRecord(record);
         fields.id.value = record.id;
         fields.date.value = record.date;
+        fields.time.value = record.time || contentItem?.time || "";
+        fields.platform.value = record.platform || contentItem?.platform || "Instagram";
         fields.type.value = record.type;
+        fields.rubric.value = record.rubric || contentItem?.rubric || defaultContentRubrics()[0].name;
         fields.topic.value = record.topic;
+        fields.prepare.value = record.prepare || contentItem?.prepare || "";
+        fields.text.value = record.text || contentItem?.text || "";
+        fields.cta.value = record.cta || contentItem?.cta || "";
+        fields.hashtags.value = record.hashtags || contentItem?.hashtags || "";
+        fields.owner.value = record.owner || contentItem?.owner || "";
+        fields.prepDeadline.value = record.prepDeadline || contentItem?.prepDeadline || "";
         fields.views.value = record.views;
         fields.saves.value = record.saves;
         fields.messages.value = record.messages;
@@ -8249,6 +8394,9 @@
         fields.adDays.value = Number(record.adDays) || 0;
         fields.adBudget.value = adRecordBudget(record);
         updateAdBudgetFields();
+        fields.link.value = record.link || contentItem?.link || "";
+        fields.preview.value = record.preview || contentItem?.preview || "";
+        fields.comment.value = record.comment || contentItem?.comment || "";
         fields.conclusion.value = record.conclusion;
         formTitle.textContent = "Редактирование";
         cancelEditBtn.classList.remove("hidden");
@@ -8338,7 +8486,7 @@
       const yearDay = event.target.closest("[data-year-source-date]");
       if (!card && !yearDay) return;
 
-      draggedContentId = card?.dataset.contentId || "";
+      draggedContentId = String(card?.dataset.contentId || "").trim();
       draggedContentDate = yearDay?.dataset.yearSourceDate || "";
       if (card) card.classList.add("dragging");
       if (yearDay) yearDay.classList.add("dragging");
@@ -15546,20 +15694,21 @@
         return;
       }
 
+      if (activeCalendarMode === "month") {
+        renderContentMonthStream();
+        return;
+      }
+
       const days = getCalendarDays();
       const activeItems = getActiveContentPlanItems();
       const itemsByDate = groupBy(activeItems, "date");
-      calendarTitle.textContent = activeCalendarMode === "week"
-        ? `Неделя ${formatShortDate(formatIsoDate(days[0]))}-${formatShortDate(formatIsoDate(days[days.length - 1]))}`
-        : new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(calendarCursor);
+      calendarTitle.textContent = `Неделя ${formatShortDate(formatIsoDate(days[0]))}-${formatShortDate(formatIsoDate(days[days.length - 1]))}`;
 
       const todayKey = formatIsoDate(new Date());
       const hasItems = days.some((date) => (itemsByDate[formatIsoDate(date)] || []).length);
       contentCalendarEmpty.classList.toggle("hidden", hasItems);
-      contentCalendarGrid.classList.remove("year");
-      const summaryItems = activeCalendarMode === "month"
-        ? getContentItemsForMonth(calendarCursor)
-        : getContentItemsForDates(days);
+      contentCalendarGrid.classList.remove("year", "month-stream");
+      const summaryItems = getContentItemsForDates(days);
       renderContentTypeSummary(summaryItems);
       renderContentPeriodReport(summaryItems);
       contentCalendarGrid.innerHTML = days.map((date) => {
@@ -15579,6 +15728,69 @@
       }).join("");
     }
 
+    function renderContentMonthStream() {
+      const currentYear = new Date().getFullYear();
+      const startMonth = calendarCursor.getFullYear() === currentYear ? calendarCursor.getMonth() : new Date().getMonth();
+      if (calendarCursor.getFullYear() !== currentYear) {
+        calendarCursor = new Date(currentYear, startMonth, 1);
+        renderCalendarMonthSelect();
+      }
+
+      const months = Array.from({ length: 12 - startMonth }, (_, index) => startMonth + index);
+      const startDate = formatIsoDate(new Date(currentYear, startMonth, 1));
+      const endDate = formatIsoDate(new Date(currentYear, 11, 31));
+      const activeItems = getActiveContentPlanItems().filter((item) => item.date && item.date >= startDate && item.date <= endDate);
+      const itemsByDate = groupBy(activeItems, "date");
+      const todayKey = formatIsoDate(new Date());
+      const firstMonthName = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(currentYear, startMonth, 1));
+      const lastMonthName = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(currentYear, 11, 1));
+
+      calendarTitle.textContent = startMonth === 11
+        ? `${firstMonthName} ${currentYear}`
+        : `${firstMonthName} - ${lastMonthName} ${currentYear}`;
+      contentCalendarEmpty.classList.add("hidden");
+      contentCalendarGrid.classList.remove("year");
+      contentCalendarGrid.classList.add("month-stream");
+      renderContentTypeSummary(activeItems);
+      renderContentPeriodReport(activeItems);
+      contentCalendarGrid.innerHTML = months.map((month) => {
+        const monthName = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date(currentYear, month, 1));
+        const monthDays = getFixedMonthDays(currentYear, month);
+        return `
+          <section class="calendar-month-section" data-calendar-month-section="${month}">
+            <h3 class="calendar-month-heading">${escapeHtml(monthName)}</h3>
+            <div class="calendar-month-board">
+              <div class="calendar-month-layout">
+                <div class="calendar-month-weekdays" aria-hidden="true">
+                  <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+                </div>
+                <div class="calendar-month-days">
+                  ${monthDays.map((date) => {
+                    if (date.getMonth() !== month) {
+                      return '<div class="calendar-day calendar-day-placeholder" aria-hidden="true"></div>';
+                    }
+                    const key = formatIsoDate(date);
+                    const items = (itemsByDate[key] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+                    return `
+                      <div class="calendar-day ${key === todayKey ? "today" : ""}" data-calendar-date="${key}">
+                        <div class="calendar-date">
+                          <span>${formatShortDate(key)}</span>
+                          <span>${weekdayLabel(date)}</span>
+                        </div>
+                        <div class="calendar-items ${items.length > 1 ? "compact" : ""}">
+                          ${items.map((item) => contentCalendarCard(item)).join("")}
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
     function renderContentYearCalendar() {
       const year = new Date().getFullYear();
       const today = new Date();
@@ -15592,6 +15804,7 @@
       const itemsByDate = groupBy(items, "date");
       calendarTitle.textContent = `Год ${year}`;
       contentCalendarEmpty.classList.toggle("hidden", items.length > 0);
+      contentCalendarGrid.classList.remove("month-stream");
       contentCalendarGrid.classList.add("year");
       renderContentTypeSummary(items);
       renderContentPeriodReport(items);
@@ -15718,7 +15931,8 @@
     }
 
     function moveContentItemToDate(id, date) {
-      const item = contentPlanItems.find((record) => record.id === id);
+      const normalizedId = String(id || "").trim();
+      const item = contentPlanItems.find((record) => String(record.id || "").trim() === normalizedId);
       if (!item || !date || item.date === date) return;
       item.archivedAt = "";
       item.date = date;
@@ -16203,6 +16417,7 @@
       const options = defaultContentRubrics().map((rubric) => `<option value="${escapeHtml(rubric.name)}">${escapeHtml(rubric.name)}</option>`).join("");
       if (contentFields.rubric.innerHTML !== options) contentFields.rubric.innerHTML = options;
       if (ideaFields.rubric.innerHTML !== options) ideaFields.rubric.innerHTML = options;
+      if (fields.rubric.innerHTML !== options) fields.rubric.innerHTML = options;
     }
 
     function contentPreviewHtml(url) {
@@ -16379,6 +16594,7 @@
       const next = new Date(calendarCursor);
       if (activeCalendarMode === "month") {
         next.setMonth(next.getMonth() + direction);
+        if (next.getFullYear() !== new Date().getFullYear()) return;
       } else {
         next.setDate(next.getDate() + direction * 7);
       }
@@ -16773,6 +16989,9 @@
       form.reset();
       fields.id.value = "";
       fields.date.valueAsDate = new Date();
+      fields.time.value = "";
+      fields.platform.value = "Instagram";
+      fields.rubric.selectedIndex = 0;
       fields.views.value = 0;
       fields.saves.value = 0;
       fields.messages.value = 0;
@@ -17390,25 +17609,27 @@
         ...(existing || {}),
         id: existing?.id || createId(),
         date: publishedDate,
-        time: existing?.time || "",
-        platform: existing?.platform || "Instagram",
+        time: normalizedRecord.time || "",
+        platform: normalizedRecord.platform || "Instagram",
         type: adTypeToContentType(normalizedRecord.type),
-        rubric: existing?.rubric || defaultContentRubrics()[0].name,
+        rubric: normalizedRecord.rubric || defaultContentRubrics()[0].name,
         topic: normalizedRecord.topic,
-        text: existing?.text || "",
-        hashtags: existing?.hashtags || "",
+        prepare: normalizedRecord.prepare,
+        text: normalizedRecord.text,
+        cta: normalizedRecord.cta,
+        hashtags: normalizedRecord.hashtags,
         status: "Опубликовано",
-        owner: existing?.owner || "",
-        prepDeadline: existing?.prepDeadline || "",
+        owner: normalizedRecord.owner,
+        prepDeadline: normalizedRecord.prepDeadline,
         isAd: Boolean(normalizedRecord.isAd),
         adDailyCost: Number(normalizedRecord.adDailyCost) || 0,
         adStartDate: normalizedRecord.adStartDate || normalizedRecord.date || publishedDate,
         adEndDate: normalizedRecord.adEndDate || normalizedRecord.adStartDate || normalizedRecord.date || publishedDate,
         adDays: Number(normalizedRecord.adDays) || 0,
         adBudget: adRecordBudget(normalizedRecord),
-        link: existing?.link || "",
-        preview: existing?.preview || "",
-        comment: existing?.comment || normalizedRecord.conclusion || "Добавлено вручную из раздела Реклама.",
+        link: normalizedRecord.link,
+        preview: normalizedRecord.preview,
+        comment: normalizedRecord.comment || normalizedRecord.conclusion || "Добавлено вручную из раздела Реклама.",
         publishedAt: publishedDate,
         linkedAdId: normalizedRecord.id,
         adSyncDisabled: false,
@@ -19614,8 +19835,17 @@
       const normalized = {
         id: record.id || createId(),
         date: record.date || "",
+        time: record.time || "",
+        platform: record.platform || "Instagram",
         type: record.type || "Другое",
+        rubric: record.rubric || defaultContentRubrics()[0].name,
         topic: record.topic || "",
+        prepare: record.prepare || "",
+        text: record.text || "",
+        cta: record.cta || "",
+        hashtags: record.hashtags || "",
+        owner: record.owner || "",
+        prepDeadline: record.prepDeadline || "",
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
@@ -19632,6 +19862,9 @@
         adDays: Number(record.adDays) || 0,
         adBudget: Boolean(record.isAd) ? (Number(record.adBudget) || ((Number(record.adDailyCost) || 0) * (Number(record.adDays) || 0))) : 0,
         measurements,
+        link: record.link || "",
+        preview: record.preview || "",
+        comment: record.comment || "",
         conclusion: record.conclusion || "",
         linkedContentId: record.linkedContentId || "",
         updatedAt: record.updatedAt || new Date().toISOString(),
