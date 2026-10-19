@@ -6957,8 +6957,8 @@
     const cloudConfigKey = "workspace-tables.cloud.supabase";
     const cloudSessionKey = "workspace-tables.cloud.session";
     const defaultCloudConfig = {
-      url: "https://zfntoxwdqochvwymwbef.supabase.co",
-      key: "sb_publishable_emLp2Fs7nD9OGjVVMVa1gA_cGZ5PdAa",
+      url: "https://urzfbbtmkombzsmbmusw.supabase.co",
+      key: "sb_publishable_B8lkp9aldgRNOl2ptdSPew_xrWCtx-n",
       workspace: "sportpro-main",
     };
     const wholesaleSyncHistoryKey = "workspace-tables.wholesale.syncHistory";
@@ -11675,6 +11675,17 @@
       return value.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/i, "");
     }
 
+    function cloudErrorMessage(error) {
+      const message = String(error?.message || error || "").trim();
+      if (/failed to fetch|networkerror|load failed|unknown host|name or service not known|host is unknown/i.test(message)) {
+        return "Не удается связаться с облачной базой. Адрес облака недоступен или больше не существует. Откройте «Облако» и укажите действующие Project URL и publishable key Supabase.";
+      }
+      if (/jwt|token|401|invalid.*api.*key|apikey/i.test(message)) {
+        return "Нет доступа к облаку. Войдите заново или проверьте ключ облачной базы.";
+      }
+      return message || "Неизвестная ошибка соединения с облаком.";
+    }
+
     function isCloudConfigured() {
       return Boolean(cloudConfig.url && cloudConfig.key && cloudConfig.workspace);
     }
@@ -12377,7 +12388,9 @@
         updateCloudStatus(`Синхронизировано: ${formatDateTime(new Date())}`);
       } catch (error) {
         updateCloudStatus("Ошибка синхронизации");
-        if (!options.silent) alert(`Не удалось синхронизировать облако: ${error.message}`);
+        const message = cloudErrorMessage(error);
+        if (/Не удается связаться с облачной базой|Нет доступа к облаку/.test(message)) cloudPanel.classList.remove("hidden");
+        if (!options.silent) alert(`Не удалось синхронизировать облако: ${message}`);
         if (options.throwOnError) throw error;
       }
     }
@@ -12683,16 +12696,21 @@
     }
 
     async function cloudRequest(url, options = {}) {
-      const accessToken = await ensureCloudSession();
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          apikey: cloudConfig.key,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          ...(options.headers || {}),
-        },
-      });
+      let response;
+      try {
+        const accessToken = await ensureCloudSession();
+        response = await fetch(url, {
+          ...options,
+          headers: {
+            apikey: cloudConfig.key,
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            ...(options.headers || {}),
+          },
+        });
+      } catch (error) {
+        throw new Error(cloudErrorMessage(error));
+      }
 
       if (!response.ok) {
         const text = await response.text();
@@ -12712,14 +12730,19 @@
     }
 
     async function authRequest(path, options = {}) {
-      const response = await fetch(`${cloudConfig.url}/auth/v1/${path}`, {
-        ...options,
-        headers: {
-          apikey: cloudConfig.key,
-          "Content-Type": "application/json",
-          ...(options.headers || {}),
-        },
-      });
+      let response;
+      try {
+        response = await fetch(`${cloudConfig.url}/auth/v1/${path}`, {
+          ...options,
+          headers: {
+            apikey: cloudConfig.key,
+            "Content-Type": "application/json",
+            ...(options.headers || {}),
+          },
+        });
+      } catch (error) {
+        throw new Error(cloudErrorMessage(error));
+      }
 
       if (!response.ok) {
         const text = await response.text();
