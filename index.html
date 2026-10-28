@@ -1357,6 +1357,15 @@
       top: 18px;
     }
 
+    @media (min-width: 821px) {
+      .content-list-workspace.is-form-open .form-panel {
+        max-height: calc(100vh - 36px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+    }
+
     .measurement-panel {
       display: grid;
       gap: 12px;
@@ -4525,14 +4534,19 @@
               <label>Новые подписчики
                 <input id="followers" type="number" min="0" step="1" value="0" required>
               </label>
-              <label>Целевое действие
-                <select id="targetAction">
-                  <option value="Посещение сайта">Посещение сайта</option>
-                  <option value="Посещение профиля">Посещение профиля</option>
-                  <option value="Отправить сообщение">Отправить сообщение</option>
-                  <option value="Подписка">Подписка</option>
-                </select>
-              </label>
+              <div class="two">
+                <label>Целевое действие
+                  <select id="targetAction">
+                    <option value="Посещение сайта">Посещение сайта</option>
+                    <option value="Посещение профиля">Посещение профиля</option>
+                    <option value="Отправить сообщение">Отправить сообщение</option>
+                    <option value="Подписка">Подписка</option>
+                  </select>
+                </label>
+                <label>Количество действий
+                  <input id="targetActionCount" type="number" min="0" step="1" value="0">
+                </label>
+              </div>
               <label class="checkbox-line">
                 <input id="isAd" type="checkbox">
                 <span>Реклама</span>
@@ -4605,14 +4619,19 @@
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
                   </label>
                 </div>
-                <label>Целевое действие
-                  <select id="measurementTargetAction">
-                    <option value="Посещение сайта">Посещение сайта</option>
-                    <option value="Посещение профиля">Посещение профиля</option>
-                    <option value="Отправить сообщение">Отправить сообщение</option>
-                    <option value="Подписка">Подписка</option>
-                  </select>
-                </label>
+                <div class="two">
+                  <label>Целевое действие
+                    <select id="measurementTargetAction">
+                      <option value="Посещение сайта">Посещение сайта</option>
+                      <option value="Посещение профиля">Посещение профиля</option>
+                      <option value="Отправить сообщение">Отправить сообщение</option>
+                      <option value="Подписка">Подписка</option>
+                    </select>
+                  </label>
+                  <label>Количество действий
+                    <input id="measurementTargetActionCount" type="number" min="0" step="1" value="0">
+                  </label>
+                </div>
                 <div class="two">
                   <label>Лайки всего
                     <input id="measurementLikes" type="number" min="0" step="1" value="0">
@@ -7438,6 +7457,7 @@
       messages: document.querySelector("#messages"),
       followers: document.querySelector("#followers"),
       targetAction: document.querySelector("#targetAction"),
+      targetActionCount: document.querySelector("#targetActionCount"),
       isAd: document.querySelector("#isAd"),
       adDailyCost: document.querySelector("#adDailyCost"),
       adStartDate: document.querySelector("#adStartDate"),
@@ -7499,6 +7519,7 @@
       reposts: document.querySelector("#measurementReposts"),
       profileVisits: document.querySelector("#measurementProfileVisits"),
       targetAction: document.querySelector("#measurementTargetAction"),
+      targetActionCount: document.querySelector("#measurementTargetActionCount"),
       note: document.querySelector("#measurementNote"),
     };
 
@@ -7935,6 +7956,7 @@
         messages: Number(fields.messages.value) || 0,
         followers: Number(fields.followers.value) || 0,
         targetAction: fields.targetAction.value,
+        targetActionCount: Number(fields.targetActionCount.value) || 0,
         isAd: Boolean(fields.isAd.checked),
         adDailyCost: fields.isAd.checked ? Number(fields.adDailyCost.value) || 0 : 0,
         adStartDate: fields.isAd.checked ? fields.adStartDate.value : "",
@@ -8037,6 +8059,7 @@
         reposts: Number(measurementFields.reposts.value) || 0,
         profileVisits: Number(measurementFields.profileVisits.value) || 0,
         targetAction: measurementFields.targetAction.value,
+        targetActionCount: Number(measurementFields.targetActionCount.value) || 0,
         note: measurementFields.note.value.trim(),
         updatedAt: new Date().toISOString(),
       });
@@ -8449,6 +8472,7 @@
         fields.messages.value = record.messages;
         fields.followers.value = getRecordFollowers(record);
         fields.targetAction.value = record.targetAction || "Посещение профиля";
+        fields.targetActionCount.value = Number(record.targetActionCount) || 0;
         fields.isAd.checked = Boolean(record.isAd);
         fields.adDailyCost.value = Number(record.adDailyCost) || 0;
         fields.adStartDate.value = record.adStartDate || record.date || "";
@@ -17151,6 +17175,7 @@
       fields.saves.value = 0;
       fields.messages.value = 0;
       fields.followers.value = 0;
+      fields.targetActionCount.value = 0;
       fields.isAd.checked = false;
       fields.adDailyCost.value = 0;
       fields.adStartDate.value = "";
@@ -17950,6 +17975,7 @@
       measurementFields.reposts.value = Number(latest.reposts) || 0;
       measurementFields.profileVisits.value = Number(latest.profileVisits) || 0;
       measurementFields.targetAction.value = latest.targetAction || "Посещение профиля";
+      measurementFields.targetActionCount.value = Number(latest.targetActionCount) || 0;
       measurementFields.note.value = "";
       renderMeasurementHistory(record);
       measurementFields.views.focus();
@@ -20021,6 +20047,7 @@
         profileVisits: Number(record.profileVisits) || 0,
         followers: Number(record.followers) || 0,
         targetAction: record.targetAction || "Посещение профиля",
+        targetActionCount: Number(record.targetActionCount) || 0,
         isAd: Boolean(record.isAd),
         adDailyCost: Number(record.adDailyCost) || 0,
         adStartDate: record.adStartDate || record.date || "",
@@ -20059,6 +20086,7 @@
         reposts: Number(measurement.reposts) || 0,
         profileVisits: Number(measurement.profileVisits) || 0,
         targetAction: measurement.targetAction || "Посещение профиля",
+        targetActionCount: Number(measurement.targetActionCount) || 0,
         followers: Number(measurement.followers) || 0,
         leads: Number(measurement.leads) || 0,
         offers: Number(measurement.offers) || 0,
@@ -20086,6 +20114,7 @@
         reposts: record.reposts,
         profileVisits: record.profileVisits,
         targetAction: record.targetAction,
+        targetActionCount: record.targetActionCount,
         note: "Первый замер",
         updatedAt: record.updatedAt,
       });
@@ -20112,6 +20141,7 @@
       record.reposts = latest.reposts;
       record.profileVisits = latest.profileVisits;
       record.targetAction = latest.targetAction;
+      record.targetActionCount = latest.targetActionCount;
       record.measurements = (Array.isArray(record.measurements) ? record.measurements : []).map(normalizeMeasurement);
       return record;
     }
