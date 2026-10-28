@@ -8201,6 +8201,10 @@
     });
     contentFields.status.addEventListener("change", enforceContentStatusDateRule);
     contentFields.date.addEventListener("change", enforceContentStatusDateRule);
+    fields.platform.addEventListener("change", () => updateAdPublicationTypeOptions());
+    contentFields.platform.addEventListener("change", () => updateContentPublicationTypeOptions());
+    updateAdPublicationTypeOptions();
+    updateContentPublicationTypeOptions();
     document.querySelector("#contentNewItemBtn").addEventListener("click", () => {
       resetContentForm({ close: false });
       openContentFormPanel();
@@ -8376,7 +8380,7 @@
         fields.date.value = record.date;
         fields.time.value = record.time || contentItem?.time || "";
         fields.platform.value = record.platform || contentItem?.platform || "Instagram";
-        fields.type.value = record.type;
+        updateAdPublicationTypeOptions(record.type);
         fields.rubric.value = record.rubric || contentItem?.rubric || defaultContentRubrics()[0].name;
         fields.topic.value = record.topic;
         fields.prepare.value = record.prepare || contentItem?.prepare || "";
@@ -17008,12 +17012,59 @@
       }, {});
     }
 
+    function publicationTypeOptions(platform, scope) {
+      if (platform === "YouTube") {
+        return [
+          { value: "Shorts", label: "Shorts" },
+          { value: "Видео", label: "Видео" },
+        ];
+      }
+
+      if (scope === "content") {
+        return [
+          { value: "Reels", label: "Reels" },
+          { value: "Пост", label: "Пост" },
+          { value: "Сторис", label: "Сторис" },
+          { value: "Статья", label: "Статья" },
+          { value: "Рекламный креатив", label: "Рекламный креатив" },
+          { value: "Другое", label: "Другое" },
+        ];
+      }
+
+      return [
+        { value: "Рилс", label: "Рилс" },
+        { value: "Пост", label: "Пост" },
+        { value: "Сторис", label: "Сторис" },
+        { value: "Реклама", label: "Реклама" },
+        { value: "Посев", label: "Посев" },
+        { value: "Другое", label: "Другое" },
+      ];
+    }
+
+    function updatePublicationTypeOptions(select, platform, scope, preferredType = "") {
+      const options = publicationTypeOptions(platform, scope);
+      const requestedType = preferredType || select.value;
+      select.replaceChildren(...options.map((option) => new Option(option.label, option.value)));
+      select.value = options.some((option) => option.value === requestedType)
+        ? requestedType
+        : options[0].value;
+    }
+
+    function updateAdPublicationTypeOptions(preferredType = "") {
+      updatePublicationTypeOptions(fields.type, fields.platform.value, "ads", preferredType);
+    }
+
+    function updateContentPublicationTypeOptions(preferredType = "") {
+      updatePublicationTypeOptions(contentFields.type, contentFields.platform.value, "content", preferredType);
+    }
+
     function resetForm(options = {}) {
       form.reset();
       fields.id.value = "";
       fields.date.valueAsDate = new Date();
       fields.time.value = "";
       fields.platform.value = "Instagram";
+      updateAdPublicationTypeOptions();
       fields.rubric.selectedIndex = 0;
       fields.views.value = 0;
       fields.saves.value = 0;
@@ -17052,7 +17103,7 @@
       contentFields.date.value = item.date;
       contentFields.time.value = item.time;
       contentFields.platform.value = item.platform;
-      contentFields.type.value = item.type;
+      updateContentPublicationTypeOptions(item.type);
       contentFields.rubric.value = item.rubric;
       contentFields.topic.value = item.topic;
       contentFields.prepare.value = item.prepare || "";
@@ -17081,6 +17132,7 @@
       contentPlanForm.reset();
       contentFields.id.value = "";
       contentFields.date.valueAsDate = new Date();
+      updateContentPublicationTypeOptions();
       contentFields.prepDeadline.value = "";
       contentFields.isAd.checked = false;
       contentFields.adDailyCost.value = 0;
@@ -17590,6 +17642,8 @@
         "Reels": "Рилс",
         "Пост": "Пост",
         "Сторис": "Сторис",
+        "Shorts": "Shorts",
+        "Видео": "Видео",
         "Рекламный креатив": "Реклама",
       };
       return map[type] || "Другое";
@@ -17600,6 +17654,8 @@
         "Рилс": "Reels",
         "Пост": "Пост",
         "Сторис": "Сторис",
+        "Shorts": "Shorts",
+        "Видео": "Видео",
         "Реклама": "Рекламный креатив",
       };
       return map[type] || "Другое";
