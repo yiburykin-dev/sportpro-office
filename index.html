@@ -4259,6 +4259,11 @@
           </div>
           <div class="actions">
             <button class="btn dashboard-settings-btn" type="button" data-dashboard-settings="adsDashboard" data-dashboard-title="Дашборд рекламы" title="Настроить показатели">⚙</button>
+            <select id="dashboardPlatform" aria-label="Площадка дашборда">
+              <option value="all">Все площадки</option>
+              <option value="Instagram">Instagram</option>
+              <option value="YouTube">YouTube</option>
+            </select>
             <select id="dashboardPeriod" aria-label="Период дашборда">
               <option value="all">Все время</option>
               <option value="30">30 дней</option>
@@ -4268,6 +4273,7 @@
         </div>
 
         <section class="summary" data-dashboard-panel="adsDashboard" aria-label="Итоги дашборда">
+          <div class="metric" data-dashboard-metric="impressions" data-dashboard-card="impressions"><span>Показы</span><strong id="dashImpressions">0</strong></div>
           <div class="metric active" data-dashboard-metric="views" data-dashboard-card="views"><span>Просмотры</span><strong id="dashViews">0</strong></div>
           <div class="metric" data-dashboard-metric="rows" data-dashboard-card="rows"><span>Записей</span><strong id="dashRows">0</strong></div>
           <div class="metric" data-dashboard-metric="saves" data-dashboard-card="saves"><span>Сохранения</span><strong id="dashSaves">0</strong></div>
@@ -4503,6 +4509,9 @@
                 </label>
               </div>
               <div class="two">
+                <label>Показы сейчас
+                  <input id="impressions" type="number" min="0" step="1" value="0" required>
+                </label>
                 <label>Просмотры сейчас
                   <input id="views" type="number" min="0" step="1" value="0" required>
                 </label>
@@ -4516,17 +4525,33 @@
               <label>Новые подписчики
                 <input id="followers" type="number" min="0" step="1" value="0" required>
               </label>
+              <label>Целевое действие
+                <select id="targetAction">
+                  <option value="Посещение сайта">Посещение сайта</option>
+                  <option value="Посещение профиля">Посещение профиля</option>
+                  <option value="Отправить сообщение">Отправить сообщение</option>
+                  <option value="Подписка">Подписка</option>
+                </select>
+              </label>
               <label class="checkbox-line">
                 <input id="isAd" type="checkbox">
                 <span>Реклама</span>
               </label>
               <div class="ad-budget-fields hidden" id="adBudgetFields">
                 <div class="two">
+                  <label>Дата начала
+                    <input id="adStartDate" type="date">
+                  </label>
+                  <label>Дата окончания
+                    <input id="adEndDate" type="date">
+                  </label>
+                </div>
+                <div class="two">
                   <label>Стоимость дня, $
                     <input id="adDailyCost" type="number" min="0" step="1" value="0">
                   </label>
                   <label>Количество дней
-                    <input id="adDays" type="number" min="0" step="1" value="0">
+                    <input id="adDays" type="number" min="0" step="1" value="0" readonly>
                   </label>
                 </div>
                 <label>Общий бюджет, $
@@ -4562,6 +4587,9 @@
                   </label>
                 </div>
                 <div class="two">
+                  <label>Показы всего
+                    <input id="measurementImpressions" type="number" min="0" step="1" value="0">
+                  </label>
                   <label>Охват всего
                     <input id="measurementReach" type="number" min="0" step="1" value="0">
                   </label>
@@ -4577,6 +4605,14 @@
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
                   </label>
                 </div>
+                <label>Целевое действие
+                  <select id="measurementTargetAction">
+                    <option value="Посещение сайта">Посещение сайта</option>
+                    <option value="Посещение профиля">Посещение профиля</option>
+                    <option value="Отправить сообщение">Отправить сообщение</option>
+                    <option value="Подписка">Подписка</option>
+                  </select>
+                </label>
                 <div class="two">
                   <label>Лайки всего
                     <input id="measurementLikes" type="number" min="0" step="1" value="0">
@@ -6961,6 +6997,9 @@
       key: "sb_publishable_B8lkp9aldgRNOl2ptdSPew_xrWCtx-n",
       workspace: "sportpro-main",
     };
+    const retiredCloudUrls = new Set([
+      "https://zfntoxwdqochvwymwbef.supabase.co",
+    ]);
     const wholesaleSyncHistoryKey = "workspace-tables.wholesale.syncHistory";
     const wholesaleLocalBackupDateKey = "workspace-tables.wholesale.localBackupDate";
     const deletedRecordsKey = "workspace-tables.ads.deleted";
@@ -7034,6 +7073,7 @@
     const contentSortToggle = document.querySelector("#contentSortToggle");
     const funnelSearch = document.querySelector("#funnelSearch");
     const funnelSortBy = document.querySelector("#funnelSortBy");
+    const dashboardPlatform = document.querySelector("#dashboardPlatform");
     const themeSelect = document.querySelector("#themeSelect");
     const brandLogo = document.querySelector("#brandLogo");
     const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -7392,12 +7432,16 @@
       hashtags: document.querySelector("#adHashtags"),
       owner: document.querySelector("#adOwner"),
       prepDeadline: document.querySelector("#adPrepDeadline"),
+      impressions: document.querySelector("#impressions"),
       views: document.querySelector("#views"),
       saves: document.querySelector("#saves"),
       messages: document.querySelector("#messages"),
       followers: document.querySelector("#followers"),
+      targetAction: document.querySelector("#targetAction"),
       isAd: document.querySelector("#isAd"),
       adDailyCost: document.querySelector("#adDailyCost"),
+      adStartDate: document.querySelector("#adStartDate"),
+      adEndDate: document.querySelector("#adEndDate"),
       adDays: document.querySelector("#adDays"),
       adBudget: document.querySelector("#adBudget"),
       link: document.querySelector("#adLink"),
@@ -7444,6 +7488,7 @@
     const measurementFields = {
       recordId: document.querySelector("#measurementRecordId"),
       date: document.querySelector("#measurementDate"),
+      impressions: document.querySelector("#measurementImpressions"),
       views: document.querySelector("#measurementViews"),
       reach: document.querySelector("#measurementReach"),
       followers: document.querySelector("#measurementFollowers"),
@@ -7453,6 +7498,7 @@
       forwards: document.querySelector("#measurementForwards"),
       reposts: document.querySelector("#measurementReposts"),
       profileVisits: document.querySelector("#measurementProfileVisits"),
+      targetAction: document.querySelector("#measurementTargetAction"),
       note: document.querySelector("#measurementNote"),
     };
 
@@ -7883,13 +7929,17 @@
         hashtags: fields.hashtags.value.trim(),
         owner: fields.owner.value.trim(),
         prepDeadline: fields.prepDeadline.value,
+        impressions: Number(fields.impressions.value) || 0,
         views: Number(fields.views.value) || 0,
         saves: Number(fields.saves.value) || 0,
         messages: Number(fields.messages.value) || 0,
         followers: Number(fields.followers.value) || 0,
+        targetAction: fields.targetAction.value,
         isAd: Boolean(fields.isAd.checked),
         adDailyCost: fields.isAd.checked ? Number(fields.adDailyCost.value) || 0 : 0,
-        adDays: fields.isAd.checked ? Number(fields.adDays.value) || 0 : 0,
+        adStartDate: fields.isAd.checked ? fields.adStartDate.value : "",
+        adEndDate: fields.isAd.checked ? fields.adEndDate.value : "",
+        adDays: fields.isAd.checked ? adDateRangeDays(fields.adStartDate.value, fields.adEndDate.value) : 0,
         adBudget: fields.isAd.checked ? adBudgetFromFields() : 0,
         link: fields.link.value.trim(),
         preview: fields.preview.value.trim(),
@@ -7976,6 +8026,7 @@
       record.measurements.push({
         id: createId(),
         date: measurementFields.date.value,
+        impressions: Number(measurementFields.impressions.value) || 0,
         views: Number(measurementFields.views.value) || 0,
         reach: Number(measurementFields.reach.value) || 0,
         followers: Number(measurementFields.followers.value) || 0,
@@ -7985,6 +8036,7 @@
         forwards: Number(measurementFields.forwards.value) || 0,
         reposts: Number(measurementFields.reposts.value) || 0,
         profileVisits: Number(measurementFields.profileVisits.value) || 0,
+        targetAction: measurementFields.targetAction.value,
         note: measurementFields.note.value.trim(),
         updatedAt: new Date().toISOString(),
       });
@@ -8116,7 +8168,8 @@
     cancelEditBtn.addEventListener("click", resetForm);
     fields.isAd.addEventListener("change", updateAdBudgetFields);
     fields.adDailyCost.addEventListener("input", updateAdBudgetFields);
-    fields.adDays.addEventListener("input", updateAdBudgetFields);
+    fields.adStartDate.addEventListener("change", updateAdBudgetFields);
+    fields.adEndDate.addEventListener("change", updateAdBudgetFields);
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
     document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
       setAdsMode("table");
@@ -8235,6 +8288,7 @@
     sortBy.addEventListener("change", render);
     funnelSortBy.addEventListener("change", render);
     dashboardPeriod.addEventListener("change", renderDashboard);
+    dashboardPlatform.addEventListener("change", renderDashboard);
     timelineScale.addEventListener("change", renderDashboard);
     document.querySelectorAll("[data-dashboard-metric]").forEach((metric) => {
       metric.addEventListener("click", () => {
@@ -8389,13 +8443,17 @@
         fields.hashtags.value = record.hashtags || contentItem?.hashtags || "";
         fields.owner.value = record.owner || contentItem?.owner || "";
         fields.prepDeadline.value = record.prepDeadline || contentItem?.prepDeadline || "";
+        fields.impressions.value = Number(record.impressions) || 0;
         fields.views.value = record.views;
         fields.saves.value = record.saves;
         fields.messages.value = record.messages;
         fields.followers.value = getRecordFollowers(record);
+        fields.targetAction.value = record.targetAction || "Посещение профиля";
         fields.isAd.checked = Boolean(record.isAd);
         fields.adDailyCost.value = Number(record.adDailyCost) || 0;
-        fields.adDays.value = Number(record.adDays) || 0;
+        fields.adStartDate.value = record.adStartDate || record.date || "";
+        fields.adEndDate.value = record.adEndDate || record.adStartDate || record.date || "";
+        fields.adDays.value = adDateRangeDays(fields.adStartDate.value, fields.adEndDate.value);
         fields.adBudget.value = adRecordBudget(record);
         updateAdBudgetFields();
         fields.link.value = record.link || contentItem?.link || "";
@@ -11630,6 +11688,11 @@
       if (!saved || Array.isArray(saved) || typeof saved !== "object") {
         return { ...defaultCloudConfig };
       }
+      if (retiredCloudUrls.has(normalizeCloudUrl(String(saved.url || "")))) {
+        localStorage.setItem(cloudConfigKey, JSON.stringify(defaultCloudConfig));
+        localStorage.removeItem(cloudSessionKey);
+        return { ...defaultCloudConfig };
+      }
       return {
         url: saved.url || defaultCloudConfig.url,
         key: saved.key || defaultCloudConfig.key,
@@ -12770,15 +12833,17 @@
       }
       const scoped = getDashboardRecords();
       const funnelScoped = getDashboardFunnelRecords();
+      const impressions = sum(scoped, "impressions");
       const totalViews = sum(scoped, "views");
       const saves = sum(scoped, "saves");
       const messages = sum(scoped, "messages");
       const contentReach = sum(scoped, "reach");
       const funnelLeads = sum(funnelScoped, "leads");
       const funnelRevenue = sum(funnelScoped, "revenue");
-      const currentMonthSpend = adSpendInRange(records, monthRange(new Date()));
+      const currentMonthSpend = adSpendInRange(scoped, monthRange(new Date()));
 
       document.querySelector("#dashRows").textContent = scoped.length;
+      document.querySelector("#dashImpressions").textContent = formatNumber(impressions);
       document.querySelector("#dashViews").textContent = formatNumber(totalViews);
       document.querySelector("#dashSaves").textContent = formatNumber(saves);
       document.querySelector("#dashMessages").textContent = formatNumber(messages);
@@ -12804,15 +12869,20 @@
       document.querySelector("#adBudgetFields")?.classList.toggle("hidden", !enabled);
       if (!enabled) {
         fields.adDailyCost.value = 0;
+        fields.adStartDate.value = "";
+        fields.adEndDate.value = "";
         fields.adDays.value = 0;
         fields.adBudget.value = 0;
         return;
       }
+      if (!fields.adStartDate.value) fields.adStartDate.value = fields.date.value || formatIsoDate(new Date());
+      if (!fields.adEndDate.value) fields.adEndDate.value = fields.adStartDate.value;
+      fields.adDays.value = adDateRangeDays(fields.adStartDate.value, fields.adEndDate.value);
       fields.adBudget.value = adBudgetFromFields();
     }
 
     function adBudgetFromFields() {
-      return (Number(fields.adDailyCost.value) || 0) * (Number(fields.adDays.value) || 0);
+      return (Number(fields.adDailyCost.value) || 0) * adDateRangeDays(fields.adStartDate.value, fields.adEndDate.value);
     }
 
     function updateContentAdBudgetFields() {
@@ -12963,7 +13033,7 @@
     function renderAdSpendStats() {
       updateAdSpendPeriodControls();
       const range = selectedAdSpendRange();
-      const events = filterAdSpendEvents(adSpendEvents(records), range);
+      const events = filterAdSpendEvents(adSpendEvents(getDashboardRecords()), range);
       const rows = groupedAdSpendRows(events);
       const total = events.reduce((sumValue, event) => sumValue + event.amount, 0);
       const max = Math.max(...rows.map((row) => row.amount), 0);
@@ -16693,19 +16763,22 @@
 
     function getDashboardRecords() {
       const period = dashboardPeriod.value;
-      if (period === "all") return [...records];
+      const platform = dashboardPlatform.value;
+      const scopedRecords = platform === "all" ? records : records.filter((record) => record.platform === platform);
+      if (period === "all") return [...scopedRecords];
 
       const since = new Date();
       since.setHours(0, 0, 0, 0);
       since.setDate(since.getDate() - Number(period) + 1);
 
-      return records.filter((record) => {
+      return scopedRecords.filter((record) => {
         if (!record.date) return false;
         return new Date(`${record.date}T00:00:00`) >= since;
       });
     }
 
     function getDashboardFunnelRecords() {
+      if (dashboardPlatform.value !== "all") return [];
       const period = dashboardPeriod.value;
       if (period === "all") return [...funnelRecords];
 
@@ -16842,6 +16915,13 @@
           title: "записи",
           source: "content",
           value: (items) => items.length,
+          format: (value) => formatNumber(value),
+        },
+        impressions: {
+          title: "показы",
+          source: "content",
+          useMeasurements: true,
+          value: (items) => sum(items, "impressions"),
           format: (value) => formatNumber(value),
         },
         views: {
@@ -17066,12 +17146,15 @@
       fields.platform.value = "Instagram";
       updateAdPublicationTypeOptions();
       fields.rubric.selectedIndex = 0;
+      fields.impressions.value = 0;
       fields.views.value = 0;
       fields.saves.value = 0;
       fields.messages.value = 0;
       fields.followers.value = 0;
       fields.isAd.checked = false;
       fields.adDailyCost.value = 0;
+      fields.adStartDate.value = "";
+      fields.adEndDate.value = "";
       fields.adDays.value = 0;
       fields.adBudget.value = 0;
       updateAdBudgetFields();
@@ -17856,6 +17939,7 @@
       measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
       measurementFields.recordId.value = record.id;
       measurementFields.date.valueAsDate = new Date();
+      measurementFields.impressions.value = Number(latest.impressions) || 0;
       measurementFields.views.value = Number(latest.views) || 0;
       measurementFields.reach.value = Number(latest.reach) || 0;
       measurementFields.followers.value = Number(latest.followers) || 0;
@@ -17865,6 +17949,7 @@
       measurementFields.forwards.value = Number(latest.forwards) || 0;
       measurementFields.reposts.value = Number(latest.reposts) || 0;
       measurementFields.profileVisits.value = Number(latest.profileVisits) || 0;
+      measurementFields.targetAction.value = latest.targetAction || "Посещение профиля";
       measurementFields.note.value = "";
       renderMeasurementHistory(record);
       measurementFields.views.focus();
@@ -17906,7 +17991,7 @@
         <div class="measurement-history-row">
           <strong>${formatDate(measurement.date)}</strong>
           <span>
-            ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.reach)} охват,
+            ${formatNumber(measurement.impressions)} показов, ${formatNumber(measurement.views)} просмотров, ${formatNumber(measurement.reach)} охват,
             ${formatNumber(measurement.followers)} подписчиков, ${formatNumber(measurement.saves)} сохранений,
             ${formatNumber(measurement.messages)} сообщений, ${formatNumber(measurement.likes)} лайков,
             ${formatNumber(measurement.forwards)} переслано, ${formatNumber(measurement.reposts)} репостов,
@@ -19925,6 +20010,7 @@
         hashtags: record.hashtags || "",
         owner: record.owner || "",
         prepDeadline: record.prepDeadline || "",
+        impressions: Number(record.impressions) || 0,
         views: Number(record.views) || 0,
         saves: Number(record.saves) || 0,
         messages: Number(record.messages) || 0,
@@ -19934,6 +20020,7 @@
         reposts: Number(record.reposts) || 0,
         profileVisits: Number(record.profileVisits) || 0,
         followers: Number(record.followers) || 0,
+        targetAction: record.targetAction || "Посещение профиля",
         isAd: Boolean(record.isAd),
         adDailyCost: Number(record.adDailyCost) || 0,
         adStartDate: record.adStartDate || record.date || "",
@@ -19962,6 +20049,7 @@
       return {
         id: measurement.id || createId(),
         date: measurement.date || "",
+        impressions: Number(measurement.impressions) || 0,
         views: Number(measurement.views) || 0,
         reach: Number(measurement.reach) || 0,
         saves: Number(measurement.saves) || 0,
@@ -19970,6 +20058,7 @@
         forwards: Number(measurement.forwards) || 0,
         reposts: Number(measurement.reposts) || 0,
         profileVisits: Number(measurement.profileVisits) || 0,
+        targetAction: measurement.targetAction || "Посещение профиля",
         followers: Number(measurement.followers) || 0,
         leads: Number(measurement.leads) || 0,
         offers: Number(measurement.offers) || 0,
@@ -19981,11 +20070,12 @@
     }
 
     function createMeasurementFromEntry(record) {
-      const hasMetrics = Number(record.views) || Number(record.reach) || Number(record.saves) || Number(record.messages)
+      const hasMetrics = Number(record.impressions) || Number(record.views) || Number(record.reach) || Number(record.saves) || Number(record.messages)
         || Number(record.followers) || Number(record.likes) || Number(record.forwards) || Number(record.reposts) || Number(record.profileVisits);
       if (!hasMetrics) return null;
       return normalizeMeasurement({
         date: record.date,
+        impressions: record.impressions,
         views: record.views,
         reach: record.reach,
         followers: record.followers,
@@ -19995,6 +20085,7 @@
         forwards: record.forwards,
         reposts: record.reposts,
         profileVisits: record.profileVisits,
+        targetAction: record.targetAction,
         note: "Первый замер",
         updatedAt: record.updatedAt,
       });
@@ -20010,6 +20101,7 @@
     function syncRecordWithLatestMeasurement(record) {
       const latest = getLatestMeasurement(record);
       if (!latest) return record;
+      record.impressions = latest.impressions;
       record.views = latest.views;
       record.reach = latest.reach;
       record.saves = latest.saves;
@@ -20019,6 +20111,7 @@
       record.forwards = latest.forwards;
       record.reposts = latest.reposts;
       record.profileVisits = latest.profileVisits;
+      record.targetAction = latest.targetAction;
       record.measurements = (Array.isArray(record.measurements) ? record.measurements : []).map(normalizeMeasurement);
       return record;
     }
