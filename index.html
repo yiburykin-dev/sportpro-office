@@ -4188,10 +4188,10 @@
             <h2>Реклама</h2>
             <p>Дашборд и таблица для учета рекламных размещений.</p>
           </div>
-          <div class="followers-card" aria-label="Подписчики аккаунта">
+          <div class="followers-card" aria-label="Подписчики Instagram">
             <div class="followers-card-head">
               <div>
-                <span>Подписчики</span>
+                <span>Подписчики Instagram</span>
                 <strong id="accountFollowersTotal">0</strong>
               </div>
               <button class="btn icon" id="followersEditBtn" type="button" title="Изменить исходное число">✎</button>
@@ -4201,6 +4201,20 @@
               <button class="btn primary" id="followersSaveBtn" type="button">OK</button>
             </div>
             <small>База: <span id="followersBaseValue">0</span> + прирост: <span id="followersGrowthValue">0</span></small>
+          </div>
+          <div class="followers-card" aria-label="Подписчики YouTube">
+            <div class="followers-card-head">
+              <div>
+                <span>Подписчики YouTube</span>
+                <strong id="youtubeFollowersTotal">0</strong>
+              </div>
+              <button class="btn icon" id="youtubeFollowersEditBtn" type="button" title="Изменить исходное число">✎</button>
+            </div>
+            <div class="followers-editor hidden" id="youtubeFollowersEditor">
+              <input id="youtubeFollowersBaseInput" type="number" min="0" step="1" placeholder="Исходное число">
+              <button class="btn primary" id="youtubeFollowersSaveBtn" type="button">OK</button>
+            </div>
+            <small>База: <span id="youtubeFollowersBaseValue">0</span> + прирост: <span id="youtubeFollowersGrowthValue">0</span></small>
           </div>
           <div class="actions">
             <span class="cloud-status" id="cloudStatus">Облако не настроено</span>
@@ -4524,11 +4538,11 @@
                 <label>Просмотры сейчас
                   <input id="views" type="number" min="0" step="1" value="0" required>
                 </label>
-                <label>Сохранения сейчас
+                <label class="ads-instagram-only">Сохранения сейчас
                   <input id="saves" type="number" min="0" step="1" value="0" required>
                 </label>
               </div>
-              <label>Сообщения сейчас
+              <label class="ads-instagram-only">Сообщения сейчас
                 <input id="messages" type="number" min="0" step="1" value="0" required>
               </label>
               <label>Новые подписчики
@@ -4604,7 +4618,7 @@
                   <label>Показы всего
                     <input id="measurementImpressions" type="number" min="0" step="1" value="0">
                   </label>
-                  <label>Охват всего
+                  <label class="ads-instagram-only">Охват всего
                     <input id="measurementReach" type="number" min="0" step="1" value="0">
                   </label>
                   <label>Новые подписчики от публикации
@@ -4612,10 +4626,10 @@
                   </label>
                 </div>
                 <div class="two">
-                  <label>Сохранения всего
+                  <label class="ads-instagram-only">Сохранения всего
                     <input id="measurementSaves" type="number" min="0" step="1" value="0" required>
                   </label>
-                  <label>Сообщения всего
+                  <label class="ads-instagram-only">Сообщения всего
                     <input id="measurementMessages" type="number" min="0" step="1" value="0" required>
                   </label>
                 </div>
@@ -4632,7 +4646,7 @@
                     <input id="measurementTargetActionCount" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
-                <div class="two">
+                <div class="two ads-instagram-only">
                   <label>Лайки всего
                     <input id="measurementLikes" type="number" min="0" step="1" value="0">
                   </label>
@@ -4640,7 +4654,7 @@
                     <input id="measurementForwards" type="number" min="0" step="1" value="0">
                   </label>
                 </div>
-                <div class="two">
+                <div class="two ads-instagram-only">
                   <label>Репосты всего
                     <input id="measurementReposts" type="number" min="0" step="1" value="0">
                   </label>
@@ -4669,6 +4683,11 @@
               <div class="filters">
                 <select id="typeFilter" aria-label="Фильтр по типу">
                   <option value="">Все типы</option>
+                </select>
+                <select id="adsPlatformFilter" aria-label="Фильтр по площадке">
+                  <option value="">Все площадки</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="YouTube">YouTube</option>
                 </select>
                 <select id="sortBy" aria-label="Сортировка">
                   <option value="dateDesc">Сначала новые</option>
@@ -7079,6 +7098,7 @@
     const contentRubricsGrid = document.querySelector("#contentRubricsGrid");
     const funnelEmptyState = document.querySelector("#funnelEmptyState");
     const typeFilter = document.querySelector("#typeFilter");
+    const adsPlatformFilter = document.querySelector("#adsPlatformFilter");
     const sortBy = document.querySelector("#sortBy");
     const search = document.querySelector("#search");
     const contentSearch = document.querySelector("#contentSearch");
@@ -7113,6 +7133,11 @@
     const followersGrowthValue = document.querySelector("#followersGrowthValue");
     const followersEditor = document.querySelector("#followersEditor");
     const followersBaseInput = document.querySelector("#followersBaseInput");
+    const youtubeFollowersTotal = document.querySelector("#youtubeFollowersTotal");
+    const youtubeFollowersBaseValue = document.querySelector("#youtubeFollowersBaseValue");
+    const youtubeFollowersGrowthValue = document.querySelector("#youtubeFollowersGrowthValue");
+    const youtubeFollowersEditor = document.querySelector("#youtubeFollowersEditor");
+    const youtubeFollowersBaseInput = document.querySelector("#youtubeFollowersBaseInput");
     const dashboardPeriod = document.querySelector("#dashboardPeriod");
     const timelineScale = document.querySelector("#timelineScale");
     const timelineTitle = document.querySelector("#timelineTitle");
@@ -8197,12 +8222,22 @@
     document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
       setAdsMode("table");
       resetForm({ close: false });
+      if (adsPlatformFilter.value) {
+        fields.platform.value = adsPlatformFilter.value;
+        updateAdPublicationTypeOptions();
+        updateAdsPlatformMetricFields();
+      }
       openAdsPublicationFormPanel();
       cancelEditBtn.classList.remove("hidden");
       fields.topic.focus();
     });
     document.querySelector("#adsNewPublicationBtn").addEventListener("click", () => {
       resetForm({ close: false });
+      if (adsPlatformFilter.value) {
+        fields.platform.value = adsPlatformFilter.value;
+        updateAdPublicationTypeOptions();
+        updateAdsPlatformMetricFields();
+      }
       openAdsPublicationFormPanel();
       cancelEditBtn.classList.remove("hidden");
       fields.topic.focus();
@@ -8277,9 +8312,13 @@
     });
     contentFields.status.addEventListener("change", enforceContentStatusDateRule);
     contentFields.date.addEventListener("change", enforceContentStatusDateRule);
-    fields.platform.addEventListener("change", () => updateAdPublicationTypeOptions());
+    fields.platform.addEventListener("change", () => {
+      updateAdPublicationTypeOptions();
+      updateAdsPlatformMetricFields();
+    });
     contentFields.platform.addEventListener("change", () => updateContentPublicationTypeOptions());
     updateAdPublicationTypeOptions();
+    updateAdsPlatformMetricFields();
     updateContentPublicationTypeOptions();
     document.querySelector("#contentNewItemBtn").addEventListener("click", () => {
       resetContentForm({ close: false });
@@ -8308,6 +8347,7 @@
     contentFields.adEndDate.addEventListener("change", updateContentAdBudgetFields);
     funnelSearch.addEventListener("input", render);
     typeFilter.addEventListener("change", render);
+    adsPlatformFilter.addEventListener("change", render);
     sortBy.addEventListener("change", render);
     funnelSortBy.addEventListener("change", render);
     dashboardPeriod.addEventListener("change", renderDashboard);
@@ -8329,6 +8369,12 @@
       if (!followersEditor.classList.contains("hidden")) followersBaseInput.focus();
     });
     document.querySelector("#followersSaveBtn").addEventListener("click", saveFollowersBase);
+    document.querySelector("#youtubeFollowersEditBtn").addEventListener("click", () => {
+      youtubeFollowersBaseInput.value = adsSettings.youtubeFollowersBase || 0;
+      youtubeFollowersEditor.classList.toggle("hidden");
+      if (!youtubeFollowersEditor.classList.contains("hidden")) youtubeFollowersBaseInput.focus();
+    });
+    document.querySelector("#youtubeFollowersSaveBtn").addEventListener("click", saveYoutubeFollowersBase);
     document.querySelector("#cloudToggleBtn").addEventListener("click", () => {
       cloudPanel.classList.toggle("hidden");
     });
@@ -8458,6 +8504,7 @@
         fields.time.value = record.time || contentItem?.time || "";
         fields.platform.value = record.platform || contentItem?.platform || "Instagram";
         updateAdPublicationTypeOptions(record.type);
+        updateAdsPlatformMetricFields();
         fields.rubric.value = record.rubric || contentItem?.rubric || defaultContentRubrics()[0].name;
         fields.topic.value = record.topic;
         fields.prepare.value = record.prepare || contentItem?.prepare || "";
@@ -11610,6 +11657,7 @@
       return {
         id: "ads-followers",
         followersBase: Number(settings.followersBase) || 0,
+        youtubeFollowersBase: Number(settings.youtubeFollowersBase) || 0,
         updatedAt: settings.updatedAt || "1970-01-01T00:00:00.000Z",
       };
     }
@@ -11623,6 +11671,13 @@
       adsSettings.updatedAt = new Date().toISOString();
       saveAdsSettings();
       followersEditor.classList.add("hidden");
+    }
+
+    function saveYoutubeFollowersBase() {
+      adsSettings.youtubeFollowersBase = Math.max(0, Number(youtubeFollowersBaseInput.value) || 0);
+      adsSettings.updatedAt = new Date().toISOString();
+      saveAdsSettings();
+      youtubeFollowersEditor.classList.add("hidden");
     }
 
     function normalizeSalesScript(script) {
@@ -12872,7 +12927,9 @@
       document.querySelector("#dashSaves").textContent = formatNumber(saves);
       document.querySelector("#dashMessages").textContent = formatNumber(messages);
       document.querySelector("#dashRate").textContent = totalViews ? `${(((saves + messages) / totalViews) * 100).toFixed(1)}%` : "0%";
-      document.querySelector("#dashFollowers").textContent = formatNumber(getAccountFollowersTotal());
+      document.querySelector("#dashFollowers").textContent = formatNumber(getAccountFollowersTotal(
+        dashboardPlatform.value === "all" ? "" : dashboardPlatform.value,
+      ));
       document.querySelector("#dashReach").textContent = formatNumber(contentReach);
       document.querySelector("#dashAdSpend").textContent = formatUsd(currentMonthSpend);
       document.querySelector("#dashLeads").textContent = formatNumber(funnelLeads);
@@ -13908,22 +13965,35 @@
       return Number(record.followers) || 0;
     }
 
-    function getFollowersGrowth() {
+    function getFollowersGrowth(platform = "") {
       return records
-        .filter(isPublishedAdRecord)
+        .filter((record) => isPublishedAdRecord(record) && (!platform || record.platform === platform))
         .reduce((total, record) => total + getRecordFollowers(record), 0);
     }
 
-    function getAccountFollowersTotal() {
-      return (Number(adsSettings.followersBase) || 0) + getFollowersGrowth();
+    function getAccountFollowersTotal(platform = "") {
+      if (platform === "Instagram") {
+        return (Number(adsSettings.followersBase) || 0) + getFollowersGrowth("Instagram");
+      }
+      if (platform === "YouTube") {
+        return (Number(adsSettings.youtubeFollowersBase) || 0) + getFollowersGrowth("YouTube");
+      }
+      return (Number(adsSettings.followersBase) || 0)
+        + (Number(adsSettings.youtubeFollowersBase) || 0)
+        + getFollowersGrowth();
     }
 
     function renderFollowersSummary() {
-      const base = Number(adsSettings.followersBase) || 0;
-      const growth = getFollowersGrowth();
-      accountFollowersTotal.textContent = formatNumber(base + growth);
-      followersBaseValue.textContent = formatNumber(base);
-      followersGrowthValue.textContent = formatNumber(growth);
+      const instagramBase = Number(adsSettings.followersBase) || 0;
+      const instagramGrowth = getFollowersGrowth("Instagram");
+      const youtubeBase = Number(adsSettings.youtubeFollowersBase) || 0;
+      const youtubeGrowth = getFollowersGrowth("YouTube");
+      accountFollowersTotal.textContent = formatNumber(instagramBase + instagramGrowth);
+      followersBaseValue.textContent = formatNumber(instagramBase);
+      followersGrowthValue.textContent = formatNumber(instagramGrowth);
+      youtubeFollowersTotal.textContent = formatNumber(youtubeBase + youtubeGrowth);
+      youtubeFollowersBaseValue.textContent = formatNumber(youtubeBase);
+      youtubeFollowersGrowthValue.textContent = formatNumber(youtubeGrowth);
     }
 
     function renderSummary() {
@@ -13958,7 +14028,11 @@
 
     function renderFilters() {
       const current = typeFilter.value;
-      const types = [...new Set(records.map((record) => record.type))].sort((a, b) => a.localeCompare(b, "ru"));
+      const platform = adsPlatformFilter.value;
+      const types = [...new Set(records
+        .filter((record) => !platform || record.platform === platform)
+        .map((record) => record.type))]
+        .sort((a, b) => a.localeCompare(b, "ru"));
       typeFilter.innerHTML = '<option value="">Все типы</option>' + types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join("");
       typeFilter.value = types.includes(current) ? current : "";
     }
@@ -16756,10 +16830,12 @@
     function getVisibleRecords() {
       const query = search.value.trim().toLowerCase();
       const type = typeFilter.value;
+      const platform = adsPlatformFilter.value;
       const filtered = records.filter((record) => {
         const matchesType = !type || record.type === type;
+        const matchesPlatform = !platform || record.platform === platform;
         const haystack = `${record.topic} ${record.conclusion}`.toLowerCase();
-        return matchesType && (!query || haystack.includes(query));
+        return matchesType && matchesPlatform && (!query || haystack.includes(query));
       });
 
       return filtered.sort((a, b) => {
@@ -17158,6 +17234,12 @@
       updatePublicationTypeOptions(fields.type, fields.platform.value, "ads", preferredType);
     }
 
+    function updateAdsPlatformMetricFields(platform = fields.platform.value) {
+      const isYouTube = platform === "YouTube";
+      document.querySelectorAll("#entryForm .ads-instagram-only, #measurementForm .ads-instagram-only")
+        .forEach((field) => field.classList.toggle("hidden", isYouTube));
+    }
+
     function updateContentPublicationTypeOptions(preferredType = "") {
       updatePublicationTypeOptions(contentFields.type, contentFields.platform.value, "content", preferredType);
     }
@@ -17169,6 +17251,7 @@
       fields.time.value = "";
       fields.platform.value = "Instagram";
       updateAdPublicationTypeOptions();
+      updateAdsPlatformMetricFields();
       fields.rubric.selectedIndex = 0;
       fields.impressions.value = 0;
       fields.views.value = 0;
@@ -17963,6 +18046,7 @@
       measurementPanel.classList.remove("hidden");
       measurementTitle.textContent = `Замер: ${record.topic || record.type}`;
       measurementFields.recordId.value = record.id;
+      updateAdsPlatformMetricFields(record.platform || "Instagram");
       measurementFields.date.valueAsDate = new Date();
       measurementFields.impressions.value = Number(latest.impressions) || 0;
       measurementFields.views.value = Number(latest.views) || 0;
