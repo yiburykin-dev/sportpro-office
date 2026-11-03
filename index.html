@@ -654,6 +654,41 @@
       max-width: 140px;
     }
 
+    .campaign-reminders {
+      display: grid;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid #e7b65f;
+      border-radius: 8px;
+      background: #fff8e8;
+    }
+
+    .campaign-reminder {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .campaign-reminder strong,
+    .campaign-reminder span {
+      display: block;
+    }
+
+    .campaign-reminder span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 680px) {
+      .campaign-reminder {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+
     .btn {
       border: 1px solid var(--line);
       background: var(--surface);
@@ -4223,6 +4258,8 @@
           </div>
         </div>
 
+        <section class="campaign-reminders hidden" id="campaignReminders" aria-live="polite"></section>
+
         <section class="cloud-panel hidden" id="cloudPanel">
           <div class="cloud-panel-header">
             <div>
@@ -7154,6 +7191,7 @@
     const measurementPanel = document.querySelector("#measurementPanel");
     const measurementTitle = document.querySelector("#measurementTitle");
     const measurementHistory = document.querySelector("#measurementHistory");
+    const campaignReminders = document.querySelector("#campaignReminders");
     const quickMeasurementRecord = document.querySelector("#quickMeasurementRecord");
     const contentImportDate = document.querySelector("#contentImportDate");
     const contentImportItem = document.querySelector("#contentImportItem");
@@ -8070,9 +8108,10 @@
       if (!record) return;
 
       record.measurements = Array.isArray(record.measurements) ? record.measurements : [];
+      const measurementDate = measurementFields.date.value;
       record.measurements.push({
         id: createId(),
-        date: measurementFields.date.value,
+        date: measurementDate,
         impressions: Number(measurementFields.impressions.value) || 0,
         views: Number(measurementFields.views.value) || 0,
         reach: Number(measurementFields.reach.value) || 0,
@@ -8085,6 +8124,7 @@
         profileVisits: Number(measurementFields.profileVisits.value) || 0,
         targetAction: measurementFields.targetAction.value,
         targetActionCount: Number(measurementFields.targetActionCount.value) || 0,
+        isFinalCampaignMeasurement: Boolean(record.isAd && record.adEndDate && measurementDate >= record.adEndDate),
         note: measurementFields.note.value.trim(),
         updatedAt: new Date().toISOString(),
       });
@@ -8219,6 +8259,12 @@
     fields.adStartDate.addEventListener("change", updateAdBudgetFields);
     fields.adEndDate.addEventListener("change", updateAdBudgetFields);
     document.querySelector("#measurementCancelBtn").addEventListener("click", closeMeasurementPanel);
+    campaignReminders.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-campaign-measure-id]");
+      if (!button) return;
+      setAdsMode("table");
+      openMeasurementPanel(button.dataset.campaignMeasureId);
+    });
     document.querySelector("#quickPublicationBtn").addEventListener("click", () => {
       setAdsMode("table");
       resetForm({ close: false });
@@ -8873,6 +8919,7 @@
       renderClientSources();
       renderFilters();
       renderSummary();
+      renderCampaignFinalMeasurementReminders();
       renderRows();
       renderFunnelSummary();
       renderFunnelRows();
@@ -13994,6 +14041,52 @@
       youtubeFollowersTotal.textContent = formatNumber(youtubeBase + youtubeGrowth);
       youtubeFollowersBaseValue.textContent = formatNumber(youtubeBase);
       youtubeFollowersGrowthValue.textContent = formatNumber(youtubeGrowth);
+    }
+
+    function hasFinalCampaignMeasurement(record) {
+      const endDate = record.adEndDate || record.date;
+      if (!endDate) return false;
+      return (record.measurements || []).some((item) => {
+        const measurement = normalizeMeasurement(item);
+        return measurement.isFinalCampaignMeasurement
+          || (!measurement.isInitial && measurement.date >= endDate);
+      });
+    }
+
+    function getCampaignsNeedingFinalMeasurement() {
+      const today = formatIsoDate(new Date());
+      return records.filter((record) => record.isAd
+        && record.adEndDate
+        && record.adEndDate <= today
+        && !hasFinalCampaignMeasurement(record));
+    }
+
+    function renderCampaignFinalMeasurementReminders() {
+      const dueCampaigns = getCampaignsNeedingFinalMeasurement();
+      campaignReminders.classList.toggle("hidden", dueCampaigns.length === 0);
+      if (!dueCampaigns.length) {
+        campaignReminders.innerHTML = "";
+        return;
+      }
+      const today = formatIsoDate(new Date());
+      campaignReminders.innerHTML = `
+        <strong>Нужен итоговый замер рекламной кампании</strong>
+        ${dueCampaigns.map((record) => {
+          const endingToday = record.adEndDate === today;
+          const timing = endingToday
+            ? "Кампания заканчивается сегодня. Внесите итоговые показатели после завершения."
+            : `Кампания завершилась ${formatDate(record.adEndDate)}. Внесите итоговые показатели.`;
+          return `
+            <div class="campaign-reminder">
+              <div>
+                <strong>${escapeHtml(record.topic || record.type)}</strong>
+                <span>${escapeHtml(record.platform || "Площадка не указана")} · ${escapeHtml(timing)}</span>
+              </div>
+              <button class="btn primary" type="button" data-campaign-measure-id="${escapeHtml(record.id)}">Сделать замер</button>
+            </div>
+          `;
+        }).join("")}
+      `;
     }
 
     function renderSummary() {
@@ -20172,6 +20265,8 @@
         targetAction: measurement.targetAction || "Посещение профиля",
         targetActionCount: Number(measurement.targetActionCount) || 0,
         followers: Number(measurement.followers) || 0,
+        isInitial: Boolean(measurement.isInitial || measurement.note === "Первый замер"),
+        isFinalCampaignMeasurement: Boolean(measurement.isFinalCampaignMeasurement),
         leads: Number(measurement.leads) || 0,
         offers: Number(measurement.offers) || 0,
         deals: Number(measurement.deals) || 0,
@@ -20199,6 +20294,7 @@
         profileVisits: record.profileVisits,
         targetAction: record.targetAction,
         targetActionCount: record.targetActionCount,
+        isInitial: true,
         note: "Первый замер",
         updatedAt: record.updatedAt,
       });
